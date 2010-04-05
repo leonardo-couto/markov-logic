@@ -1,0 +1,190 @@
+package structureLearner;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import math.AutomatedLBFGS;
+import math.LBFGS.ExceptionWithIflag;
+
+import weightLearner.WPLL;
+import fol.Formula;
+import fol.Predicate;
+
+/**
+ * @author Leonardo Castilho Couto
+ *
+ */
+public class ShortestFirstSearch extends AbstractLearner {
+	
+	private List<Formula> clauses;
+	private Map<Integer, List<Formula>> lengthClauses;
+	private FormulaGenerator cg;
+	private int k, m;
+	private double epslon;
+	private WPLL wpll;
+	private WPLL.WpllGradient gradient;
+	AutomatedLBFGS weightLearner;
+
+	public ShortestFirstSearch(Set<Predicate> p) {
+		super(p);
+		clauses = new ArrayList<Formula>(FormulaGenerator.unitClauses(p));
+		cg = new FormulaGenerator(p);
+		lengthClauses = new HashMap<Integer, List<Formula>>();
+		lengthClauses.put(new Integer(1), new ArrayList<Formula>(clauses));
+		wpll = new WPLL(p, clauses); 
+		gradient = wpll.new WpllGradient();
+		weightLearner = new AutomatedLBFGS();
+		m = 1000;
+		k = 3;
+		epslon = 0.1;
+	}
+
+	@Override
+	public Set<Formula> learn() {
+		double[] weights = new double[clauses.size()];
+		Arrays.fill(weights, 0);
+		try {
+			weights = weightLearner.maxLbfgs(weights, wpll, gradient);
+		} catch (ExceptionWithIflag e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		double score = wpll.wpll(weights);
+		
+		int i = 0;
+		
+		while(i < 100) {
+			i++;
+			System.out.println("**********" + score);
+			Set<Formula> formulas = findBestClauses(score, weights);
+			if (formulas.isEmpty()) {
+				return new HashSet<Formula>(clauses);
+			}
+			for (Formula f : formulas) {
+				System.out.println(f); // TODO: remove!!
+				wpll.addFormula(f);
+				clauses.add(f);
+			}
+			try {
+				weights = Arrays.copyOf(weights, clauses.size());
+				weights = weightLearner.maxLbfgs(weights, wpll, gradient);
+			} catch (ExceptionWithIflag e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			score = wpll.wpll(weights);
+		}
+		return new HashSet<Formula>(clauses);
+	}
+	
+	public Set<Formula> findBestClauses(double score, double[] weights) {
+		Set<Formula> out = new HashSet<Formula>();
+		List<weightedClause> bestClauses = new ArrayList<weightedClause>();
+		List<weightedClause> candidates = new ArrayList<weightedClause>();
+		double[] newWeights = Arrays.copyOf(weights, weights.length + 1);
+		double[] aux;
+		boolean stop = false;
+		
+		for (int i = 1; i < cg.getMaxAtoms(); i++) {
+			// add all clauses of length i;
+			Collection<Formula> next = lengthClauses.get(new Integer(i));
+			
+			// add all candidates to be expanded
+			Collections.sort(candidates);
+			for (int j = 0; j < Math.min(m, candidates.size()); j++) {
+				next.add(candidates.get(j).clause);
+			}
+			
+			candidates = new ArrayList<weightedClause>();
+			
+			next = cg.generateFormulas(next);
+			// TODO: Needs to make sure no clause in here is equal clauses already in mln.
+			// the above does not work because of Formula.equals.
+			// next.removeAll(lengthClauses.get(new Integer(i+1)));
+			
+			// TODO: PARALELIZAR ESSA PARTE
+			// - CRIAR UM WPLL PARA CADA THREAD
+			
+			int total = next.size();
+			int partial = 0; // TODO: REMOVE
+			
+			for (Formula f : next) {
+				
+				partial++;
+				System.out.println(partial + "/" + total); // TODO: REMOVE
+				
+				wpll.addFormula(f);
+				double newScore = 0;
+				double learnedWeight;
+				try {
+					aux = weightLearner.maxLbfgs(newWeights, wpll, gradient);
+					learnedWeight = aux[aux.length -1];
+					newScore = wpll.wpll(aux);
+				} catch (ExceptionWithIflag e) {
+					System.out.println("*tentando novamente*"); // TODO: nao funciona, mas usar isso para debugar
+//					e.printStackTrace();
+					try {
+						double[] ad = Arrays.copyOf(newWeights, newWeights.length);
+						ad[ad.length-1] = -10.0d;
+						aux = weightLearner.maxLbfgs(ad, wpll, gradient);
+						learnedWeight = aux[aux.length -1];
+						newScore = wpll.wpll(aux);
+					} catch (ExceptionWithIflag e1) {
+						wpll.removeFormula(f);
+						continue;
+					}
+				}
+				wpll.removeFormula(f);
+				System.out.println(Double.toString(score - newScore) + " " + f); // TODO: Remove
+				
+				if (Double.compare(newScore, score) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
+					stop = true;
+					bestClauses.add(new weightedClause(f, score - newScore, learnedWeight));
+				} else {
+					candidates.add(new weightedClause(f, score - newScore, learnedWeight));
+				}
+			}
+			
+			candidates.addAll(bestClauses);
+			if (stop) {
+				Collections.sort(bestClauses);
+				for (int j = 0; j < Math.min(k, bestClauses.size()); j++) {
+					out.add(bestClauses.get(j).clause);
+					candidates.remove(bestClauses.get(j));
+				}
+				return out;
+			}
+			
+		}
+		return out;
+	}
+
+
+	private class weightedClause implements Comparable<weightedClause> {
+		
+		public weightedClause(Formula clause, double score, double weight) {
+			this.score = score;
+			this.clause = clause;
+		}
+		
+		double score;
+		Formula clause;
+		
+		@Override
+		public int compareTo(weightedClause o) {
+			return Double.compare(this.score, o.score);
+		}
+	
+		
+	}
+	
+	
+
+}
