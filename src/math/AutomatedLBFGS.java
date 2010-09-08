@@ -28,10 +28,10 @@ public class AutomatedLBFGS extends LBFGS {
 		double[] diag = new double[n];
 		int[] iflag = {0};
 		
-		super.lbfgs(n, m, out, function.f(out), gradient.f(out), diagco, diag, iprint, eps, xtol, iflag);
+		super.lbfgs(n, m, out, function.f(out), gradient.g(out), diagco, diag, iprint, eps, xtol, iflag);
 		
 		while (iflag[0] == 1) {
-			super.lbfgs(n, m, out, function.f(out), gradient.f(out), diagco, diag, iprint, eps, xtol, iflag);			
+			super.lbfgs(n, m, out, function.f(out), gradient.g(out), diagco, diag, iprint, eps, xtol, iflag);			
 		}
 
 		return out;
@@ -44,10 +44,10 @@ public class AutomatedLBFGS extends LBFGS {
 		double[] diag = new double[n];
 		int[] iflag = {0};
 		
-		super.lbfgs(n, m, out, -1.0*function.f(out), changeSign(gradient.f(out)), diagco, diag, iprint, eps, xtol, iflag);
+		super.lbfgs(n, m, out, -1.0*function.f(out), changeSign(gradient.g(out)), diagco, diag, iprint, eps, xtol, iflag);
 		
 		while (iflag[0] == 1) {
-			super.lbfgs(n, m, out, -1.0*function.f(out), changeSign(gradient.f(out)), diagco, diag, iprint, eps, xtol, iflag);			
+			super.lbfgs(n, m, out, -1.0*function.f(out), changeSign(gradient.g(out)), diagco, diag, iprint, eps, xtol, iflag);			
 		}
 
 		return out;

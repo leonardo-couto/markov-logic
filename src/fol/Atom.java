@@ -2,6 +2,7 @@ package fol;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -78,12 +79,12 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	
 	private static void checkArguments(Predicate p, Term[] args) {
 		if (args.length != p.getDomains().size()) {
-			throw new IllegalArgumentException("Wrong number of arguments. Tried to create an Atom of Predicate \"" + p.toString() + "\" with arguments: " + Util.join(args, ",") + ".");
+			throw new IllegalArgumentException("Wrong number of arguments creating an Atom of Predicate \"" + p.toString() + "\" with arguments: " + Util.join(args, ",") + ".");
 		}
 		int i = 0;
 		for (Term t : args) {
 			if (!Domain.in(t, p.getDomains().get(i))) {
-				throw new IllegalArgumentException("Incompatible Domains. Tried to use Term \"" + t.toString() + "\" with Domain(s) {" + Util.join(t.getDomain().toArray(), ",") + "} into Domain \"" + p.getDomains().get(i).toString() + "\" of Predicate \"" + p.toString() + "\".");
+				throw new IllegalArgumentException("Incompatible Domains. Cannot put Term \"" + t.toString() + "\" with Domain(s) {" + Util.join(t.getDomain().toArray(), ",") + "} into Domain \"" + p.getDomains().get(i).toString() + "\" of Predicate \"" + p.toString() + "\".");
 			}
 			i++;
 		}
@@ -118,6 +119,14 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 		return value;
 	}
 
+	/* (non-Javadoc)
+	 * @see fol.Formula#getPredicates()
+	 */
+	@Override
+	public Set<Predicate> getPredicates() {
+		return Collections.singleton(predicate);
+	}
+	
 	/* (non-Javadoc)
 	 * @see fol.Formula#hasPredicate(fol.Predicate)
 	 */
@@ -215,8 +224,8 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	}
 	
 	@Override
-	protected Formula[] colapse(Formula[] fa) {
-		return null;
+	protected List<Formula> colapse(List<Formula> fa) {
+		return formulas;
 	}
 
 	/* (non-Javadoc)

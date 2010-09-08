@@ -1,5 +1,8 @@
 package fol;
 
+import java.util.List;
+import java.util.Set;
+
 
 /**
  * @author Leonardo Castilho Couto
@@ -15,10 +18,10 @@ public class NegatedFormula extends Formula {
 	}
 	
 	public double getValue() {
-		if(Double.isNaN(formulas[0].getValue())) {
+		if(Double.isNaN(formulas.get(0).getValue())) {
 			return Double.NaN;
 		} else {
-			return 1.0d - formulas[0].getValue();
+			return 1.0d - formulas.get(0).getValue();
 		}
 	}
 	
@@ -29,7 +32,7 @@ public class NegatedFormula extends Formula {
 
 	@Override
 	public String toString() {
-		return "!" + formulas[0].print();
+		return "!" + formulas.get(0).print();
 	}
 	
 	@Override
@@ -38,20 +41,28 @@ public class NegatedFormula extends Formula {
 	}	
 
 	@Override
-	protected Formula[] colapse(Formula[] fa) {
-		return null;
+	protected List<Formula> colapse(List<Formula> fa) {
+		return formulas;
 	}
 	
 	public static Formula negatedFormula(Formula f) {
 		if (f instanceof NegatedFormula) {
-			return ((NegatedFormula) f).formulas[0];
+			return ((NegatedFormula) f).formulas.get(0);
 		}
 		return new NegatedFormula(f);
 	}
 
 	@Override
 	public Formula copy() {
-		return new NegatedFormula(formulas[0].copy());
+		return new NegatedFormula(formulas.get(0).copy());
+	}
+	
+	/* (non-Javadoc)
+	 * @see fol.Formula#getPredicates()
+	 */
+	@Override
+	public Set<Predicate> getPredicates() {
+		return formulas.get(0).getPredicates();
 	}
 
 }

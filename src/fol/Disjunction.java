@@ -30,7 +30,7 @@ public class Disjunction extends Formula {
 
 	@Override
 	public double getValue() {
-		double[] values = new double[formulas.length];
+		double[] values = new double[formulas.size()];
 		int i = 0;
 		for (Formula f : formulas) {
 			values[i] = f.getValue();
@@ -61,7 +61,7 @@ public class Disjunction extends Formula {
 	}
 
 	@Override
-	protected Formula[] colapse(Formula[] fa) {
+	protected List<Formula> colapse(List<Formula> fa) {
 		List<Formula> out = new ArrayList<Formula>();
 		for (Formula f : fa) {
 			if (f instanceof Disjunction) {
@@ -73,14 +73,14 @@ public class Disjunction extends Formula {
 			}
 		}
 		Collections.sort(out);
-		return out.toArray(new Formula[out.size()]);
+		return out;
 	}
 
 	@Override
 	public Formula copy() {
-		Formula[] newFormulas = new Formula[formulas.length];
-		for (int i = 0; i < newFormulas.length; i++) {
-			newFormulas[i] = formulas[i].copy();
+		List<Formula> newFormulas = new ArrayList<Formula>(formulas.size());
+		for (Formula f : formulas) {
+			newFormulas.add(f.copy());
 		}
 		return new Disjunction(newFormulas);
 	}

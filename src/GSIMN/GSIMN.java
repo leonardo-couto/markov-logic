@@ -22,7 +22,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 	private UndirectedGraph<RV, DefaultEdge> graph;
 	private Set<RV> V;
 	private final double alpha;
-	private final IndependenceTest<RV> independence;;
+	private final IndependenceTest<RV> independence;
 
 	public GSIMN(Set<RV> V, IndependenceTest<RV> independence, double alpha) {
 		this.graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);

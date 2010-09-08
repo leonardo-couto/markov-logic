@@ -6,6 +6,6 @@ package math;
  */
 public interface RnToRnFunction {
 
-	public double[] f(double[] x);
+	public double[] g(double[] x);
 	
 }

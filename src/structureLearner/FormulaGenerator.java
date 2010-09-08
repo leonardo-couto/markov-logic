@@ -152,6 +152,7 @@ public class FormulaGenerator {
 		
 	}
 	
+	// TODO: implementar algoritmo tnodes
 	public static Set<Atom> getTNodes(Set<Predicate> predicates, int maxVar) {
 		Set<Atom> out = new HashSet<Atom>();
 		for (Predicate p : predicates) {

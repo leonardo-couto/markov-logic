@@ -33,7 +33,6 @@ public class ParallelShortestFirst extends AbstractLearner {
 	private final int k, m;
 	private final double epslon;
 	private WPLL wpll;
-	private WPLL.WpllGradient gradient;
 	AutomatedLBFGS weightLearner;
 
 
@@ -48,8 +47,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		for (Formula clause : clauses) {
 			lengthClauses.get(clause.length()-1).add(clause);
 		}
-		wpll = new WPLL(p, clauses); 
-		gradient = wpll.new WpllGradient();
+		this.wpll = new WPLL(p, clauses);
 		weightLearner = new AutomatedLBFGS();
 		m = 50;
 		k = 1;
@@ -61,12 +59,12 @@ public class ParallelShortestFirst extends AbstractLearner {
 		double[] weights = new double[clauses.size()];
 		Arrays.fill(weights, 0);
 		try {
-			weights = weightLearner.maxLbfgs(weights, wpll, gradient);
+			weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
 		} catch (ExceptionWithIflag e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		double score = wpll.wpll(weights);
+		double score = wpll.getScore(weights);
 		
 		int i = 0;
 		
@@ -88,12 +86,12 @@ public class ParallelShortestFirst extends AbstractLearner {
 			}
 			try {
 				weights = Arrays.copyOf(weights, clauses.size());
-				weights = weightLearner.maxLbfgs(weights, wpll, gradient);
+				weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
 			} catch (ExceptionWithIflag e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			score = wpll.wpll(weights);
+			score = wpll.getScore(weights);
 		}
 		return new HashSet<Formula>(clauses);
 	}
@@ -208,7 +206,6 @@ public class ParallelShortestFirst extends AbstractLearner {
 	class TestFormula implements Runnable {
 		
 		private WPLL wpll;
-		private WPLL.WpllGradient gradient;
 		private Formula[] formulas;
 		private AutomatedLBFGS lbfgs = new AutomatedLBFGS();
 		private Vector<WeightedClause> candidates;
@@ -223,7 +220,6 @@ public class ParallelShortestFirst extends AbstractLearner {
 				Vector<WeightedClause> candidates, Vector<WeightedClause> bestClauses,
 				double[] weights, double score, CountDownLatch done) {
 			this.wpll = new WPLL(wpll);
-			this.gradient = this.wpll.new WpllGradient();
 			this.fArray = fArray;
 			this.candidates = candidates;
 			this.bestClauses = bestClauses;
@@ -251,7 +247,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 						double learnedWeight;
 						double[] nweights;
 						try {
-							nweights = lbfgs.maxLbfgs(weights, wpll, gradient);
+							nweights = lbfgs.maxLbfgs(weights, this.wpll, this.wpll);
 							learnedWeight = nweights[nweights.length -1]; 
 							newScore = wpll.f(nweights);
 						} catch (ExceptionWithIflag e) {

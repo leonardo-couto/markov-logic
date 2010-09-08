@@ -29,7 +29,6 @@ public class ShortestFirstSearch extends AbstractLearner {
 	private int k, m;
 	private double epslon;
 	private WPLL wpll;
-	private WPLL.WpllGradient gradient;
 	AutomatedLBFGS weightLearner;
 
 	public ShortestFirstSearch(Set<Predicate> p) {
@@ -38,8 +37,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 		cg = new FormulaGenerator(p);
 		lengthClauses = new HashMap<Integer, List<Formula>>();
 		lengthClauses.put(new Integer(1), new ArrayList<Formula>(clauses));
-		wpll = new WPLL(p, clauses); 
-		gradient = wpll.new WpllGradient();
+		wpll = new WPLL(p, clauses);
 		weightLearner = new AutomatedLBFGS();
 		m = 1000;
 		k = 3;
@@ -51,12 +49,12 @@ public class ShortestFirstSearch extends AbstractLearner {
 		double[] weights = new double[clauses.size()];
 		Arrays.fill(weights, 0);
 		try {
-			weights = weightLearner.maxLbfgs(weights, wpll, gradient);
+			weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
 		} catch (ExceptionWithIflag e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		double score = wpll.wpll(weights);
+		double score = wpll.getScore(weights);
 		
 		int i = 0;
 		
@@ -74,12 +72,12 @@ public class ShortestFirstSearch extends AbstractLearner {
 			}
 			try {
 				weights = Arrays.copyOf(weights, clauses.size());
-				weights = weightLearner.maxLbfgs(weights, wpll, gradient);
+				weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
 			} catch (ExceptionWithIflag e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			score = wpll.wpll(weights);
+			score = wpll.getScore(weights);
 		}
 		return new HashSet<Formula>(clauses);
 	}
@@ -124,18 +122,18 @@ public class ShortestFirstSearch extends AbstractLearner {
 				double newScore = 0;
 				double learnedWeight;
 				try {
-					aux = weightLearner.maxLbfgs(newWeights, wpll, gradient);
+					aux = weightLearner.maxLbfgs(newWeights, this.wpll, this.wpll);
 					learnedWeight = aux[aux.length -1];
-					newScore = wpll.wpll(aux);
+					newScore = wpll.getScore(aux);
 				} catch (ExceptionWithIflag e) {
 					System.out.println("*tentando novamente*"); // TODO: nao funciona, mas usar isso para debugar
 //					e.printStackTrace();
 					try {
 						double[] ad = Arrays.copyOf(newWeights, newWeights.length);
 						ad[ad.length-1] = -10.0d;
-						aux = weightLearner.maxLbfgs(ad, wpll, gradient);
+						aux = weightLearner.maxLbfgs(ad, this.wpll, this.wpll);
 						learnedWeight = aux[aux.length -1];
-						newScore = wpll.wpll(aux);
+						newScore = wpll.getScore(aux);
 					} catch (ExceptionWithIflag e1) {
 						wpll.removeFormula(f);
 						continue;

@@ -1,30 +1,27 @@
 package util;
 
-import java.util.Arrays;
+import java.util.List;
 
-public class ArrayPointer<T> {
+public class ListPointer<T> {
 	
-	public final T[] a;
+	public final List<T> a;
 	public final int i;
 	public final T original;
 	
-	public ArrayPointer(T[] a, int i) {
+	public ListPointer(List<T> a, int i) {
 		this.a = a;
 		this.i = i;
-		if ((i < 0) || (a.length < i)) {
-			throw new IllegalArgumentException("Index out of bounds");
-		}
-		this.original = a[i]; // pointer to the original element
+		this.original = a.get(i); // pointer to the original element
 	}
 	
 	public T get() {
-		return a[i];
+		return a.get(i);
 	}
 	
 	public void set(T t) {
-		a[i] = t;
+		a.set(i, t);
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
@@ -32,7 +29,7 @@ public class ArrayPointer<T> {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + Arrays.hashCode(a);
+		result = prime * result + ((a == null) ? 0 : a.hashCode());
 		result = prime * result + i;
 		result = prime * result
 				+ ((original == null) ? 0 : original.hashCode());
@@ -42,22 +39,19 @@ public class ArrayPointer<T> {
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
 			return false;
-		if (getClass() != obj.getClass())
+		if (!(obj instanceof ListPointer<?>))
 			return false;
-		ArrayPointer<T> other;
-		try { 
-			other = (ArrayPointer<T>) obj;
-		} catch (ClassCastException e) {
-			return false;
-		}
-		if (!Arrays.equals(a, other.a))
+		ListPointer<?> other = (ListPointer<?>) obj;
+		if (a == null) {
+			if (other.a != null)
+				return false;
+		} else if (!a.equals(other.a))
 			return false;
 		if (i != other.i)
 			return false;
@@ -68,6 +62,8 @@ public class ArrayPointer<T> {
 			return false;
 		return true;
 	}
-	
+
+
+
 
 }

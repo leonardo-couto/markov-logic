@@ -12,7 +12,7 @@ import java.util.Set;
 import math.RnToRFunction;
 import math.RnToRnFunction;
 
-import util.ArrayPointer;
+import util.ListPointer;
 import util.Sampler;
 import fol.Atom;
 import fol.Constant;
@@ -22,7 +22,7 @@ import fol.Term;
 import fol.Variable;
 
 // Weighted Pseudo Log Likelihood
-public class WPLL implements RnToRFunction {
+public class WPLL {
 	
 	private Set<Predicate> predicates;
 	private List<Formula> formulas;
@@ -63,12 +63,25 @@ public class WPLL implements RnToRFunction {
 		defaultWeights();
 	}
 	
+	private double[] lastCall;
+	
 	@Override
 	public double f(double[] x) {
-		return wpll(x);
+		return getScore(x);
 	}
 	
-	public double wpll(double[] x) {
+	@Override
+	public double[] g(double[] x) {
+		if (Arrays.equals(x, this.lastCall)) {
+			return this.grad;
+		} else {
+			this.getScore(x);
+			return this.grad;
+		}
+	}
+	
+	public double getScore(double[] x) {
+		lastCall = Arrays.copyOf(x, x.length);
 		
 		if (!(formulas.size() == x.length)) {
 			throw new RuntimeException("Different number of formulas and weights");
@@ -101,7 +114,7 @@ public class WPLL implements RnToRFunction {
 		}
 	}
 	
-	public void removeFormula(Formula f) {
+	public boolean removeFormula(Formula f) {
 		if (formulas.contains(f)) {
 			formulas.remove(f);
 			for (Predicate p : predicates) {
@@ -113,7 +126,9 @@ public class WPLL implements RnToRFunction {
 					}
 				}
 			}
+			return true;
 		}
+		return false;
 	}
 	
 	private void updateCounts(Predicate p) {
@@ -263,9 +278,9 @@ public class WPLL implements RnToRFunction {
 	private void updateTFCounts(Predicate p, Formula f, DataCount dc, Atom[] atoms) {
 		
 		Formula fCopy = f.copy();
-		ArrayPointer<Formula> pA = null;
-		List<ArrayPointer<Formula>> apl = fCopy.getAtoms();
-		for (ArrayPointer<Formula> pointer : apl) {
+		ListPointer<Formula> pA = null;
+		List<ListPointer<Formula>> apl = fCopy.getAtoms();
+		for (ListPointer<Formula> pointer : apl) {
 			if (((Atom) pointer.get()).predicate.equals(p)) {
 				pA = pointer;
 				break;
@@ -336,7 +351,7 @@ public class WPLL implements RnToRFunction {
 				}
 				
 				// True counts				
-				for (ArrayPointer<Formula> pointer : apl) {
+				for (ListPointer<Formula> pointer : apl) {
 					pointer.set(pointer.original.replaceVariables(var, cons));
 					if (pointer.get().equals(trueAtom)) {
 						pointer.set(trueAtom);
@@ -350,7 +365,7 @@ public class WPLL implements RnToRFunction {
 				}
 				
 				// False counts
-				for (ArrayPointer<Formula> pointer : apl) {
+				for (ListPointer<Formula> pointer : apl) {
 					if (pointer.get().equals(trueAtom)) {
 						pointer.set(falseAtom);
 					}
@@ -408,17 +423,6 @@ public class WPLL implements RnToRFunction {
 		
 	}
 	
-	public class WpllGradient implements RnToRnFunction {
-		
-		@Override
-		public double[] f(double[] x) {
-			// wpll calculates the grad and wpll together. Do not call this before
-			// calling WPLL.f(x)!!
-			return grad;
-		}
-		
-	}
-
 	/**
 	 * @return the predicates
 	 */
