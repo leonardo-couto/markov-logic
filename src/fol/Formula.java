@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import stat.ConvergenceTester;
+import stat.Sampler;
 import util.ListPointer;
 import weightLearner.FormulaCount;
 
@@ -101,7 +103,7 @@ public abstract class Formula implements Comparable<Formula> {
 	/**
 	 * Replaces Variable X[i] by the Constant c[i].
 	 */
-	public Formula replaceVariables(Variable[] X, Constant[] c) {
+	public Formula replaceVariables(List<Variable> X, List<Constant> c) {
 		// Check domains compatibility.
 		//if (X.length != c.length) {
 		//	throw new IllegalArgumentException();
@@ -114,7 +116,7 @@ public abstract class Formula implements Comparable<Formula> {
 		return recursiveReplaceVariable(X, c);
 	}
 	
-	protected Formula recursiveReplaceVariable(Variable[] X, Constant[] c) {
+	protected Formula recursiveReplaceVariable(List<Variable> X, List<Constant> c) {
 		for (int i = 0; i < this.formulas.size(); i++) {
 			this.formulas.set(i, this.formulas.get(i).recursiveReplaceVariable(X, c));
 		}
@@ -188,62 +190,56 @@ public abstract class Formula implements Comparable<Formula> {
 		return null;		
 	}
 	
+	public FormulaCount trueCount(List<Variable> variables, Sampler<Constant> sampler) {
+		List<ListPointer<Formula>> apl = this.getAtoms();
+		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
+		
+		for (List<Constant> arg : sampler) {
+		  this.replaceVariables(variables, arg);
+		  double d = this.getValue();
+		  if (!Double.isNaN(d)) {
+		    if(tester.increment(d)) {
+		      break;
+		    }
+		  }
+		  for (ListPointer<Formula> pointer : apl) {
+		    pointer.set(pointer.original);
+		  }
+		}
+		
+		if(tester.hasConverged()) {
+		  
+		}
+		
+		return null;
+
+	}
+	
+	// TODO: Testar!!!!!!!!!!!!!!!!!
+	// TODO: da para chamar varias vezes com o mesmo Sampler para economizar!
+	// mas ficaria um pouco feio. Ver o que fazer.
 	public FormulaCount trueCounts() {
-		FormulaCount fc = new FormulaCount();
-		Variable[] var = getVariables().toArray(new Variable[0]);
+		List<Variable> variables = new ArrayList<Variable>(this.getVariables());
 		
-		if (var.length == 0) {
+		if (variables.isEmpty()) {
 			// Formula is grounded
-			double d = getValue();
+			double d = this.getValue();
 			if (Double.isNaN(d)) {
-				fc.addNaNCount();
+				return new FormulaCount(0,0);
 			} else {
-				fc.addTrueCounts(d);
+				return new FormulaCount(d, 1);
 			}
-			return fc;
 		}
 		
-		List<Constant[]> constants = new ArrayList<Constant[]>();
-		int[] length = new int[var.length];
-		int[] counter = new int[var.length+1];
-		long n = 1;
-		for (int i = 0; i < var.length; i++) {
-			counter[i] = 0;
-			constants.add(var[i].getConstants().toArray(new Constant[0]));
-			length[i] = constants.get(i).length;
-			n = n * length[i];
+		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
+		for (Variable v : variables) {
+		  constants.add(v.getConstants());
 		}
+
+		Sampler<Constant> sampler = new Sampler<Constant>(constants);
 		
-		List<ListPointer<Formula>> apl = getAtoms();
-		
-		Constant[] c = new Constant[var.length];
-		double d;
-		for (long i = 0; i < n; i++) {
-			for (int j = 0; j < var.length; j++) {
-				if (counter[j] == length[j]) {
-					counter[j] = 0;
-					counter[j+1]++;
-				}
-				c[j] = constants.get(j)[counter[j]];
-			}
-			// TODO: Sampler, colocar tudo num set, e escolher alguns.
-			// nao, set muito grande, associar 'n' a uma escolha unica de constants
-			// e fazer sample de n até os valores convergirem.
-			counter[0]++;
-			for (ListPointer<Formula> pointer : apl) {
-				pointer.set(pointer.original.recursiveReplaceVariable(var, c));
-			}
-			d = getValue();
-			if (Double.isNaN(d)) {
-				fc.addNaNCount();
-			} else {
-				fc.addTrueCounts(d);
-			}
-		}
-		for (ListPointer<Formula> pointer : apl) {
-			pointer.set(pointer.original);
-		}
-		return fc;
+		return this.trueCount(variables, sampler);
+
 	}
 	
 	/**

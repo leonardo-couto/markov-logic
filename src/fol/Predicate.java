@@ -281,7 +281,7 @@ public class Predicate implements RandomVariable<Predicate> {
 			
 			for (int j = 0; j < aList.size(); j++) {
 				if (connected.get(pList.get(j)).booleanValue()) {
-					Atom a = (Atom) aList.get(j).replaceVariables(var, c);
+					Atom a = (Atom) aList.get(j).replaceVariables(Arrays.asList(var), Arrays.asList(c));
 					if (Double.isNaN(a.value)) {
 						continue constants;
 					}

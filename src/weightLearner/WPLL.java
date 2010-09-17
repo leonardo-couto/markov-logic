@@ -12,8 +12,8 @@ import java.util.Set;
 import math.RnToRFunction;
 import math.RnToRnFunction;
 
+import stat.Sampler;
 import util.ListPointer;
-import util.Sampler;
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;

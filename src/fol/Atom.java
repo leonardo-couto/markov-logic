@@ -26,6 +26,9 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	public final Predicate predicate;
 	public final Term[] terms;
 	public final double value;	
+	
+  public static final Atom TRUE = new Atom(null, 1, Collections.<Term>emptyList());
+  public static final Atom FALSE = new Atom(null, 0, Collections.<Term>emptyList());	
 
 	/**
 	 * @param formulas
@@ -136,14 +139,14 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	}	
 
 	@Override
-	protected Formula recursiveReplaceVariable(Variable[] X, Constant[] c) {
+	protected Formula recursiveReplaceVariable(List<Variable> X, List<Constant> c) {
 		Term[] newterms = Arrays.copyOf(terms, terms.length);
 		boolean replaced = false;
-		for (int i = 0; i < X.length; i++) {
+		for (int i = 0; i < X.size(); i++) {
 			for (int j = 0; j < terms.length; j++) {
-				if (X[i].equals(newterms[j])) {
+				if (X.get(i).equals(newterms[j])) {
 					replaced = true;
-					newterms[j] = c[i];
+					newterms[j] = c.get(i);
 				}
 			}
 		}
@@ -254,35 +257,35 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 			return out;
 		} else {
 			double[] out = new double[groundings.size()];
-			Variable[] vars = getVariables().toArray(new Variable[0]);
+			List<Variable> vars = new ArrayList<Variable>(getVariables());
 			int ngrounds = 0;
 			
-			if (vars.length == 0) {
+			if (vars.isEmpty()) {
 				// Atom is grounded
 				out[0] = getValue();
 				return Arrays.copyOf(out, 1);
 			}
 			
-			List<Constant[]> constants = new ArrayList<Constant[]>();
-			int[] length = new int[vars.length];
-			int[] counter = new int[vars.length+1];
+			List<List<Constant>> constants = new ArrayList<List<Constant>>();
+			int[] length = new int[vars.size()];
+			int[] counter = new int[vars.size()+1];
 			int n = 1;
-			for (int i = 0; i < vars.length; i++) {
+			for (int i = 0; i < vars.size(); i++) {
 				counter[i] = 0;
-				constants.add(vars[i].getConstants().toArray(new Constant[0]));
-				length[i] = constants.get(i).length;
+				constants.add(new ArrayList<Constant>(vars.get(i).getConstants()));
+				length[i] = constants.get(i).size();
 				n = n * length[i];
 			}
 			
-			Constant[] c = new Constant[vars.length];
+			List<Constant> c = new ArrayList<Constant>(vars.size());
 			double d;
 			for (long i = 0; i < n; i++) {
-				for (int j = 0; j < vars.length; j++) {
+				for (int j = 0; j < vars.size(); j++) {
 					if (counter[j] == length[j]) {
 						counter[j] = 0;
 						counter[j+1]++;
 					}
-					c[j] = constants.get(j)[counter[j]];
+					c.set(j,constants.get(j).get(counter[j]));
 				}
 				d = recursiveReplaceVariable(vars, c).getValue();
 				if (!Double.isNaN(d)) {
@@ -411,7 +414,7 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 					}
 					double value = 0;
 					if (changed) {
-						value = ((Atom) a.replaceVariables(av, ac)).value;
+						value = ((Atom) a.replaceVariables(Arrays.asList(av), Arrays.asList(ac))).value;
 						lastValue.put(a, value);
 					} else {
 						value = lastValue.get(a);
