@@ -25,6 +25,9 @@ public class Settings {
   private static final double[] tStudent95 = new double[tLimit];
   private static final double[] tStudent99 = new double[tLimit];
   
+  // Formula.formulaCount:
+  public static final int formulaCountMaxSamples = 1000;
+  
   /**
    * Calcula os tlimit primeiros elementos da distribuicao t de student
    * para i=1 .. tlimit graus de liberdade. (i -> infinito tende a normal)

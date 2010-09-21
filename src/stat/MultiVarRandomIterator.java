@@ -17,6 +17,9 @@ public class MultiVarRandomIterator<T> implements Iterator<List<T>> {
 	private static final Random random = new Random();
 	private final boolean leaf;
 	private List<T> nextElement;
+	private int maxSamples = -1;
+	private boolean hasSampleLimit = false;
+	private int i = 0;
 	
 	public MultiVarRandomIterator(List<List<T>> domains) {
 		if(domains == null || domains.isEmpty()) {
@@ -68,11 +71,17 @@ public class MultiVarRandomIterator<T> implements Iterator<List<T>> {
 	
 	@Override
 	public boolean hasNext() {
+		if (hasSampleLimit) {
+			if (i > maxSamples) {
+				return false;
+			}
+		}
 		return (nextElement != null);
 	}
 
 	@Override
 	public List<T> next() {
+		i++;
 		List<T> out = nextElement;
 		nextElement = makeNext();
 		return out;
@@ -141,6 +150,16 @@ public class MultiVarRandomIterator<T> implements Iterator<List<T>> {
 			return tn;
 		}
 		
+	}
+	
+	public MultiVarRandomIterator<T> setMaxSamples(int n) {
+		this.maxSamples = n;
+		this.hasSampleLimit = true;
+		return this;
+	}
+	
+	public int getMaxSamples() {
+		return this.maxSamples; 
 	}
 
 }

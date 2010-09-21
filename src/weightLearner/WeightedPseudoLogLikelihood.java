@@ -1,18 +1,18 @@
 package weightLearner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import stat.ConvergenceMethodTester;
+import main.Settings;
 import stat.ConvergenceTester;
 import stat.Sampler;
-import util.Convergent;
 import util.ListPointer;
-
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
@@ -25,10 +25,10 @@ import fol.Variable;
  *
  */
 public class WeightedPseudoLogLikelihood extends AbstractScore {
-	
+
 	private final Map<Predicate, Long> inversePllWeight; // Not formulas weight! TODO: citar referencia
 	private final Map<Predicate, DataCount> dataCounts;
-	
+
 	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
 		super(predicates);
 		int defaultSize = (int) Math.ceil(predicates.size()*1.4);
@@ -37,9 +37,10 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		// populate inversePllWeight with the number of groundings for each predicate. 
 		for (Predicate p : predicates) {
 			this.inversePllWeight.put(p, p.totalGroundsNumber());
+			this.dataCounts.put(p, new DataCount(p));
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see weightLearner.Score#getScore(double[])
 	 */
@@ -65,7 +66,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	public void addFormula(Formula f) {
 		super.addFormula(f);
 		for (Predicate p : formulaPredicates.get(f)) {
-			// TODO: update counts de p
+			this.dataCounts.get(p).addFormula(f);
 		}
 	}
 
@@ -75,12 +76,10 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	@Override
 	public void addFormulas(List<Formula> formulas) {
 		super.addFormulas(formulas);
-		Set<Predicate> predicates = new HashSet<Predicate>(this.predicateFormulas.keySet().size());
 		for (Formula f : formulas) {
-			predicates.addAll(formulaPredicates.get(f));
-		}
-		for (Predicate p : predicates) {
-			// TODO: update counts de p
+			for (Predicate p : this.formulaPredicates.get(f)) {
+				this.dataCounts.get(p).addFormula(f);
+			}
 		}
 	}
 
@@ -92,56 +91,19 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		// TODO: remove counts
 		return super.removeFormula(f);
 	}
-	
-	private void updateCounts(Predicate p) {
-		
-		// Use only formulas where the Predicate p appears.
-		Set<Formula> pFormulas = new HashSet<Formula>(predicateFormulas.get(p));
-		
-		DataCount dc;
-		Set<Atom> sample;
-		boolean hasCounts = false;
-		
-		if (dataCounts.containsKey(p)) {
-			// Some counts have already been done.
-			hasCounts = true;
-			dc = dataCounts.get(p);
-			sample = dc.keySet();  // NAO VAI MAIS USAR O MESMO CARA PARA TODOS
-			pFormulas.removeAll(dc.formulas);
-			dc.formulas.addAll(pFormulas);
-			
-		} else {
-			// No counts done for this predicate
-			
-			//sample = sampler.samplePredicate(p);
-			//dc = new DataCount(p.totalGroundsNumber(), sample.size(), pFormulas);
-			dc = new DataCount(p.totalGroundsNumber(), (int) p.totalGroundsNumber(), pFormulas);
-			
-			// Store counts for this Predicate
-			dataCounts.put(p, dc);
-		}
-		
-		if (pFormulas.isEmpty()) {
-			// Predicate has no Formula counts that has not been calculated.
-			return; 
-		}
-		
-		
 
-		
-	}
-	
-	
 	private static class Data {
 		public final FormulaCount trueCount;
 		public final FormulaCount falseCount;
-		
-		public Data(FormulaCount trueCount, FormulaCount falseCount) {
+		public final double value;
+
+		public Data(FormulaCount trueCount, FormulaCount falseCount, double value) {
 			this.trueCount = trueCount;
 			this.falseCount = falseCount;
+			this.value = value;
 		}
 	}
-	
+
 	// inicialmente:
 	//   - apenas uma funcao
 	//   vou escolhendo Atoms pertencentes a p.getGrounds aleatoriamente
@@ -155,11 +117,11 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	//   nao convergiu, pega mais atoms aleatoriamente, e calcula para as outras funcoes também
 	//   - adicionada a n-esima funcao:
 	//   para cada atom que for calcular, ver se foi calculada para todas as funcoes.
-	
+
 	// colocarei o trabalho de fazer o sampling nessa classe.
 	// deixar transparente para o wpll, como se ele nao estivesse fazendo sampling, e sim
 	// calculando exatamente a funcao!!
-	
+
 	// Soma_{r=predicate} (
 	//     Soma_{gr=ground_r} ( 
 	//         x -max(a,b) -log(1+e^min[a/b,b/a]) -> o log varia entre 2 e 1+e
@@ -186,137 +148,166 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	//   Problema: se passar essa soma, tambem tem que passar o gradiente!
 	//    ver se da para calcular o gradiente sem ter de elevar a e, como feito
 	//    para o somatorio, ver as notas.
-	
-  @SuppressWarnings("unused")
+
 	private static class DataCount extends HashMap<Atom,Map<Formula,Data>> {
-		
-		public final long totalGrounds;
-		private int sampledGrounds;
+
 		private final Set<Formula> formulas;
 		private final List<Atom> atoms;
 		public final Predicate predicate;
-		private Sampler<Atom> sampler;
-		
-		private static final Convergent<Atom> convergent = new Convergent<Atom>() {
-		  
-		  private Formula f;
-		  
-		  public void setFormula(Formula f) {
-		    this.f = f;
-		  }
+		private final Iterator<List<Atom>> iterator;
 
-      @Override
-      public double method(List<Atom> args) {
-        // TODO Auto-generated method stub
-        return 0;
-      }
-		  
-    };
-		
-
-    public void addFormula(Formula f) {
-			boolean converged = false;
-			
-			if (f instanceof Atom) {
-			  // TODO: tratar o caso de Atom
-			}
-			
-			f = f.copy();
-			ListPointer<Formula> pA = null;
-			List<ListPointer<Formula>> apl = f.getAtoms();
-			for (ListPointer<Formula> pointer : apl) {
-			  if (((Atom) pointer.get()).predicate.equals(this.predicate)) {
-			    if (((Atom) pointer.get()).variablesOnly()) {
-			      pA = pointer;
-			      break;
-			    }
-			  }
-			}
-			if (pA == null) {
-	      throw new RuntimeException("Formula \"" + f.toString() + 
-	              "\" contains no Predicate \"" + predicate.toString() + "." + 
-	              "\" with only Variables.");
-			}
-			Atom at = (Atom) pA.get();
-			List<Variable> variables = new ArrayList<Variable>(at.terms.length);
-			for (Term t : at.terms) {
-			  variables.add((Variable) t);			  
-			}
-			
-			ConvergenceTester testerA = ConvergenceTester.lowPrecisionConvergence();
-			ConvergenceTester testerB = ConvergenceTester.lowPrecisionConvergence();
-			
-			if (!this.atoms.isEmpty()) {
-			  
-			  int i = 0;
-        double[] tc = new double[this.atoms.size()];
-        double[] fc = new double[this.atoms.size()];
-			
-			  for (Atom a : this.atoms) {
-			    
-			    List<Constant> constants = new ArrayList<Constant>(a.terms.length);
-			    for (Term t : at.terms) {
-			      constants.add((Constant) t);
-			    }
-			    
-			    Formula grounded = f.replaceVariables(variables, constants);
-			    
-			    pA.set(Atom.TRUE);
-			    FormulaCount trueCount = grounded.trueCounts();
-			    pA.set(Atom.FALSE);
-			    FormulaCount falseCount = grounded.trueCounts();
-			    tc[i] = trueCount.trueCounts;
-			    fc[i] = falseCount.trueCounts; // TODO: Acho que soh precisa guardar a proporcao, ver!!
-			                                   // de qualquer maneira, mudar de trueCounts para counts
-			                                   // e tirar o NaNCounts.
-			    i++;			    
-			  }
-			  
-			  testerA.evaluate(tc);
-			  testerB.evaluate(fc);			
-			}
-		}
-		
-		public boolean removeFormula(Formula f) {
-			// TODO: remove counts
-			return false;
-		}
-		
-		public long getTotalGrounds(Predicate p) {
-		  // TODO: Ver se jah nao foi feito em outro lugar
-		  // se nao, implementar!
-		  return 1;
-		}
-		
 		public DataCount(Predicate p) {
 			this.predicate = p;
 			this.atoms = new ArrayList<Atom>();
 			this.formulas = new HashSet<Formula>();
-			this.totalGrounds = getTotalGrounds(p);
-//			this.formulas = new HashSet<Formula>();
-//			this.totalGrounds = p.totalGroundsNumber();
-//			this.sampler = new Sampler<Atom>(p.getGroundings().keySet());
+			Sampler<Atom> sampler = new Sampler<Atom>(p.getGroundings().keySet());
+			sampler.setMaxSamples(Settings.formulaCountMaxSamples);
+			this.iterator = sampler.iterator();
 		}
-		
-		
-//		public DataCount(long totalGrounds, int sampledGrounds, Set<Formula> formulas) {
-//			super();
-//			this.totalGrounds = totalGrounds;
-//			this.sampledGrounds = sampledGrounds;
-//			this.formulas = formulas;
-//			this.atoms = new ArrayList<Atom>();
-//		}
-		
-//		@SuppressWarnings("unused")
-//		public static DataCount copy(DataCount old) {
-//			DataCount newDC = new DataCount(old.totalGrounds, old.sampledGrounds,
-//					new HashSet<Formula>(old.formulas));
-//			for (Atom a : old.keySet()) {
-//				newDC.put(a, new HashMap<Formula, Data>(old.get(a)));
-//			}
-//			return newDC;
-//		}
-		
+
+		public int sampledAtoms() {
+			return this.atoms.size();
+		}
+
+		private ListPointer<Formula> getPointer(Formula f) {
+			if (f instanceof Atom) {
+				List<Formula> list = Collections.singletonList(f);
+				return new ListPointer<Formula>(list, 0);
+			}
+			ListPointer<Formula> out = f.getAtomPointer(this.predicate);
+			if (out == null) {
+				throw new RuntimeException("Formula \"" + f.toString() + 
+						"\" contains no Predicate \"" + this.predicate.toString() + 
+				"\" with Variables only.");
+			}
+			return out;
+		}
+
+		private static Sampler<Constant> getSampler(List<Variable> variables) {
+			List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
+			for (Variable v : variables) {
+				constants.add(v.getConstants());
+			}
+			return new Sampler<Constant>(constants);
+		}
+
+		private List<Data> addAtoms(Formula formula, List<Atom> atoms) {
+			List<Data> out = new ArrayList<Data>(atoms.size());
+			if (formula instanceof Atom) {
+
+				for (Atom a : atoms) {
+					FormulaCount trueCount  = new FormulaCount(1, 1);
+					FormulaCount falseCount = new FormulaCount(0, 1);
+					Data d = new Data(trueCount, falseCount, a.getValue());
+					this.get(a).put(formula, d);
+					out.add(d);
+				}
+
+				return out;
+			}
+
+			Formula f = formula.copy();
+			Set<Variable> variablesSet = f.getVariables();
+			ListPointer<Formula> pA = this.getPointer(f);
+			Atom at = (Atom) pA.get();
+			List<Variable> atomVariables = new ArrayList<Variable>(at.getVariables());
+			variablesSet.removeAll(atomVariables);
+			List<Variable> variables = new ArrayList<Variable>(variablesSet);
+			Sampler<Constant> sampler = getSampler(variables);
+			sampler.setMaxSamples(Settings.formulaCountMaxSamples);
+			int i = 0;
+
+			for (Atom a : atoms) {
+
+				Formula grounded;
+
+				if (variables.isEmpty()) {              
+					grounded = f;
+				} else {
+					List<Constant> constants = new ArrayList<Constant>(a.terms.length);
+					for (Term t : at.terms) {
+						constants.add((Constant) t);
+					}
+					grounded = f.replaceVariables(atomVariables, constants);
+				}
+
+				pA.set(Atom.TRUE);
+				FormulaCount trueCount = grounded.trueCounts(variables, sampler);
+				pA.set(Atom.FALSE);
+				FormulaCount falseCount = grounded.trueCounts(variables, sampler);
+				//tc[i] = trueCount.counts;
+				//fc[i] = falseCount.counts; // TODO: Acho que soh precisa guardar a proporcao, ver!!
+				double value = a.value*trueCount.counts + (1.0-a.value)*falseCount.counts;
+				i++; 
+				Data d = new Data(trueCount, falseCount, value);
+				// TODO: o que acontece quando tc/fc = FormulaCount(0,0)?
+				// TODO: ver se precisa do totalCount (se nao usar double para Data).
+				this.get(a).put(formula, d);
+				out.add(d);
+			}
+
+			return out;
+		}
+
+
+		public void addFormula(Formula formula) {
+			ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
+
+
+			if (!this.atoms.isEmpty()) {
+				double[] v = new double[this.atoms.size()];
+				List<Data> data = this.addAtoms(formula, this.atoms);
+				for (int i = 0; i < v.length; i++) {
+					v[i] = data.get(i).value;
+				}
+				tester.evaluate(v);
+			}
+
+			if(!tester.hasConverged()) {
+				List<Atom> atoms = new ArrayList<Atom>();
+				while(!tester.hasConverged() && iterator.hasNext()) {
+					Atom a = iterator.next().get(0);
+					atoms.add(a);
+					Map<Formula, Data> map = new HashMap<Formula, Data>(2*this.formulas.size());
+					this.put(a, map);
+					Data d = this.addAtoms(formula, Collections.singletonList(a)).get(0);
+					tester.increment(d.value);
+				}
+				for (Formula f : this.formulas) {
+					this.addAtoms(f, atoms);
+				}
+			}
+			formulas.add(formula);
+		}
+
+		public boolean removeFormula(Formula f) {
+			if(this.formulas.remove(f)) {
+				for (Map<Formula, Data> map : this.values()) {
+					map.remove(f);
+				}
+				return true;
+			}
+			return false;
+		}
+
+		//		public DataCount(long totalGrounds, int sampledGrounds, Set<Formula> formulas) {
+		//			super();
+		//			this.totalGrounds = totalGrounds;
+		//			this.sampledGrounds = sampledGrounds;
+		//			this.formulas = formulas;
+		//			this.atoms = new ArrayList<Atom>();
+		//		}
+
+		//		@SuppressWarnings("unused")
+		//		public static DataCount copy(DataCount old) {
+		//			DataCount newDC = new DataCount(old.totalGrounds, old.sampledGrounds,
+		//					new HashSet<Formula>(old.formulas));
+		//			for (Atom a : old.keySet()) {
+		//				newDC.put(a, new HashMap<Formula, Data>(old.get(a)));
+		//			}
+		//			return newDC;
+		//		}
+
 	}
 
 

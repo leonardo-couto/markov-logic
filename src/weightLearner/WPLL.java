@@ -200,8 +200,8 @@ public class WPLL {
 			double d1 = 0.0d;
 			for (Formula f : map.keySet()) {
 				// TODO: MODIFICAR, pensar o que fazer com os NaN counts. Talvez ver a proporcao e normalizar.
-				d0 = d0 + (((double) map.get(f).trueCount.trueCounts) * wf.get(f).doubleValue());
-				d1 = d1 + (((double) map.get(f).falseCount.trueCounts) * wf.get(f).doubleValue());
+				d0 = d0 + (((double) map.get(f).trueCount.counts) * wf.get(f).doubleValue());
+				d1 = d1 + (((double) map.get(f).falseCount.counts) * wf.get(f).doubleValue());
 			}
 			d0 = Math.exp(d0);
 			d1 = Math.exp(d1);
@@ -225,8 +225,8 @@ public class WPLL {
 			
 			for (Formula f : map.keySet()) {
 				// TODO: MODIFICAR, pensar o que fazer com os NaN counts. Talvez ver a proporcao e normalizar.
-				double tc = (double) map.get(f).trueCount.trueCounts;
-				double fc = (double) map.get(f).falseCount.trueCounts;
+				double tc = (double) map.get(f).trueCount.counts;
+				double fc = (double) map.get(f).falseCount.counts;
 				int i = idx.get(f).intValue();
 				
 				if (zero) {

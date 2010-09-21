@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import main.Settings;
+
 import stat.ConvergenceTester;
 import stat.Sampler;
 import util.ListPointer;
@@ -190,7 +192,18 @@ public abstract class Formula implements Comparable<Formula> {
 		return null;		
 	}
 	
-	public FormulaCount trueCount(List<Variable> variables, Sampler<Constant> sampler) {
+	public FormulaCount trueCounts(List<Variable> variables, Sampler<Constant> sampler) {
+		
+		if (variables.isEmpty()) {
+			// Formula is grounded
+			double d = this.getValue();
+			if (Double.isNaN(d)) {
+				return new FormulaCount(0,0);
+			} else {
+				return new FormulaCount(d, 1);
+			}
+		}
+		
 		List<ListPointer<Formula>> apl = this.getAtoms();
 		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
 		
@@ -206,18 +219,18 @@ public abstract class Formula implements Comparable<Formula> {
 		    pointer.set(pointer.original);
 		  }
 		}
-		
-		if(tester.hasConverged()) {
-		  
+	
+		if (!tester.hasConverged()) {
+			// TODO: tirar, ou colocar num log
+			System.out.println("nao convergiu");
+			return new FormulaCount(0,0);
 		}
-		
-		return null;
 
+		return new FormulaCount(sampler.n*tester.mean(), sampler.n);
+		
 	}
 	
 	// TODO: Testar!!!!!!!!!!!!!!!!!
-	// TODO: da para chamar varias vezes com o mesmo Sampler para economizar!
-	// mas ficaria um pouco feio. Ver o que fazer.
 	public FormulaCount trueCounts() {
 		List<Variable> variables = new ArrayList<Variable>(this.getVariables());
 		
@@ -237,8 +250,9 @@ public abstract class Formula implements Comparable<Formula> {
 		}
 
 		Sampler<Constant> sampler = new Sampler<Constant>(constants);
+		sampler.setMaxSamples(Settings.formulaCountMaxSamples);
 		
-		return this.trueCount(variables, sampler);
+		return this.trueCounts(variables, sampler);
 
 	}
 	

@@ -19,6 +19,9 @@ public class Sampler<T> implements Iterable<List<T>> {
 	public final long n;
 	private static final int SHUFFLE_LIMIT = 50; //50;
 	private static final int NO_REPLACEMENT_LIMIT = 500; //500;
+	private int maxSamples = -1;
+	private boolean hasSampleLimit = false;
+	private boolean empty = false;
 	
 	public Sampler(Collection<T> domain) {
 		this(Collections.singletonList(domain));
@@ -28,6 +31,9 @@ public class Sampler<T> implements Iterable<List<T>> {
 		
 		boolean shuffle = true;
 		boolean noReplacement = true;
+		if(domains.isEmpty()) {
+			this.empty = true;
+		}
 		final List<List<T>> objDomains = new ArrayList<List<T>>(domains.size());
 		long n = 1;
 		for (int i=0; i < domains.size(); i++ ) {
@@ -45,6 +51,9 @@ public class Sampler<T> implements Iterable<List<T>> {
 				}
 			}
 		}
+		if (n == 0) {
+			this.empty = true;
+		}
 		
 		this.shuffle = shuffle;
 		this.noReplacement = noReplacement;
@@ -60,28 +69,48 @@ public class Sampler<T> implements Iterable<List<T>> {
 	//
 	// escolher randomicamente cada ramo da arvore, se já estiver lotado, escolher outro ramo
 	// backtraking, manter uma flag se jah esta cheio.
-
+	@SuppressWarnings("unchecked")
 	public Iterator<List<T>> iterator() {
-
+		
+		if (this.empty) {
+			return (Iterator<List<T>>) EMPTY_ITERATOR;
+		}
+		
 		if (shuffle) {
-			return crossJoin(this.domains, (int) this.n).iterator();
+			List<List<T>> out = crossJoin(this.domains, (int) this.n);
+			if (hasSampleLimit) {
+				if (out.size() > this.maxSamples) {
+					out = out.subList(0, maxSamples);
+				}
+			}
+			return out.iterator();
 		}
 
 		if (noReplacement) {
+			if (hasSampleLimit) {
+				return (new MultiVarRandomIterator<T>(this.domains)).setMaxSamples(this.maxSamples);
+			}
 			return new MultiVarRandomIterator<T>(this.domains);
 		}
 
 		return new Iterator<List<T>>() {
-
+			
+			private int i = 0;
 			private final Random r = new Random();
 
 			@Override
 			public boolean hasNext() {
+				if (hasSampleLimit) {
+					if (i > maxSamples) {
+						return false;
+					}
+				}
 				return true;
 			}
 
 			@Override
 			public List<T> next() {
+				i++;
 				List<T> out = new ArrayList<T>(domains.size());
 				for(List<T> domain : domains) {
 					out.add(domain.get(r.nextInt(domain.size())));
@@ -129,5 +158,32 @@ public class Sampler<T> implements Iterable<List<T>> {
 		Collections.shuffle(out);
 		return out;
 	}
+	
+	public void setMaxSamples(int n) {
+		this.maxSamples = n;
+		this.hasSampleLimit = true;
+	}
+	
+	public int getMaxSamples() {
+		return this.maxSamples; 
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public static final Iterator EMPTY_ITERATOR = new Iterator() {
 
+		@Override
+		public boolean hasNext() {
+			return false;
+		}
+
+		@Override
+		public Object next() {
+			return null;
+		}
+
+		@Override
+		public void remove() {			
+		}
+	};
+	
 }
