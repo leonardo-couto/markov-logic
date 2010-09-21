@@ -28,6 +28,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 	private final Map<Predicate, Long> inversePllWeight; // Not formulas weight! TODO: citar referencia
 	private final Map<Predicate, DataCount> dataCounts;
+	private double[] grad = new double[0];
 
 	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
 		super(predicates);
@@ -46,17 +47,40 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	 */
 	@Override
 	public double getScore(double[] weights) {
-		// TODO Auto-generated method stub
+		List<Formula> formulas = this.getFormulas();
+		if (!(formulas.size() == weights.length)) {
+			throw new RuntimeException("Different number of formulas and weights");
+		}
+		double wpll = 0;
+		
+		Map<Formula, Double> wf = new HashMap<Formula, Double>(formulas.size()*2);
+		Map<Formula, Integer> idx = new HashMap<Formula, Integer>(formulas.size()*2);
+		for (int i = 0; i < formulas.size(); i++) {
+			wf.put(formulas.get(i), new Double(weights[i]));
+			idx.put(formulas.get(i), new Integer(i));
+		}
+		
+		this.grad = new double[weights.length];
+		for (Predicate p : this.predicateFormulas.keySet()) {
+			wpll = wpll + this.predicateWPll(p, wf, idx);
+		}
+		return wpll;
+	}
+	
+	private double predicateWPll(Predicate p, Map<Formula, Double> wf, Map<Formula, Integer> idx) {
+		
+		// TODO: parei aqui!
+		
 		return 0;
 	}
+
 
 	/* (non-Javadoc)
 	 * @see math.RnToRnFunction#g(double[])
 	 */
 	@Override
 	public double[] g(double[] x) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.grad;
 	}
 
 	/* (non-Javadoc)
@@ -88,7 +112,9 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	 */
 	@Override
 	public boolean removeFormula(Formula f) {
-		// TODO: remove counts
+		for (Predicate p : formulaPredicates.get(f)) {
+			this.dataCounts.get(p).removeFormula(f);
+		}
 		return super.removeFormula(f);
 	}
 
