@@ -136,10 +136,16 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	@Override
 	public boolean hasPredicate(Predicate p) {
 		return predicate.equals(p);
-	}	
+	}
+	
+	@Override
+	public Atom replaceVariables(List<Variable> X, List<Constant> c) {
+	  return this.recursiveReplaceVariable(X, c);
+	}
+
 
 	@Override
-	protected Formula recursiveReplaceVariable(List<Variable> X, List<Constant> c) {
+	protected Atom recursiveReplaceVariable(List<Variable> X, List<Constant> c) {
 		Term[] newterms = Arrays.copyOf(terms, terms.length);
 		boolean replaced = false;
 		for (int i = 0; i < X.size(); i++) {

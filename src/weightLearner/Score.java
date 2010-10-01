@@ -23,5 +23,7 @@ public interface Score extends RnToRFunction, RnToRnFunction {
 	public boolean removeFormula(Formula f);
 	
 	public double getScore(double[] weights);
+	
+	public Score copy();
 
 }

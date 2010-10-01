@@ -8,11 +8,9 @@ import java.util.List;
 import java.util.Set;
 
 import main.Settings;
-
 import stat.ConvergenceTester;
 import stat.Sampler;
 import util.ListPointer;
-import weightLearner.FormulaCount;
 
 /**
  * @author Leonardo Castilho Couto
@@ -192,15 +190,15 @@ public abstract class Formula implements Comparable<Formula> {
 		return null;		
 	}
 	
-	public FormulaCount trueCounts(List<Variable> variables, Sampler<Constant> sampler) {
+	public double trueCounts(List<Variable> variables, Sampler<Constant> sampler) {
 		
 		if (variables.isEmpty()) {
 			// Formula is grounded
 			double d = this.getValue();
 			if (Double.isNaN(d)) {
-				return new FormulaCount(0,0);
+				return 0;
 			} else {
-				return new FormulaCount(d, 1);
+				return d;
 			}
 		}
 		
@@ -223,24 +221,24 @@ public abstract class Formula implements Comparable<Formula> {
 		if (!tester.hasConverged()) {
 			// TODO: tirar, ou colocar num log
 			System.out.println("nao convergiu");
-			return new FormulaCount(0,0);
+			return 0;
 		}
 
-		return new FormulaCount(sampler.n*tester.mean(), sampler.n);
+		return sampler.n*tester.mean();
 		
 	}
 	
 	// TODO: Testar!!!!!!!!!!!!!!!!!
-	public FormulaCount trueCounts() {
+	public double trueCounts() {
 		List<Variable> variables = new ArrayList<Variable>(this.getVariables());
 		
 		if (variables.isEmpty()) {
 			// Formula is grounded
 			double d = this.getValue();
 			if (Double.isNaN(d)) {
-				return new FormulaCount(0,0);
+				return 0;
 			} else {
-				return new FormulaCount(d, 1);
+				return d;
 			}
 		}
 		

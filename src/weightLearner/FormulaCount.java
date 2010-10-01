@@ -1,5 +1,6 @@
 package weightLearner;
 
+// TODO: REMOVER, nao estah mais sendo usada
 public class FormulaCount {
 	
 	public final double counts;

@@ -13,7 +13,9 @@ import java.util.concurrent.CountDownLatch;
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
 
+import weightLearner.Score;
 import weightLearner.WPLL;
+import weightLearner.WeightedPseudoLogLikelihood;
 import fol.Formula;
 import fol.Predicate;
 
@@ -23,8 +25,7 @@ import fol.Predicate;
  */
 public class ParallelShortestFirst extends AbstractLearner {
 	
-	// TODO: PARAMETERS TO BE SET:
-	private final int threads = 2;
+	private final int threads = Runtime.getRuntime().availableProcessors();
 	private final int fpt = 30; // Functions per thread.
 	
 	private List<Formula> clauses;
@@ -32,7 +33,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 	private FormulaGenerator cg;
 	private final int k, m;
 	private final double epslon;
-	private WPLL wpll;
+	private Score wscore;
 	AutomatedLBFGS weightLearner;
 
 
@@ -47,7 +48,8 @@ public class ParallelShortestFirst extends AbstractLearner {
 		for (Formula clause : clauses) {
 			lengthClauses.get(clause.length()-1).add(clause);
 		}
-		this.wpll = new WPLL(p, clauses);
+		this.wscore = new WeightedPseudoLogLikelihood(p);
+		wscore.addFormulas(clauses);
 		weightLearner = new AutomatedLBFGS();
 		m = 50;
 		k = 1;
@@ -59,12 +61,12 @@ public class ParallelShortestFirst extends AbstractLearner {
 		double[] weights = new double[clauses.size()];
 		Arrays.fill(weights, 0);
 		try {
-			weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
+			weights = weightLearner.maxLbfgs(weights, this.wscore, this.wscore);
 		} catch (ExceptionWithIflag e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		double score = wpll.getScore(weights);
+		double score = wscore.getScore(weights);
 		
 		int i = 0;
 		
@@ -80,18 +82,18 @@ public class ParallelShortestFirst extends AbstractLearner {
 			}
 			for (Formula f : formulas) {
 				System.out.println(f); // TODO: remove!!
-				wpll.addFormula(f);
+				wscore.addFormula(f);
 				clauses.add(f);
 				lengthClauses.get(f.length()-1).add(f);
 			}
 			try {
 				weights = Arrays.copyOf(weights, clauses.size());
-				weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
+				weights = weightLearner.maxLbfgs(weights, this.wscore, this.wscore);
 			} catch (ExceptionWithIflag e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			score = wpll.getScore(weights);
+			score = wscore.getScore(weights);
 		}
 		return new HashSet<Formula>(clauses);
 	}
@@ -123,7 +125,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			
 			CountDownLatch done = new CountDownLatch(threads);
 			for (int j = 0; j < threads; j++) {
-				new TestFormula(wpll, formulas, candidates, bestClauses, newWeights, score, done);
+				new TestFormula(wscore, formulas, candidates, bestClauses, newWeights, score, done);
 			}
 
 			try {
@@ -205,7 +207,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 
 	class TestFormula implements Runnable {
 		
-		private WPLL wpll;
+		private Score wpll;
 		private Formula[] formulas;
 		private AutomatedLBFGS lbfgs = new AutomatedLBFGS();
 		private Vector<WeightedClause> candidates;
@@ -216,10 +218,10 @@ public class ParallelShortestFirst extends AbstractLearner {
 		public final Thread t;
 		private CountDownLatch done;
 		
-		public TestFormula(WPLL wpll, FormulaArray fArray, 
+		public TestFormula(Score wscore, FormulaArray fArray, 
 				Vector<WeightedClause> candidates, Vector<WeightedClause> bestClauses,
 				double[] weights, double score, CountDownLatch done) {
-			this.wpll = new WPLL(wpll);
+			this.wpll = new WPLL(wscore);
 			this.fArray = fArray;
 			this.candidates = candidates;
 			this.bestClauses = bestClauses;

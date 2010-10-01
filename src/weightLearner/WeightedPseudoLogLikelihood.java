@@ -1,6 +1,7 @@
 package weightLearner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,18 +27,15 @@ import fol.Variable;
  */
 public class WeightedPseudoLogLikelihood extends AbstractScore {
 
-	private final Map<Predicate, Long> inversePllWeight; // Not formulas weight! TODO: citar referencia
 	private final Map<Predicate, DataCount> dataCounts;
 	private double[] grad = new double[0];
 
 	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
 		super(predicates);
 		int defaultSize = (int) Math.ceil(predicates.size()*1.4);
-		this.inversePllWeight = new HashMap<Predicate, Long>(defaultSize);
 		this.dataCounts = new HashMap<Predicate, DataCount>(defaultSize);
 		// populate inversePllWeight with the number of groundings for each predicate. 
 		for (Predicate p : predicates) {
-			this.inversePllWeight.put(p, p.totalGroundsNumber());
 			this.dataCounts.put(p, new DataCount(p));
 		}
 	}
@@ -52,26 +50,95 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			throw new RuntimeException("Different number of formulas and weights");
 		}
 		double wpll = 0;
-		
+
 		Map<Formula, Double> wf = new HashMap<Formula, Double>(formulas.size()*2);
 		Map<Formula, Integer> idx = new HashMap<Formula, Integer>(formulas.size()*2);
 		for (int i = 0; i < formulas.size(); i++) {
 			wf.put(formulas.get(i), new Double(weights[i]));
 			idx.put(formulas.get(i), new Integer(i));
 		}
-		
+
 		this.grad = new double[weights.length];
+		Arrays.fill(this.grad, 0.0d);
 		for (Predicate p : this.predicateFormulas.keySet()) {
 			wpll = wpll + this.predicateWPll(p, wf, idx);
 		}
 		return wpll;
 	}
-	
-	private double predicateWPll(Predicate p, Map<Formula, Double> wf, Map<Formula, Integer> idx) {
+
+	private double predicateWPll(Predicate p, Map<Formula, Double> weight, Map<Formula, Integer> idx) {
+
+		DataCount dataCount = dataCounts.get(p);
+		double predicatePLL = 0;
+		double[] pGrad = new double[weight.size()];
+		Arrays.fill(pGrad, 0.0d);
 		
-		// TODO: parei aqui!
+		for (Atom atom : dataCount.keySet()) {
+
+			// wx = sum_i(w_i * n_i[ground = x    ]);
+			// a  = sum_i(w_i * n_i[ground = true ]);
+			// b  = sum_i(w_i * n_i[ground = false]);
+			double wx = 0, a = 0, b = 0;
+
+			Map<Formula, Data> formulaCount = dataCount.get(atom);
+
+			// Summation over formulas
+			for (Formula f : formulaCount.keySet()) {
+				double wi = weight.get(f);
+				Data count = formulaCount.get(f);
+
+				wx = wx + wi*count.value;
+				a = a + wi*count.trueCount;
+				b = b + wi*count.falseCount;
+			}
+			
+			// exp = e^(abs(a-b)), invexp = exp^-1
+			// if invexp ~ 0, ignore it.
+			boolean ignoreExp = false;
+			double exp = 0, invexp = 0;
+			double diff = Math.abs(a - b);
+			if (Double.compare(diff, 50) > -1) {
+				ignoreExp = true;
+			} else {
+				exp = Math.exp(diff);
+				invexp = Math.exp(-diff);
+			}
+			
+			predicatePLL = predicatePLL + wx - Math.max(a, b) - Math.log(1+invexp);
+			
+			// compute the partial derivative with respect to w_i
+			// if a > b then the derivative = 
+			// n_i[x] - n_i[true] + (n_i[true] - n_i[false])/(1+exp)
+			for (Formula f : formulaCount.keySet()) {
+				Data count = formulaCount.get(f);
+				double tc = count.trueCount;
+				double fc = count.falseCount;
+				double x  = count.value;
+				int i = idx.get(f).intValue();
+				
+				if (a > b) {
+					pGrad[i] = pGrad[i] + x - tc;
+					if(!ignoreExp) {
+						pGrad[i] = pGrad[i] + (tc-fc)/(exp+1.0);
+					}
+
+				} else {
+					pGrad[i] = pGrad[i] + x - fc;			
+					if(!ignoreExp) {
+						pGrad[i] = pGrad[i] + (fc-tc)/(exp+1.0);
+					}
+				}
+			}
+		}
 		
-		return 0;
+		// multiply PllWeight (the inverse number of groundings for each predicate)
+		// see paper (TODO: CITE PAPER!!)
+		// also need to multiply (number of grounds)/(number of sampled grounds).
+		// so, only divide by the number of sampled grounds
+		for (int i = 0; i < pGrad.length; i++) {
+			this.grad[i] = this.grad[i] + (pGrad[i] / dataCount.sampledAtoms());
+		}
+		return (predicatePLL / dataCount.sampledAtoms());
 	}
 
 
@@ -119,11 +186,11 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	}
 
 	private static class Data {
-		public final FormulaCount trueCount;
-		public final FormulaCount falseCount;
+		public final double trueCount;
+		public final double falseCount;
 		public final double value;
 
-		public Data(FormulaCount trueCount, FormulaCount falseCount, double value) {
+		public Data(double trueCount, double falseCount, double value) {
 			this.trueCount = trueCount;
 			this.falseCount = falseCount;
 			this.value = value;
@@ -150,15 +217,15 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 	// Soma_{r=predicate} (
 	//     Soma_{gr=ground_r} ( 
-	//         x -max(a,b) -log(1+e^min[a/b,b/a]) -> o log varia entre 2 e 1+e
+	//         x -max(a,b) -log(1+e^min[a-b,b-a]) -> o log varia entre 2 e 1+e
 	//     )
 	// )
 	//           --> fator mais importante eh a soma de de a e b, parar de usar o somatorio
 	//               quando tiver convertido para a soma de x - max(a,b).
 	//
-	// onde x = Soma_{i=function}( w_i * n_i[gr = valor(gr)] )
-	//      a = Soma_{i=function}( w_i * n_i[gr = true     ] )
-	//      b = Soma_{i=function}( w_i * n_i[gr = false    ] )
+	// onde x = Soma_{i=function}( w_i * n_i[gr = valor(gr)] = w_i * n_i[x] )
+	//      a = Soma_{i=function}( w_i * n_i[gr = true     ] = w_i * n_i[a] )
+	//      b = Soma_{i=function}( w_i * n_i[gr = false    ] = w_i * n_i[b] )
 	//      n_i = numero de counts da formula i com o valor de gr especificado
 	//      gr = atom do predicado r, com constantes (grounded)
 	//
@@ -177,6 +244,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 	private static class DataCount extends HashMap<Atom,Map<Formula,Data>> {
 
+		private static final long serialVersionUID = 8714785841871940035L;
 		private final Set<Formula> formulas;
 		private final List<Atom> atoms;
 		public final Predicate predicate;
@@ -222,8 +290,8 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			if (formula instanceof Atom) {
 
 				for (Atom a : atoms) {
-					FormulaCount trueCount  = new FormulaCount(1, 1);
-					FormulaCount falseCount = new FormulaCount(0, 1);
+					double trueCount  = 1;
+					double falseCount = 0;
 					Data d = new Data(trueCount, falseCount, a.getValue());
 					this.get(a).put(formula, d);
 					out.add(d);
@@ -258,16 +326,12 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 				}
 
 				pA.set(Atom.TRUE);
-				FormulaCount trueCount = grounded.trueCounts(variables, sampler);
+				double trueCount = grounded.trueCounts(variables, sampler);
 				pA.set(Atom.FALSE);
-				FormulaCount falseCount = grounded.trueCounts(variables, sampler);
-				//tc[i] = trueCount.counts;
-				//fc[i] = falseCount.counts; // TODO: Acho que soh precisa guardar a proporcao, ver!!
-				double value = a.value*trueCount.counts + (1.0-a.value)*falseCount.counts;
+				double falseCount = grounded.trueCounts(variables, sampler);
+				double value = a.value*trueCount + (1.0-a.value)*falseCount;
 				i++; 
 				Data d = new Data(trueCount, falseCount, value);
-				// TODO: o que acontece quando tc/fc = FormulaCount(0,0)?
-				// TODO: ver se precisa do totalCount (se nao usar double para Data).
 				this.get(a).put(formula, d);
 				out.add(d);
 			}
@@ -335,6 +399,5 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		//		}
 
 	}
-
 
 }

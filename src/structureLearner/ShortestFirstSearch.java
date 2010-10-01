@@ -12,8 +12,8 @@ import java.util.Set;
 
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
-
-import weightLearner.WPLL;
+import weightLearner.Score;
+import weightLearner.WeightedPseudoLogLikelihood;
 import fol.Formula;
 import fol.Predicate;
 
@@ -28,7 +28,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 	private FormulaGenerator cg;
 	private int k, m;
 	private double epslon;
-	private WPLL wpll;
+	private Score wpll;
 	AutomatedLBFGS weightLearner;
 
 	public ShortestFirstSearch(Set<Predicate> p) {
@@ -37,7 +37,8 @@ public class ShortestFirstSearch extends AbstractLearner {
 		cg = new FormulaGenerator(p);
 		lengthClauses = new HashMap<Integer, List<Formula>>();
 		lengthClauses.put(new Integer(1), new ArrayList<Formula>(clauses));
-		wpll = new WPLL(p, clauses);
+		wpll = new WeightedPseudoLogLikelihood(p);
+		wpll.addFormulas(clauses);
 		weightLearner = new AutomatedLBFGS();
 		m = 1000;
 		k = 3;
