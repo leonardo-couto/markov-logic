@@ -1,11 +1,12 @@
 package fol;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
 import main.Settings;
 import stat.ConvergenceTester;
@@ -16,152 +17,167 @@ import util.ListPointer;
  * @author Leonardo Castilho Couto
  *
  */
-public abstract class Formula implements Comparable<Formula> {
-	
-	protected final List<Formula> formulas;
+public class Formula implements Comparable<Formula> {
+
+	private List<Atom> atoms;
+	private final List<Operator> operators;
+	private final List<Boolean> stack;
 	private final Set<Predicate> predicates;
+	
+	private Formula(List<Atom> atoms, List<Operator> operators, 
+			List<Boolean> stack, Set<Predicate> predicates) {
+		this.atoms = atoms;
+		this.operators = operators;
+		this.stack = stack;
+		this.predicates = predicates;
+	}
+
+	protected Formula() {
+		this.atoms = null;
+		this.operators = null;
+		this.stack = null;
+		this.predicates = null;
+	}
 
 	/**
 	 * @param formulas
 	 */
-	public Formula() {
-		this.formulas = Collections.emptyList();
-		this.predicates = Collections.emptySet();
-	}	
-	
-	/**
-	 * @param formulas
-	 */
-	public Formula(Formula ... formulas) {
-		this.formulas = colapse(Arrays.asList(formulas));
+	public Formula(List<Atom> atoms, List<Operator> operators, List<Boolean> stack) {
+		this.atoms = atoms;
+		this.operators = operators;
+		this.stack = stack;
 		this.predicates = new HashSet<Predicate>();
-		for (Formula f : this.formulas) {
-			this.predicates.addAll(f.predicates);
+		for(Atom a : atoms) {
+			this.predicates.add(a.predicate);
 		}
 	}
-	
-	/**
-	 * @param formulas
-	 */
-	public Formula(List<Formula> formulas) {
-		this.formulas = colapse(formulas);
-		this.predicates = new HashSet<Predicate>();
-		for (Formula f : this.formulas) {
-			this.predicates.addAll(f.predicates);
-		}
-	}
-	
-	/**
-	 * @param formulas
-	 */
-	public Formula(Formula formula) {
-		this.formulas = Collections.singletonList(formula);
-		this.predicates = formula.predicates;
-	}
-	
+
 	public Set<Predicate> getPredicates() {
 		return new HashSet<Predicate>(this.predicates);
 	}
-	
-	public abstract double getValue();
-	
-	protected String print() {
-		// Aux from toString(). The same as toString, but enclosed with parenthesis.
-		return "( " + toString() + " )";
-	}
-	
-	public String toString() {
-		boolean first = true;
-		String s = "";
-		for (Formula f : formulas) {
-			if (first) {
-				s = f.print();
-				first = false;
-				continue;
+
+	public double getValue() {
+		Stack<Double> values = new Stack<Double>();
+		Iterator<Atom> atom = this.atoms.iterator();
+		Iterator<Operator> operator = this.operators.iterator();
+		for (Boolean isAtom : stack) {
+			if(isAtom) {
+				values.push(atom.next().getValue());
+			} else { // operator
+				Operator op = operator.next();
+				double[] args = new double[op.getArity()];
+				for (int i = 0; i < op.getArity(); i++) {
+					args[i] = values.pop();
+				}
+				values.push(op.value(args));
 			}
-			s = s + " " + operator() + " " + f.print();
 		}
-		return s;
+
+		if (values.size() != 1) {
+			throw new RuntimeException("Malformed Formula: " + this.toPostfixString());
+		}
+		return values.pop();
 	}
-	
-	// colapses and sort Formulas: i.e: Given f0 = f1 v f2, f1 = f3 v f4;
-	// a f0.colapse() change f0 to f0 = f2 v f3 v f4.
-	// if n0 = !n1, and n1 = !n2, n0.colapses -> n0 = n2
-	protected abstract List<Formula> colapse(List<Formula> fa);
-	
-	protected abstract String operator();
+
+	@Override
+	public String toString() {
+		//Operator lastOperator = null; // TODO: passar para o toString do operador
+		Stack<String> values = new Stack<String>();
+		Iterator<Atom> atom = this.atoms.iterator();
+		Iterator<Operator> operator = this.operators.iterator();
+		for (Boolean isAtom : stack) {
+			if (isAtom) {
+				values.push(atom.next().toString());
+			} else {
+				Operator op = operator.next();
+				String[] args = new String[op.getArity()];
+				for (int i = 0; i < op.getArity(); i++) {
+					args[i] = values.pop();
+				}
+				values.push("( " + op.toString(args) + " )");
+			}
+		}
+		if (values.size() != 1) {
+			throw new RuntimeException("Malformed Formula: " + this.toPostfixString());
+		}
+		return values.pop();
+	}
+
+	public String toPostfixString() {
+		StringBuffer sb = new StringBuffer();
+		Iterator<Atom> atom = this.atoms.iterator();
+		Iterator<Operator> operator = this.operators.iterator();
+		for (Boolean isAtom : stack) {
+			if (isAtom) {
+				sb.append(atom.next());
+			} else {
+				sb.append(operator.next());
+			}
+		}
+		return sb.toString();
+	}
 
 	public boolean hasPredicate(Predicate p) {
-		for (Formula f : this.formulas) {
-			if (f.hasPredicate(p)) {
-				return true;
-			}
-		}
-		return false;
+		return this.predicates.contains(p);
 	}
-	
+
+	private static List<Atom> replaceAtomVariables(List<Atom> atoms, List<Variable> x, List<Constant> c) {
+		List<Atom> newAtoms = new ArrayList<Atom>(atoms.size());
+		for (Atom a : atoms) {
+			newAtoms.add(a.replaceVariables(x, c));
+		}
+		return newAtoms;
+	}
+
 	/**
-	 * Replaces Variable X[i] by the Constant c[i].
+	 * Replaces all occurrences of Variable X[i] by the Constant c[i].
 	 */
-	public Formula replaceVariables(List<Variable> X, List<Constant> c) {
-		// Check domains compatibility.
-		//if (X.length != c.length) {
-		//	throw new IllegalArgumentException();
-		//}
-		//for (int i = 0; i < X.length; i++) {
-		//	if(!X[i].inDomain(c[i])) {
-		//		throw new IllegalArgumentException();
-		//	}
-		//}
-		return recursiveReplaceVariable(X, c);
+	public Formula replaceVariables(List<Variable> x, List<Constant> c) {
+		List<Atom> newAtoms = replaceAtomVariables(this.atoms, x, c);
+		List<Operator> newOperators = new ArrayList<Operator>(this.operators);
+		List<Boolean> newStack = new ArrayList<Boolean>(this.stack);
+		return new Formula(newAtoms, newOperators, newStack);
 	}
-	
-	protected Formula recursiveReplaceVariable(List<Variable> X, List<Constant> c) {
-		for (int i = 0; i < this.formulas.size(); i++) {
-			this.formulas.set(i, this.formulas.get(i).recursiveReplaceVariable(X, c));
-		}
-		return this;
-	}
-	
+
 	/**
 	 * @return A copy of this Formula.
 	 */
-	public abstract Formula copy();
-	
+	public Formula copy() {
+		List<Atom> atomsCopy = new LinkedList<Atom>(this.atoms);
+		List<Operator> operatorsCopy = new LinkedList<Operator>(this.operators);
+		List<Boolean> stackCopy = new LinkedList<Boolean>(this.stack);
+		return new Formula(atomsCopy, operatorsCopy, stackCopy);
+	}
+
 	public Set<Variable> getVariables() {
 		Set<Variable> set = new HashSet<Variable>();
-		for(Formula f : formulas) {
-			set.addAll(f.getVariables());
+		for(Atom a : this.atoms) {
+			set.addAll(a.getVariables());
 		}
 		return set;
 	}
 
 	/**
-	 * @return A Set<Atom> with all Atoms that belong to this Formula.
+	 * @return A List<Atom> with all Atoms that belong to this Formula.
 	 */
-	public List<ListPointer<Formula>> getAtoms() {
-		List<ListPointer<Formula>> out = new ArrayList<ListPointer<Formula>>();
-		for (int i = 0; i < this.formulas.size(); i++) {
-			if (this.formulas.get(i) instanceof Atom) {
-				out.add(new ListPointer<Formula>(formulas, i));
-			} else {
-				out.addAll(formulas.get(i).getAtoms());
-			}
-		}
-		return out;		
+	public List<Atom> getAtoms() {
+		return this.atoms;
 	}
-	
+
 	/**
-	 * Recursively add all Atoms that belong to this Formula.
-	 * 
-	 * @param Set<Atom> the Set where all the Atoms will be 
-	 * recursively added.
+	 * @return A List<Boolean> that represents this Formula Stack.
 	 */
-	protected void addAtoms(Set<Atom> set) {
-		for (Formula f : formulas) {
-			f.addAtoms(set);
-		}
+	public List<Boolean> getStack() {
+		return this.stack;
 	}
+
+	/**
+	 * @return A List<Operator> with all operators that belong to this Formula.
+	 */
+	public List<Operator> getOperators() {
+		return this.operators;
+	}
+
 	
 	/**
 	 * Search the Formula for the first occurrence of an Atom of
@@ -170,28 +186,22 @@ public abstract class Formula implements Comparable<Formula> {
 	 * @return A ArrayPointer that points to the Atom found.
 	 * Or null if the Atom was not found.
 	 */
-	public ListPointer<Formula> getAtomPointer(Predicate p) {
-		ListPointer<Formula> out;
-		for (int i = 0; i < formulas.size(); i++) {
-			if (formulas.get(i) instanceof Atom) {
-				Atom a = (Atom) formulas.get(i);
-				if (p.equals(a.predicate)) {
-					if (a.variablesOnly()) {
-						return new ListPointer<Formula>(formulas, i);
-					}
-				}
-			} else {
-				out = formulas.get(i).getAtomPointer(p);
-				if (out != null) {
-					return out;
+	public ListPointer<Atom> getAtomPointer(Predicate p) {
+		// TODO: override no ATOM?
+		for (int i = 0; i < this.atoms.size(); i++) {
+			Atom a = this.atoms.get(i);
+			if (a.predicate.equals(p)) {
+				if (a.variablesOnly()) {
+					return new ListPointer<Atom>(this.atoms, i);
 				}
 			}
 		}
 		return null;		
 	}
-	
+
 	public double trueCounts(List<Variable> variables, Sampler<Constant> sampler) {
-		
+		// TODO: override no ATOM?
+
 		if (variables.isEmpty()) {
 			// Formula is grounded
 			double d = this.getValue();
@@ -201,23 +211,21 @@ public abstract class Formula implements Comparable<Formula> {
 				return d;
 			}
 		}
-		
-		List<ListPointer<Formula>> apl = this.getAtoms();
+
+		List<Atom> original = this.atoms;
 		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
-		
+
 		for (List<Constant> arg : sampler) {
-		  this.replaceVariables(variables, arg);
-		  double d = this.getValue();
-		  if (!Double.isNaN(d)) {
-		    if(tester.increment(d)) {
-		      break;
-		    }
-		  }
-		  for (ListPointer<Formula> pointer : apl) {
-		    pointer.set(pointer.original);
-		  }
+			this.atoms = replaceAtomVariables(original, variables, arg);
+			double d = this.getValue();
+			if (!Double.isNaN(d)) {
+				if(tester.increment(d)) {
+					break;
+				}
+			}
 		}
-	
+		this.atoms = original;
+
 		if (!tester.hasConverged()) {
 			// TODO: tirar, ou colocar num log
 			System.out.println("nao convergiu");
@@ -225,13 +233,13 @@ public abstract class Formula implements Comparable<Formula> {
 		}
 
 		return sampler.n*tester.mean();
-		
+
 	}
-	
+
 	// TODO: Testar!!!!!!!!!!!!!!!!!
 	public double trueCounts() {
 		List<Variable> variables = new ArrayList<Variable>(this.getVariables());
-		
+
 		if (variables.isEmpty()) {
 			// Formula is grounded
 			double d = this.getValue();
@@ -241,27 +249,29 @@ public abstract class Formula implements Comparable<Formula> {
 				return d;
 			}
 		}
-		
+
 		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
 		for (Variable v : variables) {
-		  constants.add(v.getConstants());
+			constants.add(v.getConstants());
 		}
 
 		Sampler<Constant> sampler = new Sampler<Constant>(constants);
 		sampler.setMaxSamples(Settings.formulaCountMaxSamples);
-		
+
 		return this.trueCounts(variables, sampler);
 
 	}
-	
+
 	/**
 	 * The number of Atoms in a formula
 	 * Does not consider Atoms of Predicate Predicate.equals
 	 */
 	public int length() {
-		int i = 0;
-		for (Formula f : formulas) {
-			i = i + f.length();
+		int i = this.atoms.size();
+		for (Atom a : this.atoms) {
+			if (a.predicate.equals(Predicate.equals)) {
+				i--;
+			}
 		}
 		return i;
 	}
@@ -274,4 +284,57 @@ public abstract class Formula implements Comparable<Formula> {
 		return this.toString().compareTo(o.toString());
 	}
 	
+	
+	public static Formula oneArityOp(Operator op, Formula f) {
+		List<Operator> newop = new ArrayList<Operator>(f.operators.size() +1);
+		List<Boolean> newstack = new ArrayList<Boolean>(f.stack.size()+1);
+		List<Atom> newAtoms = new ArrayList<Atom>(f.atoms);
+		newop.addAll(f.operators);
+		newop.add(op);
+		newstack.addAll(f.stack);
+		newstack.add(false);
+		return new Formula(newAtoms, newop, newstack, f.getPredicates());
+	}
+
+	public static Formula twoArityOp(Operator op, Formula f0, Formula f1) {
+		List<Boolean> newStack = new ArrayList<Boolean>(f0.stack.size() + f1.stack.size() +1);
+		newStack.addAll(f0.stack);
+		newStack.addAll(f1.stack);
+		newStack.add(false);
+		List<Atom> newAtoms = new ArrayList<Atom>(f0.atoms.size() + f1.atoms.size());
+		newAtoms.addAll(f0.atoms);
+		newAtoms.addAll(f1.atoms);
+		List<Operator> newOp = new ArrayList<Operator>(f0.operators.size() + f1.operators.size() +1);
+		newOp.addAll(f0.operators);
+		newOp.addAll(f1.operators);
+		newOp.add(op);
+		Set<Predicate> newPredicates = new HashSet<Predicate>(f0.predicates);
+		newPredicates.addAll(f1.predicates);		
+		return new Formula(newAtoms, newOp, newStack, newPredicates);
+	}
+	
+	public static Formula nArityOp(Operator op, Formula ... formulas) {
+		int stackSize = 1;
+		int atomsSize = 0;
+		int opSize = 1;
+		for (Formula f : formulas) {
+			stackSize += f.stack.size();
+			atomsSize += f.atoms.size();
+			opSize += f.operators.size();
+		}
+		List<Boolean> newStack = new ArrayList<Boolean>(stackSize);
+		List<Atom> newAtoms = new ArrayList<Atom>(atomsSize);
+		List<Operator> newOp = new ArrayList<Operator>(opSize);
+		Set<Predicate> newPredicates = new HashSet<Predicate>();
+		for (Formula f : formulas) {
+			newStack.addAll(f.stack);
+			newAtoms.addAll(f.atoms);
+			newOp.addAll(f.operators);
+			newPredicates.addAll(f.predicates);
+		}
+		newStack.add(false);
+		newOp.add(op);
+		return new Formula(newAtoms, newOp, newStack, newPredicates);
+	}
+
 }

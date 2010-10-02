@@ -16,7 +16,8 @@ import fol.Conjunction;
 import fol.Disjunction;
 import fol.Domain;
 import fol.Formula;
-import fol.NegatedFormula;
+import fol.Negation;
+import fol.Operator;
 import fol.Predicate;
 import fol.Variable;
 
@@ -30,6 +31,11 @@ public class FormulaGenerator {
 	private int maxVar = 6; // Max number of distinct variables in a clause.
 	private int maxAtom = 4; // Max number of Atoms in a clause.	
 	
+	private static final Operator DISJUNCTION = Disjunction.operator;
+	private static final Operator CONJUNCTION = Conjunction.operator;
+	private static final Operator BICONDITIONAL = Biconditional.operator;
+	private static final Operator NEGATION = Negation.operator;
+	
 	public FormulaGenerator(Collection<Predicate> predicates) {
 		this.predicates = new HashSet<Predicate>(predicates);
 	}
@@ -39,16 +45,15 @@ public class FormulaGenerator {
 		
 		if(!(f0.compareTo(f1) == 0)) {
 			// Disjunction
-			out.add(new Disjunction(f0,f1));
+			out.add(DISJUNCTION.getFormula(f0,f1));
 			// Implication
-			out.add(new Disjunction(NegatedFormula.negatedFormula(f0),f1));
+			out.add(DISJUNCTION.getFormula(NEGATION.getFormula(f0),f1));
 			// Inverse Implication
-			out.add(new Disjunction(f0,NegatedFormula.negatedFormula(f1)));
+			out.add(DISJUNCTION.getFormula(f0,NEGATION.getFormula(f1)));
 			// Conjunction
-			out.add(new Conjunction(f0,f1));
+			out.add(CONJUNCTION.getFormula(f0,f1));
 			// Biconditional
-			out.add(new Biconditional(f0,f1));
-			
+			out.add(BICONDITIONAL.getFormula(f0,f1));			
 		}
 		
 		return out;

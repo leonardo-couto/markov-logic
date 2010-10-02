@@ -1,88 +1,63 @@
 package fol;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author Leonardo Castilho Couto
  *
  */
-public class Disjunction extends Formula {
+public class Disjunction extends Operator {
+	
+	private static final String disjunctionOP = "v";
+	private static final int disjunctionArity = 2;
+	public static final Operator operator = new Disjunction();
 
 	/**
 	 * @param formulas
 	 */
-	public Disjunction(List<Formula> formulas) {
-		super(formulas);
-		
-	}
-	
-	public Disjunction(Formula ... formulas) {
-		super(formulas);
+	public Disjunction() {
+		super(disjunctionArity, disjunctionOP);
 	}
 	
 	@Override
-	protected String operator() {
-		return "v";
-	}	
+	public double _value(double ... values) {
+		return or(values[0], values[1]);
+	}
 
 	@Override
-	public double getValue() {
-		double[] values = new double[formulas.size()];
-		int i = 0;
-		for (Formula f : formulas) {
-			values[i] = f.getValue();
-			if (Double.compare(values[i], 0.98d) > 0) {
-				return 1.0d;
-			}
-			i++;
-		}
-		Arrays.sort(values); // this put all Double.NaN in the end of the array.
-		if (Double.isNaN(values[0])) {
-			return Double.NaN;
-		}
-		double out = values[0];
-		for(i = 1; i < values.length; i++) {
-			if (Double.isNaN(values[i])) {
-				if (Double.compare(out, 0.9d) > 0) {
-					// Ignore errors smaller than 0.05.
-					return ((out + 1.0d)/2.0d);
-				}
-				out = or(out, values[i]);
-			}
-		}
-		return out;
+	protected Formula _getFormula(Formula... formulas) {
+		return Formula.twoArityOp(this, formulas[0], formulas[1]);
 	}
-	
+
+	@Override
+	public String toString(String ... formulas) {
+		return "( " + formulas[0] + " ) " + disjunctionOP + " ( " + formulas[1] + " )";
+	}
+
+	@Override
+	public String toString() {
+		return disjunctionOP;
+	}
+
 	public static double or(double d1, double d2) {
-		return d1 + d2 - d1*d2;
-	}
-
-	@Override
-	protected List<Formula> colapse(List<Formula> fa) {
-		List<Formula> out = new ArrayList<Formula>();
-		for (Formula f : fa) {
-			if (f instanceof Disjunction) {
-				for (Formula f1 : f.formulas) {
-					out.add(f1);
+		if ( Double.isNaN(d1) ) {
+			if (Double.isNaN(d2)) {
+				return Double.NaN;
+			}
+			if (Double.compare(d2, 0.9d) > 0) {
+				// Ignore errors smaller than 0.05.
+				return ((d2+1.0d)/2.0d);
+			}
+			return Double.NaN;
+		} else {
+			if (Double.isNaN(d2)) {
+				if (Double.compare(d1, 0.9d) > 0) {
+					// Ignore errors smaller than 0.05.
+					return ((d1+1.0d)/2.0d);
 				}
-			} else {
-				out.add(f);
+				return Double.NaN;
 			}
 		}
-		Collections.sort(out);
-		return out;
-	}
-
-	@Override
-	public Formula copy() {
-		List<Formula> newFormulas = new ArrayList<Formula>(formulas.size());
-		for (Formula f : formulas) {
-			newFormulas.add(f.copy());
-		}
-		return new Disjunction(newFormulas);
+		return d1 + d2 - d1*d2;
 	}
 
 }

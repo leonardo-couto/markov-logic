@@ -20,7 +20,6 @@ import parse.ParseDomain;
 import structureLearner.ParallelShortestFirst;
 import structureLearner.ShortestFirstSearch;
 import weightLearner.FormulaCount;
-import weightLearner.WPLL;
 import fol.Atom;
 import fol.Constant;
 import fol.Disjunction;

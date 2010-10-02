@@ -12,9 +12,7 @@ import java.util.concurrent.CountDownLatch;
 
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
-
 import weightLearner.Score;
-import weightLearner.WPLL;
 import weightLearner.WeightedPseudoLogLikelihood;
 import fol.Formula;
 import fol.Predicate;
@@ -221,7 +219,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		public TestFormula(Score wscore, FormulaArray fArray, 
 				Vector<WeightedClause> candidates, Vector<WeightedClause> bestClauses,
 				double[] weights, double score, CountDownLatch done) {
-			this.wpll = new WPLL(wscore);
+			this.wpll = wscore.copy();
 			this.fArray = fArray;
 			this.candidates = candidates;
 			this.bestClauses = bestClauses;

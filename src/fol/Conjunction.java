@@ -1,87 +1,60 @@
 package fol;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author Leonardo Castilho Couto
  *
  */
-public class Conjunction extends Formula {
+public class Conjunction extends Operator {
+	
+	private static final String conjunctionOP = "^";
+	private static final int conjunctionArity = 2;
+	public static final Operator operator = new Conjunction();
 
 	/**
 	 * @param formulas
 	 */
-	public Conjunction(List<Formula> formulas) {
-		super(formulas);
+	private Conjunction() {
+		super(conjunctionArity, conjunctionOP);
 	}
 	
-	public Conjunction(Formula ... formulas) {
-		super(formulas);
+	@Override
+	public double _value(double ... values) {
+		return and(values[0], values[1]);
 	}
 
 	@Override
-	protected String operator() {
-		return "^";
-	}	
-	
+	protected Formula _getFormula(Formula... formulas) {
+		return Formula.twoArityOp(this, formulas[0], formulas[1]);
+	}
+
 	@Override
-	public double getValue() {
-		double[] values = new double[formulas.size()];
-		int i = 0;
-		for (Formula f : formulas) {
-			values[i] = f.getValue();
-			if (Double.compare(values[i], 0.02d) < 0) {
-				return 0.0d;
-			}
-			i++;
-		}
-		Arrays.sort(values); // this put all Double.NaN in the end of the array.
-		if (Double.isNaN(values[0])) {
-			return Double.NaN;
-		}
-		double out = values[0];
-		for(i = 1; i < values.length; i++) {
-			if (Double.isNaN(values[i])) {
-				if (Double.compare(out, 0.1d) < 0) {
-					// Ignore errors smaller than 0.05.
-					return (out/2.0d);
-				}
-				out = and(out, values[i]);
-			}
-		}
-		return out;		
+	public String toString(String ... formulas) {
+		return "( " + formulas[0] + " ) " + conjunctionOP + " ( " + formulas[1] + " )";
+	}
+
+	@Override
+	public String toString() {
+		return conjunctionOP;
 	}
 	
 	public static double and(double d1, double d2) {
+		if ( Double.isNaN(d1) ) {
+			if (Double.compare(d2, 0.1d) < 0) {
+				// Ignore errors smaller than 0.05.
+				return (d2/2.0d);
+			}
+			return Double.NaN;
+		} else {
+			if (Double.isNaN(d2)) {
+				if (Double.compare(d1, 0.1d) < 0) {
+					// Ignore errors smaller than 0.05.
+					return (d1/2.0d);
+				}
+				return Double.NaN;
+			}
+		}
 		return d1*d2;
 	}
 	
-	@Override
-	protected List<Formula> colapse(List<Formula> fa) {
-		List<Formula> out = new ArrayList<Formula>();
-		for (Formula f : fa) {
-			if (f instanceof Conjunction) {
-				for (Formula f1 : f.formulas) {
-					out.add(f1);
-				}
-			} else {
-				out.add(f);
-			}
-		}
-		Collections.sort(out);
-		return out;
-	}
-
-	@Override
-	public Formula copy() {
-		List<Formula> newFormulas = new ArrayList<Formula>(formulas.size());
-		for (Formula f : formulas) {
-			newFormulas.add(f.copy());
-		}
-		return new Conjunction(newFormulas);
-	}
-
 }

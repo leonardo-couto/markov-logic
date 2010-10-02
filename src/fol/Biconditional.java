@@ -1,77 +1,48 @@
 package fol;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * @author Leonardo Castilho Couto
  *
  */
-public class Biconditional extends Formula {
+public class Biconditional extends Operator {
+	
+	private static final String biconditionalOP = "<->";
+	private static final int biconditionalArity = 2;
+	public static final Operator operator = new Biconditional();
 
 	/**
 	 * @param formulas
 	 */
-	public Biconditional(List<Formula> formulas) {
-		super(formulas);
-		
-	}
-	
-	public Biconditional(Formula ... formulas) {
-		super(formulas);
+	private Biconditional() {
+		super(biconditionalArity, biconditionalOP);
 	}
 	
 	@Override
-	protected String operator() {
-		return "<->";
-	}	
+	public double _value(double ... values) {
+		return bic(values[0], values[1]);
+	}
 
 	@Override
-	public double getValue() {
-		double[] values = new double[formulas.size()];
-		int i = 0;
-		for (Formula f : formulas) {
-			values[i] = f.getValue();
-			if (Double.isNaN(values[i])) {
-				return Double.NaN;
-			}
-			i++;
-		}
-		double out = values[0];
-		for(i = 1; i < values.length; i++) {
-			out = bic(out, values[i]);
-		}
-		return out;
+	protected Formula _getFormula(Formula... formulas) {
+		return Formula.twoArityOp(this, formulas[0], formulas[1]);
 	}
-	
+
+	@Override
+	public String toString(String ... formulas) {
+		return "( " + formulas[0] + " ) " + biconditionalOP + " ( " + formulas[1] + " )";
+	}
+
+	@Override
+	public String toString() {
+		return biconditionalOP;
+	}
+
 	public static double bic(double d1, double d2) {
-		return Disjunction.or(Conjunction.and(d1, d2), Conjunction.and(1.0-d1,1.0-d2));
-	}
-
-	@Override
-	protected List<Formula> colapse(List<Formula> fa) {
-		List<Formula> out = new ArrayList<Formula>();
-		for (Formula f : fa) {
-			if (f instanceof Biconditional) {
-				for (Formula f1 : f.formulas) {
-					out.add(f1);
-				}
-			} else {
-				out.add(f);
-			}
-		}
-		Collections.sort(out);
-		return out;
-	}
-
-	@Override
-	public Formula copy() {
-		List<Formula> newFormulas = new ArrayList<Formula>(formulas.size());
-		for (Formula f : formulas) {
-			newFormulas.add(f.copy());
-		}
-		return new Biconditional(newFormulas);
+		return Disjunction.or(
+				Conjunction.and(d1, d2), 
+				Conjunction.and(1.0-d1,1.0-d2)
+			   );
 	}
 
 }

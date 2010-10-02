@@ -66,13 +66,6 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 		this.value = value;
 	}
 	
-	public Atom(Atom a) {
-		super();
-		this.predicate = a.predicate;
-		this.terms = Arrays.copyOf(a.terms, a.terms.length);
-		this.value = a.value;
-	}
-	
 	public Atom(Atom a, double value) {
 		super();
 		this.predicate = a.predicate;
@@ -96,16 +89,6 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	@Override
 	public String toString() {
 		return predicate.getName() + "(" + Util.join(terms, ",") + ")";
-	}
-	
-	@Override
-	protected String print() {
-		return toString();
-	}
-	
-	@Override
-	protected String operator() {
-		return null;
 	}
 	
 	/**
@@ -139,26 +122,24 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	}
 	
 	@Override
-	public Atom replaceVariables(List<Variable> X, List<Constant> c) {
-	  return this.recursiveReplaceVariable(X, c);
-	}
-
-
-	@Override
-	protected Atom recursiveReplaceVariable(List<Variable> X, List<Constant> c) {
+	public Atom replaceVariables(List<Variable> x, List<Constant> c) {
 		Term[] newterms = Arrays.copyOf(terms, terms.length);
 		boolean replaced = false;
-		for (int i = 0; i < X.size(); i++) {
+		boolean grounded = true;
+		for (int i = 0; i < x.size(); i++) {
 			for (int j = 0; j < terms.length; j++) {
-				if (X.get(i).equals(newterms[j])) {
+				if (x.get(i).equals(newterms[j])) {
 					replaced = true;
 					newterms[j] = c.get(i);
+				}
+				if (grounded && !(newterms[j] instanceof Constant)) {
+					grounded = false;
 				}
 			}
 		}
 		if (replaced) {
 			Atom a = new Atom(predicate, newterms);
-			if(a.isGround()) {
+			if(grounded) {
 				// Look into the dataset for this grounding.
 				if (predicate.getGroundings().containsKey(a)) {
 					return new Atom(predicate, predicate.getGroundings().get(a), newterms) ;
@@ -168,7 +149,7 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 		}
 		return this;
 	}
-	
+
 	public boolean isGround() {
 		for (Term t : terms) {
 			if (!(t instanceof Constant)) {
@@ -233,24 +214,11 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 	}
 	
 	@Override
-	protected List<Formula> colapse(List<Formula> fa) {
-		return formulas;
+	public Atom copy() {
+		return new Atom(this.predicate, this.value, Arrays.copyOf(this.terms,this.terms.length));
 	}
 
-	/* (non-Javadoc)
-	 * @see fol.Formula#addAtoms(java.util.Set)
-	 */
-	@Override
-	protected void addAtoms(Set<Atom> set) {
-		set.add(this);
-	}
-
-	@Override
-	public Formula copy() {
-		return new Atom(this);
-	}
-
-	@Override
+	@Override // TODO: REVER IMPLEMENTACAO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	public double[] getData() {
 		Map<Atom, Double> groundings = predicate.getGroundings();
 		if (variablesOnly()) {
@@ -293,7 +261,7 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 					}
 					c.set(j,constants.get(j).get(counter[j]));
 				}
-				d = recursiveReplaceVariable(vars, c).getValue();
+				d = replaceVariables(vars, c).getValue();
 				if (!Double.isNaN(d)) {
 					out[ngrounds] = d;
 					ngrounds++;

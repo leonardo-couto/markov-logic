@@ -1,7 +1,6 @@
 package weightLearner;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +38,16 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			this.dataCounts.put(p, new DataCount(p));
 		}
 	}
+	
+	private WeightedPseudoLogLikelihood(List<Formula> formulas,
+			Set<Predicate> predicates,
+			Map<Predicate, Set<Formula>> predicateFormulas,
+			Map<Formula, Set<Predicate>> formulaPredicates,
+			Map<Predicate, DataCount> dataCounts) {
+		super(formulas, predicates, predicateFormulas, formulaPredicates);
+		this.dataCounts = dataCounts;
+		// TODO Auto-generated constructor stub
+	}
 
 	/* (non-Javadoc)
 	 * @see weightLearner.Score#getScore(double[])
@@ -59,7 +68,6 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		}
 
 		this.grad = new double[weights.length];
-		Arrays.fill(this.grad, 0.0d);
 		for (Predicate p : this.predicateFormulas.keySet()) {
 			wpll = wpll + this.predicateWPll(p, wf, idx);
 		}
@@ -71,8 +79,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		DataCount dataCount = dataCounts.get(p);
 		double predicatePLL = 0;
 		double[] pGrad = new double[weight.size()];
-		Arrays.fill(pGrad, 0.0d);
-		
+
 		for (Atom atom : dataCount.keySet()) {
 
 			// wx = sum_i(w_i * n_i[ground = x    ]);
@@ -91,7 +98,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 				a = a + wi*count.trueCount;
 				b = b + wi*count.falseCount;
 			}
-			
+
 			// exp = e^(abs(a-b)), invexp = exp^-1
 			// if invexp ~ 0, ignore it.
 			boolean ignoreExp = false;
@@ -103,9 +110,9 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 				exp = Math.exp(diff);
 				invexp = Math.exp(-diff);
 			}
-			
+
 			predicatePLL = predicatePLL + wx - Math.max(a, b) - Math.log(1+invexp);
-			
+
 			// compute the partial derivative with respect to w_i
 			// if a > b then the derivative = 
 			// n_i[x] - n_i[true] + (n_i[true] - n_i[false])/(1+exp)
@@ -115,7 +122,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 				double fc = count.falseCount;
 				double x  = count.value;
 				int i = idx.get(f).intValue();
-				
+
 				if (a > b) {
 					pGrad[i] = pGrad[i] + x - tc;
 					if(!ignoreExp) {
@@ -130,7 +137,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 				}
 			}
 		}
-		
+
 		// multiply PllWeight (the inverse number of groundings for each predicate)
 		// see paper (TODO: CITE PAPER!!)
 		// also need to multiply (number of grounds)/(number of sampled grounds).
@@ -258,17 +265,25 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			sampler.setMaxSamples(Settings.formulaCountMaxSamples);
 			this.iterator = sampler.iterator();
 		}
+		
+		private DataCount(DataCount old) {
+			super(old);
+			this.formulas = new HashSet<Formula>(old.formulas);
+			this.atoms = new ArrayList<Atom>(old.atoms);
+			this.predicate = old.predicate;
+			Set<Atom> groundings = new HashSet<Atom>(this.predicate.getGroundings().keySet());
+			groundings.removeAll(this.atoms);
+			Sampler<Atom> sampler = new Sampler<Atom>(groundings);
+			sampler.setMaxSamples(Settings.formulaCountMaxSamples-this.atoms.size());
+			this.iterator = sampler.iterator();
+		}
 
 		public int sampledAtoms() {
 			return this.atoms.size();
 		}
 
-		private ListPointer<Formula> getPointer(Formula f) {
-			if (f instanceof Atom) {
-				List<Formula> list = Collections.singletonList(f);
-				return new ListPointer<Formula>(list, 0);
-			}
-			ListPointer<Formula> out = f.getAtomPointer(this.predicate);
+		private ListPointer<Atom> getPointer(Formula f) {
+			ListPointer<Atom> out = f.getAtomPointer(this.predicate);
 			if (out == null) {
 				throw new RuntimeException("Formula \"" + f.toString() + 
 						"\" contains no Predicate \"" + this.predicate.toString() + 
@@ -302,8 +317,8 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 			Formula f = formula.copy();
 			Set<Variable> variablesSet = f.getVariables();
-			ListPointer<Formula> pA = this.getPointer(f);
-			Atom at = (Atom) pA.get();
+			ListPointer<Atom> pA = this.getPointer(f);
+			Atom at = pA.get();
 			List<Variable> atomVariables = new ArrayList<Variable>(at.getVariables());
 			variablesSet.removeAll(atomVariables);
 			List<Variable> variables = new ArrayList<Variable>(variablesSet);
@@ -379,6 +394,14 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			}
 			return false;
 		}
+		
+		public DataCount copy() {
+			DataCount copy = new DataCount(this);
+			for (Atom a : this.atoms) {
+				copy.put(a, new HashMap<Formula, Data>(copy.get(a)));
+			}
+			return copy;
+		}
 
 		//		public DataCount(long totalGrounds, int sampledGrounds, Set<Formula> formulas) {
 		//			super();
@@ -398,6 +421,28 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		//			return newDC;
 		//		}
 
+	}
+
+	@Override
+	public Score copy() {
+		Map<Predicate, Set<Formula>> predicateFormulas = 
+			new HashMap<Predicate, Set<Formula>>(this.predicateFormulas);
+		Map<Formula, Set<Predicate>> formulaPredicates = 
+			new HashMap<Formula, Set<Predicate>>(this.formulaPredicates);
+		Set<Predicate> predicates = this.getPredicates();
+		List<Formula> formulas = this.getFormulas();
+		for (Predicate p : predicates) {
+			predicateFormulas.put(p, new HashSet<Formula>(predicateFormulas.get(p)));
+		}
+		for (Formula f : formulas) {
+			formulaPredicates.put(f, new HashSet<Predicate>(formulaPredicates.get(f)));
+		}
+		Map<Predicate, DataCount> dataCounts = new HashMap<Predicate, DataCount>(this.dataCounts);
+		for (Predicate p : predicates) {
+			dataCounts.put(p, dataCounts.get(p).copy());
+		}
+		return new WeightedPseudoLogLikelihood(formulas, predicates, 
+				predicateFormulas, formulaPredicates, dataCounts);
 	}
 
 }

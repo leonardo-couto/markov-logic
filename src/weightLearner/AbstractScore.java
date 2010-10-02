@@ -33,6 +33,15 @@ public abstract class AbstractScore implements Score {
 		}
 	}
 
+	protected AbstractScore(List<Formula> formulas, Set<Predicate> predicates,
+			Map<Predicate, Set<Formula>> predicateFormulas,
+			Map<Formula, Set<Predicate>> formulaPredicates) {
+		this.formulas = formulas;
+		this.predicates = predicates;
+		this.predicateFormulas = predicateFormulas;
+		this.formulaPredicates = formulaPredicates;
+	}
+	
 	/* (non-Javadoc)
 	 * @see weightLearner.Score#addFormula(fol.Formula)
 	 */

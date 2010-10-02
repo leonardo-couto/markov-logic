@@ -4,37 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-
-import org.apache.commons.math.MathException;
-import org.apache.commons.math.distribution.NormalDistributionImpl;
-import org.apache.commons.math.stat.descriptive.AbstractStorelessUnivariateStatistic;
-import org.apache.commons.math.stat.descriptive.moment.Mean;
-import org.apache.commons.math.stat.descriptive.moment.Variance;
 
 import stat.MultiVarRandomIterator;
 
 public class Sampler<T> implements Iterable<List<T>> {
-	// TODO: talvez dividir em duas classes, one dimensional sampler
-	//       e multidimensional sampler
-	
-	
-	
-	// s = somatorio de f(x, y, ...). (valor desconhecido, a ser estimado)
-	// Y = estimativa de s com base nas amostras coletadas
-	// epsilon = precisao de Y
-	// p = grau de confianca da estimativa
-	// n = numero total de elementos (populacao)
-	// u = media estimada
-	//
-	// Queremos:
-	//
-	// P(|Y-s| <= epsilon*n*u) = p
-	
+
 	private final List<List<T>> domains;
 	private final boolean shuffle;
 	private final boolean noReplacement;
@@ -43,12 +20,6 @@ public class Sampler<T> implements Iterable<List<T>> {
 	private static final int NO_REPLACEMENT_LIMIT = 500; //500;
 	
 	
-	private final AbstractStorelessUnivariateStatistic mean = new Mean();
-	private final AbstractStorelessUnivariateStatistic variance = new Variance();	
-	//private final double precision;
-	//private final double confidenceLevel;
-//	private double Z; // Area under Normal Curve for given confidence level.
-
 	public Sampler(List<? extends Collection<T>> domains) {
 		
 		boolean shuffle = true;
@@ -74,35 +45,7 @@ public class Sampler<T> implements Iterable<List<T>> {
 		this.noReplacement = noReplacement;
 		this.n = n;
 		this.domains = objDomains;
-		
-		
-//		this.precision = precision;
-//		this.confidenceLevel = confidenceLevel;
-//		this.Z = Sampler.normalSDInverseCumulative(confidenceLevel);
 	}
-
-	/**
-	 * This method returns the critical point x, for the normal standard 
-	 * distribution, such that P(-x &lt X &lt; x) = <code>p</code>.
-	 * <p>
-	 * Returns <code>Double.POSITIVE_INFINITY</code> for p=1.</p>
-	 *
-	 * @param p the desired probability
-	 * @return x, such that P(-x &lt X &lt; x) = <code>p</code>
-	 * @throws IllegalArgumentException if <code>p</code> is not a valid
-	 *         probability, or if the inverse cumulative probability can not
-	 *         be computed due to convergence or other numerical errors.
-	 */
-	private static double normalSDInverseCumulative(double p) {
-		try {
-			return new NormalDistributionImpl().inverseCumulativeProbability((p+1.0)/2.0);
-		} catch (MathException e) {
-			throw new IllegalArgumentException("Error calculating the inverse " +
-					"Cumulative probability for p = " + p, e);
-		}
-	}
-
-
 
 
 	// criar e manter uma arvore de escolhas jah feitas, ex:
@@ -182,86 +125,4 @@ public class Sampler<T> implements Iterable<List<T>> {
 		Collections.shuffle(out);
 		return out;
 	}
-
-	public static void main(String[] args) {
-		String[] a = {"a0", "a1", "a2", "a3", "a4", "a5"};
-		String[] b = {"b0", "b1"};
-		String[] c = {"c0", "c1"};
-		List<List<String>> domains = new ArrayList<List<String>>();
-		domains.add(Arrays.asList(a));
-		domains.add(Arrays.asList(b));
-		domains.add(Arrays.asList(c));
-		Sampler<String> sampler = new Sampler<String>(domains);
-		//Iterator<List<String>> iterator = new MultiVarRandomIterator<String>(domains);
-		int i = 0;
-		for (List<String> parameters : sampler) {
-			i++;
-			System.out.println(Arrays.toString(parameters.toArray()));  
-			if (i>15) {
-				return;
-			}
-		}
-	}
-	
-	public static void mainA(String[] args) {
-		//		for(int n = 1000; n < 100000000; n = n*10) {
-		//			int k = n/100;
-		//			double kd = (double) k;
-		//			double summation = 0;
-		//			for (int i = n-k+1; i <= n; i++) {
-		//				summation = summation + Math.log(i);
-		//			}
-		//			double logResult = summation - kd*Math.log(n);
-		//			System.out.println(n + ": " + Math.exp(logResult));
-		//		}
-		//		try { 
-		//			NormalDistribution normal = new NormalDistributionImpl();
-		//			System.out.println(normal.inverseCumulativeProbability(0.995));
-		//			//System.out.println(normal.inverseCumulativeProbability(0.95));
-		//			//System.out.println(normal.cumulativeProbability(-1.96, 1.96));
-		//			//System.out.println(normal.cumulativeProbability(-1.6448536283610324, 1.6448536283610324));
-		//
-		//			for(int i = 1; i <= 100; i++) {
-		//				TDistribution tStudent = new TDistributionImpl(i);
-		//				System.out.println("*" + tStudent.inverseCumulativeProbability(0.995));
-		//			}
-		//
-		//
-		//		} catch (Exception e) {
-		//			// TODO: handle exception
-		//		}
-
-		String s0 = "d0_a";
-		String s1 = "d0_b";
-		String s2 = "d0_c";
-		String s3 = "d0_d";
-		String s4 = "d0_e";
-		String r0 = "d1_a";
-		String r1 = "d1_b";
-		String t0 = "d2_a";
-		String t1 = "d2_b";
-		String t2 = "d2_c";
-		Set<String> d0 = new HashSet<String>();
-		Set<String> d1 = new HashSet<String>();
-		Set<String> d2 = new HashSet<String>();
-		d0.add(s0);
-		d0.add(s1);
-		d0.add(s2);
-		d0.add(s3);
-		d0.add(s4);
-		d1.add(r0);
-		d1.add(r1);
-		d2.add(t0);
-		d2.add(t1);
-		d2.add(t2);
-		List<Set<String>> doms = new ArrayList<Set<String>>();
-		doms.add(d0);
-		doms.add(d1);
-		doms.add(d2);
-		//getRandomParameters(new String(), doms);
-
-
-	}
-
-	
 }
