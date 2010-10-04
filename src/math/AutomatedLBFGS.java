@@ -5,11 +5,11 @@ import java.util.Arrays;
 
 import util.Util;
 
-public class AutomatedLBFGS extends LBFGS {
+public class AutomatedLBFGS extends LBFGS implements MaxFinder {
 	
-	public int m;
-	public int[] iprint;
-	public double eps;	
+	public final int m;
+	public final int[] iprint;
+	public final double eps;	
 	public static final double xtol = Util.machinePrecision();
 	
 	public AutomatedLBFGS() {
@@ -21,7 +21,7 @@ public class AutomatedLBFGS extends LBFGS {
 		eps = 0.01; // Precision of solution.
 	}
 
-	public double[] lbfgs(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
+	public double[] min(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
 		int n = x.length;
 		double[] out = Arrays.copyOf(x, n);
 		boolean diagco = false;
@@ -37,7 +37,7 @@ public class AutomatedLBFGS extends LBFGS {
 		return out;
 	}
 	
-	public double[] maxLbfgs(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
+	public double[] max(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
 		int n = x.length;
 		double[] out = Arrays.copyOf(x, n);
 		boolean diagco = false;

@@ -50,7 +50,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 		double[] weights = new double[clauses.size()];
 		Arrays.fill(weights, 0);
 		try {
-			weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
+			weights = weightLearner.max(weights, this.wpll, this.wpll);
 		} catch (ExceptionWithIflag e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -73,7 +73,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 			}
 			try {
 				weights = Arrays.copyOf(weights, clauses.size());
-				weights = weightLearner.maxLbfgs(weights, this.wpll, this.wpll);
+				weights = weightLearner.max(weights, this.wpll, this.wpll);
 			} catch (ExceptionWithIflag e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -123,7 +123,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 				double newScore = 0;
 				double learnedWeight;
 				try {
-					aux = weightLearner.maxLbfgs(newWeights, this.wpll, this.wpll);
+					aux = weightLearner.max(newWeights, this.wpll, this.wpll);
 					learnedWeight = aux[aux.length -1];
 					newScore = wpll.getScore(aux);
 				} catch (ExceptionWithIflag e) {
@@ -132,7 +132,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 					try {
 						double[] ad = Arrays.copyOf(newWeights, newWeights.length);
 						ad[ad.length-1] = -10.0d;
-						aux = weightLearner.maxLbfgs(ad, this.wpll, this.wpll);
+						aux = weightLearner.max(ad, this.wpll, this.wpll);
 						learnedWeight = aux[aux.length -1];
 						newScore = wpll.getScore(aux);
 					} catch (ExceptionWithIflag e1) {

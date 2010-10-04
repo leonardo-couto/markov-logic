@@ -12,6 +12,8 @@ import java.util.concurrent.CountDownLatch;
 
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
+import math.MaxFinder;
+import math.OptimizationException;
 import weightLearner.Score;
 import weightLearner.WeightedPseudoLogLikelihood;
 import fol.Formula;
@@ -23,24 +25,24 @@ import fol.Predicate;
  */
 public class ParallelShortestFirst extends AbstractLearner {
 	
-	private final int threads = Runtime.getRuntime().availableProcessors();
-	private final int fpt = 30; // Functions per thread.
+	private static final int threads = Runtime.getRuntime().availableProcessors();
+	private static final int fpt = 30; // Functions per thread.
 	
-	private List<Formula> clauses;
-	private List<List<Formula>> lengthClauses;
-	private FormulaGenerator cg;
+	private final List<Formula> clauses;
+	private final List<List<Formula>> lengthClauses;
+	private final FormulaGenerator generator;
 	private final int k, m;
 	private final double epslon;
-	private Score wscore;
-	AutomatedLBFGS weightLearner;
+	private final Score wscore;
+	private final MaxFinder maxFinder;
 
 
 	public ParallelShortestFirst(Set<Predicate> p) {
 		super(p);
 		clauses = new ArrayList<Formula>(FormulaGenerator.unitClauses(p));
-		cg = new FormulaGenerator(p);
-		lengthClauses = new ArrayList<List<Formula>>(cg.getMaxAtoms());
-		for (int i = 0; i < cg.getMaxAtoms(); i++) {
+		generator = new FormulaGenerator(p);
+		lengthClauses = new ArrayList<List<Formula>>(generator.getMaxAtoms());
+		for (int i = 0; i < generator.getMaxAtoms(); i++) {
 			lengthClauses.add(new ArrayList<Formula>());
 		}
 		for (Formula clause : clauses) {
@@ -48,7 +50,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		}
 		this.wscore = new WeightedPseudoLogLikelihood(p);
 		wscore.addFormulas(clauses);
-		weightLearner = new AutomatedLBFGS();
+		maxFinder = new AutomatedLBFGS();
 		m = 50;
 		k = 1;
 		epslon = 0.5;
@@ -57,12 +59,10 @@ public class ParallelShortestFirst extends AbstractLearner {
 	@Override
 	public Set<Formula> learn() {
 		double[] weights = new double[clauses.size()];
-		Arrays.fill(weights, 0);
 		try {
-			weights = weightLearner.maxLbfgs(weights, this.wscore, this.wscore);
-		} catch (ExceptionWithIflag e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			weights = maxFinder.max(weights, this.wscore, this.wscore);
+		} catch (OptimizationException e) {
+			throw new Run
 		}
 		double score = wscore.getScore(weights);
 		
@@ -86,7 +86,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			}
 			try {
 				weights = Arrays.copyOf(weights, clauses.size());
-				weights = weightLearner.maxLbfgs(weights, this.wscore, this.wscore);
+				weights = maxFinder.max(weights, this.wscore, this.wscore);
 			} catch (ExceptionWithIflag e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -102,7 +102,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		Vector<WeightedClause> candidates = new Vector<WeightedClause>();
 		double[] newWeights = Arrays.copyOf(weights, weights.length + 1);
 		
-		for (int i = 1; i < cg.getMaxAtoms(); i++) {
+		for (int i = 1; i < generator.getMaxAtoms(); i++) {
 			// add all clauses of length i;
 			Collection<Formula> next = new ArrayList<Formula>(lengthClauses.get(i-1));
 			
@@ -114,7 +114,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			
 			candidates = new Vector<WeightedClause>();
 			
-			FormulaArray formulas = new FormulaArray(cg.generateFormulas(next));
+			FormulaArray formulas = new FormulaArray(generator.generateFormulas(next));
 			// next.removeAll(lengthClauses.get(new Integer(i+1)));
 			// TODO: Needs to make sure no clause in here is equal clauses already in mln.
 			// the above does not work because of Formula.equals.
@@ -247,7 +247,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 						double learnedWeight;
 						double[] nweights;
 						try {
-							nweights = lbfgs.maxLbfgs(weights, this.wpll, this.wpll);
+							nweights = lbfgs.max(weights, this.wpll, this.wpll);
 							learnedWeight = nweights[nweights.length -1]; 
 							newScore = wpll.f(nweights);
 						} catch (ExceptionWithIflag e) {

@@ -80,7 +80,7 @@ public class LBFGS {
 	/** Specialized exception class for LBFGS; contains the
 	  * <code>iflag</code> value returned by <code>lbfgs</code>.
 	  */
-	public class ExceptionWithIflag extends Exception
+	public class ExceptionWithIflag extends OptimizationException
 	{
 		private static final long serialVersionUID = -2326137256860160766L;
 		public int iflag;
