@@ -6,7 +6,6 @@ import fol.Formula;
 import fol.Predicate;
 
 public abstract class AbstractLearner {
-	// TODO: USAR ISSO 
 	
 	protected Set<Predicate> predicates;
 	

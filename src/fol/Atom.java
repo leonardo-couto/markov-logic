@@ -433,8 +433,6 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 
 	@Override
 	public String getName() {
-		// problema -> nome nao seria unico.
-		// TODO: Pensar em criar um hash para o nome.
 		return toString();
 	}
 

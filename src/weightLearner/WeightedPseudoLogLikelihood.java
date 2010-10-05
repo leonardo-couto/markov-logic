@@ -46,7 +46,6 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			Map<Predicate, DataCount> dataCounts) {
 		super(formulas, predicates, predicateFormulas, formulaPredicates);
 		this.dataCounts = dataCounts;
-		// TODO Auto-generated constructor stub
 	}
 
 	/* (non-Javadoc)

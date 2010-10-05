@@ -14,6 +14,7 @@ import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
 import math.MaxFinder;
 import math.OptimizationException;
+import util.MyException;
 import weightLearner.Score;
 import weightLearner.WeightedPseudoLogLikelihood;
 import fol.Formula;
@@ -62,16 +63,16 @@ public class ParallelShortestFirst extends AbstractLearner {
 		try {
 			weights = maxFinder.max(weights, this.wscore, this.wscore);
 		} catch (OptimizationException e) {
-			throw new Run
+			throw new MyException("Not able to optimize weights for initial (atomic) clauses.");
 		}
 		double score = wscore.getScore(weights);
 		
 		int i = 0;
 		
-		while(i < 100) {
+		while(i < 100) { // TODO: 100?? PQ?? Limite maximo de iteracao, podia ser true, quando parar de melhorar findBestClauses faz terminar
 			i++;
 			System.out.println("**********" + score);
-			System.out.println(Arrays.toString(weights)); // TODO: REMOVE!!
+			System.out.println(Arrays.toString(weights)); // TODO: REMOVE!! (LOG)
 			
 			Set<Formula> formulas = findBestClauses(score, weights);
 			
@@ -79,7 +80,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 				return new HashSet<Formula>(clauses);
 			}
 			for (Formula f : formulas) {
-				System.out.println(f); // TODO: remove!!
+				System.out.println(f); // TODO: remove!! (LOG)
 				wscore.addFormula(f);
 				clauses.add(f);
 				lengthClauses.get(f.length()-1).add(f);
@@ -87,8 +88,8 @@ public class ParallelShortestFirst extends AbstractLearner {
 			try {
 				weights = Arrays.copyOf(weights, clauses.size());
 				weights = maxFinder.max(weights, this.wscore, this.wscore);
-			} catch (ExceptionWithIflag e) {
-				// TODO Auto-generated catch block
+			} catch (OptimizationException e) {
+				// TODO (LOG) and do nothing
 				e.printStackTrace();
 			}
 			score = wscore.getScore(weights);
