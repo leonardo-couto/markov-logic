@@ -2,9 +2,11 @@ package stat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import util.Util;
@@ -30,7 +32,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	
 	private void initMarginals(RV X) {
 		double[] data = X.getData();
-		marginalData.put(X, data);
+		this.marginalData.put(X, data);
 		Histogram h = new Histogram(0.0, 1.0, data);
 		boolean stop = false;
 		int n = maxPartitions;
@@ -47,18 +49,18 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			}
 			n = (int) Math.ceil(n/2.0);
 		}
-		marginalDataHist.put(X, pdata);
+		this.marginalDataHist.put(X, pdata);
 	}
 	
 	@Override
 	public double pvalue(RV X, RV Y) {
 		if (!marginalData.containsKey(X)) {
-			initMarginals(X);
+			this.initMarginals(X);
 		}
 		if (!marginalData.containsKey(Y)) {
 			initMarginals(Y);
 		}
-		double[][] data = X.getData(Y, new ArrayList<RV>(1));
+		double[][] data = X.getData(Y, Collections.<RV>emptyList());
 		if (data == null) {
 			// If X and Y share no variables, return a high pvalue, meaning
 			// they are probably independent.
@@ -105,7 +107,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		}
 	}
 	
-	private int[][][] to2x2Matrix(Object[] matrix, int dimensions) {
+	private static int[][][] to2x2Matrix(Object[] matrix, int dimensions) {
 		int d = 1;
 		Object[] o =  matrix;
 		for (int i = 0; i < dimensions -2; i++) {
@@ -134,7 +136,8 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 	@Override
 	public boolean test(RV X, RV Y,	Set<RV> Z) {
-		List<RV> zList = new ArrayList<RV>(Z);
+		List<RV> zList = new ArrayList<RV>(Z.size()+2);
+		zList.addAll(Z);
 		double[][] data = X.getData(Y, zList);
 		if (data == null) {
 			// Return false (X and Y dependent) to do not
@@ -229,6 +232,34 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			}
 		}
 		return independent;
+	}
+	
+	public static void main(String[] args) {
+		int dimension = 3;
+		Random r = new Random();
+		List<double[]> data = new ArrayList<double[]>();
+		for (int i = 0; i < 100; i++) {
+			double[] d = new double[dimension];
+			//for (int j = 0; j < d.length-1; j++) {
+			//	d[j] = r.nextDouble();
+			//}
+			d[0] = r.nextDouble();
+			d[1] = 0; //r.nextDouble();
+			d[2] = r.nextDouble();
+			data.add(d);
+		}
+		double[] min = new double[dimension];
+		double[] max = new double[dimension];
+		int[] nbins = new int[dimension];
+		for (int i = 0; i < dimension; i++) {
+			min[i] = 0;
+			max[i] = 1;
+			nbins[i] = 3;
+		}
+		Histogram hist = new Histogram(dimension, min, max, data.toArray(new double[0][]));
+		int[][][] out = to2x2Matrix(hist.getHistogram(nbins), dimension);
+		System.out.println(Arrays.deepToString(out));
+		
 	}
 	
 }

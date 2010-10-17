@@ -10,7 +10,6 @@ import java.util.Random;
 
 import org.apache.commons.math.util.MathUtils;
 
-
 public class Sampler<T> implements Iterable<List<T>> {
 	
 	private final List<List<T>> domains;

@@ -15,6 +15,8 @@ import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.SimpleGraph;
 
 import stat.RandomVariable;
+import stat.Sampler;
+import util.MyException;
 import util.Util;
 
 /**
@@ -218,57 +220,20 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 		return new Atom(this.predicate, this.value, Arrays.copyOf(this.terms,this.terms.length));
 	}
 
-	@Override // TODO: REVER IMPLEMENTACAO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	@Override 
 	public double[] getData() {
 		Map<Atom, Double> groundings = predicate.getGroundings();
-		if (variablesOnly()) {
-			double[] out = new double[groundings.size()];
-			int i = 0;
-			for (Double d : groundings.values()) {
-				out[i] = d.doubleValue();
-				i++;
-			}
-			return out;
-		} else {
-			double[] out = new double[groundings.size()];
-			List<Variable> vars = new ArrayList<Variable>(getVariables());
-			int ngrounds = 0;
-			
-			if (vars.isEmpty()) {
-				// Atom is grounded
-				out[0] = getValue();
-				return Arrays.copyOf(out, 1);
-			}
-			
-			List<List<Constant>> constants = new ArrayList<List<Constant>>();
-			int[] length = new int[vars.size()];
-			int[] counter = new int[vars.size()+1];
-			int n = 1;
-			for (int i = 0; i < vars.size(); i++) {
-				counter[i] = 0;
-				constants.add(new ArrayList<Constant>(vars.get(i).getConstants()));
-				length[i] = constants.get(i).size();
-				n = n * length[i];
-			}
-			
-			List<Constant> c = new ArrayList<Constant>(vars.size());
-			double d;
-			for (long i = 0; i < n; i++) {
-				for (int j = 0; j < vars.size(); j++) {
-					if (counter[j] == length[j]) {
-						counter[j] = 0;
-						counter[j+1]++;
-					}
-					c.set(j,constants.get(j).get(counter[j]));
-				}
-				d = replaceVariables(vars, c).getValue();
-				if (!Double.isNaN(d)) {
-					out[ngrounds] = d;
-					ngrounds++;
-				}
-			}
-			return Arrays.copyOf(out, ngrounds);			
+		if (!this.variablesOnly()) {
+			throw new MyException("Cannot handle TNodes with constants yet.");
 		}
+		double[] out = new double[groundings.size()];
+		int i = 0;
+		for (Double d : groundings.values()) {
+			out[i] = d.doubleValue();
+			i++;
+		}
+		return out;
+
 	}
 
 	@Override
@@ -312,10 +277,10 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 		Map<Atom, Constant[]> aCons = new HashMap<Atom, Constant[]>();
 		Map<Atom, Double> lastValue = new HashMap<Atom, Double>();
 		
-		List<Atom> aList = new ArrayList<Atom>(Z);
-		aList.add(this);
-		aList.add(Y);
-		Map<Atom, Boolean> connected = new HashMap<Atom, Boolean>((int) (Math.ceil(aList.size()*1.4)));
+		List<Atom> atoms = new ArrayList<Atom>(Z);
+		atoms.add(this);
+		atoms.add(Y);
+		Map<Atom, Boolean> connected = new HashMap<Atom, Boolean>((int) (Math.ceil(atoms.size()*1.4)));
 		connected.put(this, true);
 		connected.put(Y, true);
 		Set<Variable> vSet = new HashSet<Variable>(getVariables());
@@ -339,44 +304,57 @@ public final class Atom extends Formula implements RandomVariable<Atom> {
 			}
 		}
 		
-		Variable[] var = vSet.toArray(new Variable[vSet.size()]);
-		List<Constant[]> constants = new ArrayList<Constant[]>();
-		
-		int[] length = new int[var.length];
-		int[] counter = new int[var.length+1];
-		long n = 1;
-		for (int i = 0; i < var.length; i++) {
-			counter[i] = 0;
-			constants.add(var[i].getConstants().toArray(new Constant[0]));
-			length[i] = constants.get(i).length;
-			n = n * length[i];
+		// initialize sampler
+		List<Variable> variables = new ArrayList<Variable>(vSet);
+		List<Set<Constant>> cList = new ArrayList<Set<Constant>>();
+		for (Variable v : variables) {
+			cList.add(v.getConstants());
 		}
+		Sampler<Constant> sampler = new Sampler<Constant>(cList);
 		
 		//Constant[] c = new Constant[var.length];
 		List<double[]> out = new ArrayList<double[]>();
+		boolean converged = false;
+
+		constants:
+		for (List<Constant> constants : sampler) {
+			// map between the Variable and the sampled Constant
+			for (int i = 0; i < constants.size(); i++) {
+				ground.put(variables.get(i), constants.get(i));
+			}
+			
+			for (Atom a : atoms) {
+				if (connected.get(a)) {
+					
+				} else { // not connected
+					
+				}
+			}
+			
+		}
 
 		constants:
 		for (long i = 0; i < n; i++) {
 			
 			List<double[]> d = new ArrayList<double[]>();
-			d.add(new double[aList.size()]);
+			d.add(new double[atoms.size()]);
 			
-			for (int j = 0; j < var.length; j++) {
+			for (int j = 0; j < variables.length; j++) {
 				if (counter[j] == length[j]) {
 					counter[j] = 0;
 					counter[j+1]++;
 				}
 				//c[j] = constants.get(j)[counter[j]];
-				ground.put(var[j], constants.get(j)[counter[j]]);
+				ground.put(variables[j], constants.get(j)[counter[j]]);
 			}
 			// TODO: Sampler, colocar tudo num set, e escolher alguns.
 			// nao, set muito grande, associar 'n' a uma escolha unica de constants
 			// e fazer sample de n até os valores convergirem.
 			counter[0]++;
 			
-			for (int j = 0; j < aList.size(); j++) {
-				if (connected.get(aList.get(j)).booleanValue()) {
-					Atom a = aList.get(j);
+			for (int j = 0; j < atoms.size(); j++) {
+				if (connected.get(atoms.get(j)).booleanValue()) {
+					Atom a = atoms.get(j);
 					Variable[] av = aVars.get(a);
 					Constant[] ac = aCons.get(a);
 					boolean changed = false;

@@ -5,14 +5,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.jgraph.graph.DefaultEdge;
+import org.jgrapht.Graph;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.Subgraph;
 
 import stat.RandomVariable;
 import structureLearner.FormulaGenerator;
@@ -30,23 +33,10 @@ public class Predicate implements RandomVariable<Predicate> {
 	private boolean closedWorld;
 	private Map<Atom, Double> groundings;
 	private Set<Atom> neGroundings;
-
+	
 	public static final Predicate equals = new Predicate("equals", Domain.universe, Domain.universe);
-
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
-
-	/**
-	 * @return a List of each argument Domain
-	 */
-	public List<Domain> getDomains() {
-		return argDomains;
-	}
-
+	private static UndirectedGraph<Predicate, DefaultEdge> TNodes = new SimpleGraph<Predicate, DefaultEdge>(DefaultEdge.class);
+  
 	/**
 	 * 
 	 */
@@ -66,6 +56,32 @@ public class Predicate implements RandomVariable<Predicate> {
 		this.neGroundings = new HashSet<Atom>();
 	}
 	
+  private static synchronized void addVertex(Predicate vertex) {
+    Set<Predicate> nodes = TNodes.vertexSet();
+    TNodes.addVertex(vertex);
+    for (Predicate node : nodes) {
+      if (shareDomain(node, vertex)) {
+        TNodes.addEdge(node, vertex);
+      }
+    }
+  }
+
+
+  /**
+   * @return the name
+   */
+  public String getName() {
+    return name;
+  }
+
+  /**
+   * @return a List of each argument Domain
+   */
+  public List<Domain> getDomains() {
+    return argDomains;
+  }
+	
+  @Override
 	public String toString() {
 		return name + "(" + Util.join(argDomains.toArray(), ",") + ")";
 	}
@@ -184,6 +200,17 @@ public class Predicate implements RandomVariable<Predicate> {
 		}
 		return out;
 	}
+	
+	@Override
+	public Iterator<double[]> getDataIterator(Predicate Y, List<Predicate> Z) {
+	  Set<Predicate> nodes = new HashSet<Predicate>(Z);
+	  nodes.add(this);
+	  nodes.add(Y);
+	  Graph<Predicate, DefaultEdge> graph = new Subgraph<Predicate, DefaultEdge, UndirectedGraph<Predicate, DefaultEdge>>(TNodes, nodes);
+	  
+	  // TODO: PAREI AQUI!!!!
+	  return null;
+	}
 
 	@Override
 	public double[][] getData(Predicate Y, List<Predicate> Z) {
@@ -197,10 +224,10 @@ public class Predicate implements RandomVariable<Predicate> {
 		
 		for (Predicate p : Z) {
 			graph.addVertex(p);
-			if (shareDomain(this, p)) {
+			if (this.shareDomain(this, p)) {
 				graph.addEdge(this, p);
 			}
-			if (shareDomain(Y, p)) {
+			if (this.shareDomain(Y, p)) {
 				graph.addEdge(Y, p);
 			}
 		}
@@ -216,8 +243,9 @@ public class Predicate implements RandomVariable<Predicate> {
 		if (DijkstraShortestPath.findPathBetween(graph, this, Y) == null) {
 			return null;
 		}
-		List<Predicate> pList = new ArrayList<Predicate>(Z);
-		pList.add(this);
+		List<Predicate> pList = new ArrayList<Predicate>(Z.size()+2);
+		pList.addAll(Z); 
+		pList.add(this); 
 		pList.add(Y);
 		Map<Predicate, Boolean> connected = new HashMap<Predicate, Boolean>((pList.size())*2);
 		connected.put(this, true);
@@ -229,32 +257,32 @@ public class Predicate implements RandomVariable<Predicate> {
 				connected.put(p, true);
 			}
 		}
-		List<Variable> vList = new ArrayList<Variable>();
-		List<Atom> aList = new ArrayList<Atom>();
+		List<Variable> variables = new ArrayList<Variable>();
+		List<Atom> atoms = new ArrayList<Atom>();
 		for (Predicate p : pList) {
 			if (connected.get(p).booleanValue()) {
-				Atom a = FormulaGenerator.generateAtom(p, vList);
+				Atom a = FormulaGenerator.generateAtom(p, variables);
 				for (Variable v : a.getVariables()) {
-					if (!vList.contains(v)) {
-						vList.add(v);
+					if (!variables.contains(v)) {
+						variables.add(v);
 					}
 				}
-				aList.add(a);
+				atoms.add(a);
 			} else {
-				aList.add(null);
+				atoms.add(null);
 			}
 		}
 		
-		Variable[] var = vList.toArray(new Variable[vList.size()]);
-		List<Constant[]> constants = new ArrayList<Constant[]>();
+		Variable[] var = variables.toArray(new Variable[variables.size()]);
+		List<List<Constant>> constants = new ArrayList<List<Constant>>(variables.size());
 		
 		int[] length = new int[var.length];
 		int[] counter = new int[var.length+1];
 		long n = 1;
 		for (int i = 0; i < var.length; i++) {
 			counter[i] = 0;
-			constants.add(var[i].getConstants().toArray(new Constant[0]));
-			length[i] = constants.get(i).length;
+			constants.add(new ArrayList<Constant>(var[i].getConstants())); // TODO: remover o new ArrayList
+			length[i] = constants.get(i).size();
 			n = n * length[i];
 		}
 		
@@ -262,26 +290,26 @@ public class Predicate implements RandomVariable<Predicate> {
 		List<double[]> out = new ArrayList<double[]>();
 		
 		constants:
-		for (long i = 0; i < n; i++) {
+		for (long i = 0; i < n; i++) { // TODO: estah usando todas as combinacoes possiveis
 			
 			List<double[]> d = new ArrayList<double[]>();
-			d.add(new double[aList.size()]);
+			d.add(new double[atoms.size()]);
 			
 			for (int j = 0; j < var.length; j++) {
 				if (counter[j] == length[j]) {
 					counter[j] = 0;
 					counter[j+1]++;
 				}
-				c[j] = constants.get(j)[counter[j]];
+				c[j] = constants.get(j).get(counter[j]);
 			}
 			// TODO: Sampler, colocar tudo num set, e escolher alguns.
 			// nao, set muito grande, associar 'n' a uma escolha unica de constants
 			// e fazer sample de n até os valores convergirem.
 			counter[0]++;
 			
-			for (int j = 0; j < aList.size(); j++) {
+			for (int j = 0; j < atoms.size(); j++) {
 				if (connected.get(pList.get(j)).booleanValue()) {
-					Atom a = (Atom) aList.get(j).replaceVariables(Arrays.asList(var), Arrays.asList(c));
+					Atom a = atoms.get(j).replaceVariables(Arrays.asList(var), Arrays.asList(c));
 					if (Double.isNaN(a.value)) {
 						continue constants;
 					}
@@ -309,7 +337,7 @@ public class Predicate implements RandomVariable<Predicate> {
 		return out.toArray(new double[out.size()][]);
 	}
 	
-	private boolean shareDomain(Predicate x, Predicate y) {
+	private static boolean shareDomain(Predicate x, Predicate y) {
 		// TODO: Do not account for parent/child relationship between Domains.
 		for (Domain d : x.argDomains) {
 			for (Domain d1 : y.argDomains) {
