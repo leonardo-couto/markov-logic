@@ -35,8 +35,8 @@ public class Predicate implements RandomVariable<Predicate> {
 	private Set<Atom> neGroundings;
 	
 	public static final Predicate equals = new Predicate("equals", Domain.universe, Domain.universe);
-	private static UndirectedGraph<Predicate, DefaultEdge> TNodes = new SimpleGraph<Predicate, DefaultEdge>(DefaultEdge.class);
-  
+	public static final Predicate emptyPredicate = new Predicate("empty", Collections.<Domain>emptyList());
+ 
 	/**
 	 * 
 	 */
@@ -56,17 +56,6 @@ public class Predicate implements RandomVariable<Predicate> {
 		this.neGroundings = new HashSet<Atom>();
 	}
 	
-  private static synchronized void addVertex(Predicate vertex) {
-    Set<Predicate> nodes = TNodes.vertexSet();
-    TNodes.addVertex(vertex);
-    for (Predicate node : nodes) {
-      if (shareDomain(node, vertex)) {
-        TNodes.addEdge(node, vertex);
-      }
-    }
-  }
-
-
   /**
    * @return the name
    */
@@ -201,16 +190,18 @@ public class Predicate implements RandomVariable<Predicate> {
 		return out;
 	}
 	
-	@Override
-	public Iterator<double[]> getDataIterator(Predicate Y, List<Predicate> Z) {
-	  Set<Predicate> nodes = new HashSet<Predicate>(Z);
-	  nodes.add(this);
-	  nodes.add(Y);
-	  Graph<Predicate, DefaultEdge> graph = new Subgraph<Predicate, DefaultEdge, UndirectedGraph<Predicate, DefaultEdge>>(TNodes, nodes);
+	public static Iterator<double[]> staticDataIterator(List<Predicate> nodes) {
+	  
 	  
 	  // TODO: PAREI AQUI!!!!
 	  return null;
 	}
+	
+  @Override
+  public Iterator<double[]> getDataIterator(List<Predicate> nodes) {
+    return getDataIterator(nodes);
+  }
+
 
 	@Override
 	public double[][] getData(Predicate Y, List<Predicate> Z) {
@@ -348,5 +339,15 @@ public class Predicate implements RandomVariable<Predicate> {
 		}
 		return false;
 	}
+
+  @Override
+  public boolean isIndependent(Predicate y) {
+    return !shareDomain(this, y);
+  }
+  
+  @Override
+  public Predicate emptyVariable() {
+    return emptyPredicate;
+  }
 
 }
