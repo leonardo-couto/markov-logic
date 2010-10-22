@@ -21,7 +21,7 @@ public class Formula implements Comparable<Formula> {
 
 	private List<Atom> atoms;
 	private final List<Operator> operators;
-	private final List<Boolean> stack;
+	private final List<Boolean> stack; // TODO: usar ArrayStack (apache commons collection)
 	private final Set<Predicate> predicates;
 	
 	private Formula(List<Atom> atoms, List<Operator> operators, 

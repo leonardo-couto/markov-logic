@@ -18,6 +18,7 @@ import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.Subgraph;
 
 import stat.RandomVariable;
+import stat.Sampler;
 import structureLearner.FormulaGenerator;
 import util.Util;
 
@@ -27,16 +28,16 @@ import util.Util;
  */
 public class Predicate implements RandomVariable<Predicate> {
 	// TODO: ASSURE UNIQUE PREDICATE NAMES.
-	
+
 	private String name;
 	private List<Domain> argDomains;
 	private boolean closedWorld;
 	private Map<Atom, Double> groundings;
 	private Set<Atom> neGroundings;
-	
+
 	public static final Predicate equals = new Predicate("equals", Domain.universe, Domain.universe);
 	public static final Predicate emptyPredicate = new Predicate("empty", Collections.<Domain>emptyList());
- 
+
 	/**
 	 * 
 	 */
@@ -47,7 +48,7 @@ public class Predicate implements RandomVariable<Predicate> {
 		this.groundings = new HashMap<Atom, Double>();
 		this.neGroundings = new HashSet<Atom>();
 	}
-	
+
 	public Predicate(String name, Domain ... domains) {
 		this.name = name;
 		this.argDomains = Arrays.asList(domains);
@@ -55,39 +56,39 @@ public class Predicate implements RandomVariable<Predicate> {
 		this.groundings = new HashMap<Atom, Double>();
 		this.neGroundings = new HashSet<Atom>();
 	}
-	
-  /**
-   * @return the name
-   */
-  public String getName() {
-    return name;
-  }
 
-  /**
-   * @return a List of each argument Domain
-   */
-  public List<Domain> getDomains() {
-    return argDomains;
-  }
-	
-  @Override
+	/**
+	 * @return the name
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @return a List of each argument Domain
+	 */
+	public List<Domain> getDomains() {
+		return argDomains;
+	}
+
+	@Override
 	public String toString() {
 		return name + "(" + Util.join(argDomains.toArray(), ",") + ")";
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-	    if ( !(o instanceof Predicate) ) return false;
-	    
-	    Predicate p = (Predicate) o;
-	    return name.equals(p.getName());
+		if ( !(o instanceof Predicate) ) return false;
+
+		Predicate p = (Predicate) o;
+		return name.equals(p.getName());
 	}
-	
+
 	public int hashCode() {
 		return name.hashCode();
 	}
-	
+
 	/**
 	 * @return the closedWorld
 	 */
@@ -115,7 +116,7 @@ public class Predicate implements RandomVariable<Predicate> {
 		}
 		this.closedWorld = b;
 	}
-	
+
 	/**
 	 * @param p
 	 * @return A Set of all groundings of p.
@@ -135,7 +136,7 @@ public class Predicate implements RandomVariable<Predicate> {
 			groundings.put(a, a.value);
 		}
 	}	
-	
+
 	private List<List<Constant>> listGroundings() {
 		List<List<Constant>> out = new ArrayList<List<Constant>>();
 		List<List<Constant>> prev;
@@ -160,7 +161,7 @@ public class Predicate implements RandomVariable<Predicate> {
 		}
 		return out;
 	}
-	
+
 	/**
 	 * @return the groundings
 	 */
@@ -189,18 +190,60 @@ public class Predicate implements RandomVariable<Predicate> {
 		}
 		return out;
 	}
-	
+
 	public static Iterator<double[]> staticDataIterator(List<Predicate> nodes) {
-	  
-	  
-	  // TODO: PAREI AQUI!!!!
-	  return null;
+		
+		Set<Variable> variablesSet = new HashSet<Variable>();
+		List<Atom> atoms = new ArrayList<Atom>();
+		for (Predicate p : nodes) {
+			if (!p.equals(emptyPredicate)) {
+				Atom a = FormulaGenerator.generateAtom(p, variablesSet);
+				variablesSet.addAll(a.getVariables());
+				atoms.add(a);
+			} else {
+				atoms.add(Atom.FALSE);
+			}
+		}
+		
+		List<Variable> variables = new ArrayList<Variable>(variablesSet);
+		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
+		for (Variable v : variables) {
+			constants.add(v.getConstants());
+		}
+		
+		Sampler<Constant> sampler = new Sampler<Constant>(constants);
+		
+		return new Iterator<double[]>() {
+
+			@Override
+			public boolean hasNext() {
+				// TODO Auto-generated method stub
+				return false;
+			}
+
+			@Override
+			public double[] next() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+
+			@Override
+			public void remove() {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		};
+
+
+		// TODO: PAREI AQUI!!!!
+		return null;
 	}
-	
-  @Override
-  public Iterator<double[]> getDataIterator(List<Predicate> nodes) {
-    return getDataIterator(nodes);
-  }
+
+	@Override
+	public Iterator<double[]> getDataIterator(List<Predicate> nodes) {
+		return getDataIterator(nodes);
+	}
 
 
 	@Override
@@ -212,7 +255,7 @@ public class Predicate implements RandomVariable<Predicate> {
 		if (shareDomain(this, Y)) {
 			graph.addEdge(this, Y);
 		}
-		
+
 		for (Predicate p : Z) {
 			graph.addVertex(p);
 			if (this.shareDomain(this, p)) {
@@ -222,7 +265,7 @@ public class Predicate implements RandomVariable<Predicate> {
 				graph.addEdge(Y, p);
 			}
 		}
-		
+
 		for (int i = 0; i < Z.size(); i++) {
 			for (int j = i +1; j < Z.size(); j++) {
 				if (shareDomain(Z.get(i), Z.get(j))) {
@@ -230,7 +273,7 @@ public class Predicate implements RandomVariable<Predicate> {
 				}
 			}
 		}		
-		
+
 		if (DijkstraShortestPath.findPathBetween(graph, this, Y) == null) {
 			return null;
 		}
@@ -263,10 +306,10 @@ public class Predicate implements RandomVariable<Predicate> {
 				atoms.add(null);
 			}
 		}
-		
+
 		Variable[] var = variables.toArray(new Variable[variables.size()]);
 		List<List<Constant>> constants = new ArrayList<List<Constant>>(variables.size());
-		
+
 		int[] length = new int[var.length];
 		int[] counter = new int[var.length+1];
 		long n = 1;
@@ -276,58 +319,58 @@ public class Predicate implements RandomVariable<Predicate> {
 			length[i] = constants.get(i).size();
 			n = n * length[i];
 		}
-		
+
 		Constant[] c = new Constant[var.length];
 		List<double[]> out = new ArrayList<double[]>();
-		
+
 		constants:
-		for (long i = 0; i < n; i++) { // TODO: estah usando todas as combinacoes possiveis
-			
-			List<double[]> d = new ArrayList<double[]>();
-			d.add(new double[atoms.size()]);
-			
-			for (int j = 0; j < var.length; j++) {
-				if (counter[j] == length[j]) {
-					counter[j] = 0;
-					counter[j+1]++;
+			for (long i = 0; i < n; i++) { // TODO: estah usando todas as combinacoes possiveis
+
+				List<double[]> d = new ArrayList<double[]>();
+				d.add(new double[atoms.size()]);
+
+				for (int j = 0; j < var.length; j++) {
+					if (counter[j] == length[j]) {
+						counter[j] = 0;
+						counter[j+1]++;
+					}
+					c[j] = constants.get(j).get(counter[j]);
 				}
-				c[j] = constants.get(j).get(counter[j]);
-			}
-			// TODO: Sampler, colocar tudo num set, e escolher alguns.
-			// nao, set muito grande, associar 'n' a uma escolha unica de constants
-			// e fazer sample de n até os valores convergirem.
-			counter[0]++;
-			
-			for (int j = 0; j < atoms.size(); j++) {
-				if (connected.get(pList.get(j)).booleanValue()) {
-					Atom a = atoms.get(j).replaceVariables(Arrays.asList(var), Arrays.asList(c));
-					if (Double.isNaN(a.value)) {
-						continue constants;
-					}
-					for (double[] elem : d) {
-						elem[j] = a.value;
-					}
-				} else {
-					// duplicate array with 0 and 1 in the current position
-					double[][] copy = new double[d.size()][];
-					int k = 0;
-					for (double[] elem : d) {
-						copy[k] = Arrays.copyOf(elem, elem.length);
-						copy[k][j] = 1;
-						elem[j] = 0;
-						k++;
-					}
-					for (double[] elem : copy) {
-						d.add(elem);
+				// TODO: Sampler, colocar tudo num set, e escolher alguns.
+				// nao, set muito grande, associar 'n' a uma escolha unica de constants
+				// e fazer sample de n até os valores convergirem.
+				counter[0]++;
+
+				for (int j = 0; j < atoms.size(); j++) {
+					if (connected.get(pList.get(j)).booleanValue()) {
+						Atom a = atoms.get(j).replaceVariables(Arrays.asList(var), Arrays.asList(c));
+						if (Double.isNaN(a.value)) {
+							continue constants;
+						}
+						for (double[] elem : d) {
+							elem[j] = a.value;
+						}
+					} else {
+						// duplicate array with 0 and 1 in the current position
+						double[][] copy = new double[d.size()][];
+						int k = 0;
+						for (double[] elem : d) {
+							copy[k] = Arrays.copyOf(elem, elem.length);
+							copy[k][j] = 1;
+							elem[j] = 0;
+							k++;
+						}
+						for (double[] elem : copy) {
+							d.add(elem);
+						}
 					}
 				}
+				out.addAll(d);			
 			}
-			out.addAll(d);			
-		}
-			
+
 		return out.toArray(new double[out.size()][]);
 	}
-	
+
 	private static boolean shareDomain(Predicate x, Predicate y) {
 		// TODO: Do not account for parent/child relationship between Domains.
 		for (Domain d : x.argDomains) {
@@ -340,14 +383,14 @@ public class Predicate implements RandomVariable<Predicate> {
 		return false;
 	}
 
-  @Override
-  public boolean isIndependent(Predicate y) {
-    return !shareDomain(this, y);
-  }
-  
-  @Override
-  public Predicate emptyVariable() {
-    return emptyPredicate;
-  }
+	@Override
+	public boolean isIndependent(Predicate y) {
+		return !shareDomain(this, y);
+	}
+
+	@Override
+	public Predicate emptyVariable() {
+		return emptyPredicate;
+	}
 
 }
