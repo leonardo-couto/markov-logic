@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -63,7 +64,10 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		if (!this.marginalData.containsKey(y)) {
 			initMarginals(y);
 		}
-		Iterator<double[]> data = tNodes.getDataIterator(x, y, Collections.emptyList());
+		Iterator<double[]> data = this.tNodes.getDataIterator(x, y, Collections.<RV>emptyList());
+		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
+		
+		
 		double[][] data = x.getData(y, Collections.<RV>emptyList());
 		if (data == null) {
 			// If X and Y share no variables, return a high pvalue, meaning
@@ -79,7 +83,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 				       this.marginalDataHist.get(y).length};
 		double[] gmean = {Util.geometricMean(this.marginalDataHist.get(x)), 
 				          Util.geometricMean(this.marginalDataHist.get(x))}; 
-		int[][] matrix = to2x2Matrix(histogram.getHistogram(nbins), 2)[0];
+		int[][] matrix = to2dMatrices(histogram.getHistogram(nbins), 2)[0]; // TODO: PAREI AQUI! pegar o histograma e fazer o teste!
 
 		// Reduces the data count matrix size until satisfies Pearson conditions, 
 		// or reach a 2x2 matrix, in this case applies Fisher Exact test.
@@ -107,13 +111,20 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 					nbins[0] = (int) Math.ceil(nbins[0]/2.0);
 					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(x))).getHistogram(nbins[0]));
 				}
-				matrix = to2x2Matrix(histogram.getHistogram(nbins), 2)[0];
+				matrix = to2dMatrices(histogram.getHistogram(nbins), 2)[0];
 			}
 			
 		}
 	}
 	
-	private static int[][][] to2x2Matrix(Object[] matrix, int dimensions) {
+	
+	/**
+	 * Transform a multidimensional matrix in a series of two dimensional matrices.
+	 * @param matrix
+	 * @param dimensions
+	 * @return
+	 */
+	private static int[][][] to2dMatrices(Object[] matrix, int dimensions) {
 		int d = 1;
 		Object[] o =  matrix;
 		for (int i = 0; i < dimensions -2; i++) {
@@ -141,18 +152,20 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 
 	@Override
-	public boolean test(RV X, RV Y,	Set<RV> Z) {
-		List<RV> zList = new ArrayList<RV>(Z.size()+2);
-		zList.addAll(Z);
-		double[][] data = X.getData(Y, zList);
+	public boolean test(RV x, RV y,	Set<RV> Z) {
+		List<RV> nodes = new ArrayList<RV>(Z.size()+2);
+		nodes.addAll(Z);
+		nodes.add(x);
+		nodes.add(y);
+		double[][] data = x.getData(y, zList);
 		if (data == null) {
 			// Return false (X and Y dependent) to do not
 			// break Strong Union axiom.
 			return false;
 		}
 		
-		zList.add(X);
-		zList.add(Y);
+		zList.add(x);
+		zList.add(y);
 		for (RV rv : zList) {
 			if (!marginalData.containsKey(rv)) {
 				initMarginals(rv);
@@ -172,7 +185,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			gmean[i] = new Pair(Util.geometricMean(marginalDataHist.get(zList.get(i))),i);
 		}
 
-		int[][][] matrices = to2x2Matrix(h.getHistogram(nbins), dimension);
+		int[][][] matrices = to2dMatrices(h.getHistogram(nbins), dimension);
 		
 		// Check if all matrices satisfies Pearson conditions, or reduces matrix size
 		// until reach 2x2 matrices.
@@ -208,7 +221,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			} else {
 				break;
 			}
-			matrices = to2x2Matrix(h.getHistogram(nbins), dimension);
+			matrices = to2dMatrices(h.getHistogram(nbins), dimension);
 		}
 		
 		// All Matrices satisfies Pearson conditions, or are 2x2 matrices.
@@ -263,7 +276,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			nbins[i] = 3;
 		}
 		Histogram hist = new Histogram(dimension, min, max, data.toArray(new double[0][]));
-		int[][][] out = to2x2Matrix(hist.getHistogram(nbins), dimension);
+		int[][][] out = to2dMatrices(hist.getHistogram(nbins), dimension);
 		System.out.println(Arrays.deepToString(out));
 		
 	}
