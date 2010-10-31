@@ -27,15 +27,14 @@ public interface RandomVariable<T extends RandomVariable<?>> extends NameID {
 	public boolean isIndependent(T y);
 	
 	/**
+	 * TODO: refazer esse comentário!
 	 * Devolve valores de TNodes na ordem Z_0, Z_1, ... , Z_n, X, Y. Onde
 	 * X = this. 
 	 * TODO: devolver um iterador!!!
 	 * TODO: ver o que fazer quando a variavel nao estiver conectada pelo grafo!
 	 * @return This variable marginal data.
 	 */
-  public double[][] getData(T y, List<T> z);
-
-  public Iterator<double[]> getDataIterator(T y, List<T> z);
+  public Iterator<double[]> getDataIterator(List<T> nodes);
   
   public T emptyVariable();
 

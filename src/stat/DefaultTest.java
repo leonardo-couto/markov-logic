@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import structureLearner.TNodes;
 import util.Util;
 
 
@@ -18,21 +19,23 @@ import util.Util;
  */
 public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceTest<RV> {
 
-	private Map<RV, double[]> marginalData;
-	private Map<RV, int[]> marginalDataHist;
+	private final Map<RV, double[]> marginalData;
+	private final Map<RV, int[]> marginalDataHist;
 	public static int maxPartitions = 10;
 	public final double alpha;
 	private final FisherExact fe = new FisherExact(100000);
+	private final TNodes<RV> tNodes;
 
-	public DefaultTest(double alpha) {
+	public DefaultTest(double alpha, TNodes<RV> tNodes) {
 		this.alpha = alpha;
-		marginalData = new HashMap<RV, double[]>();
-		marginalDataHist = new HashMap<RV, int[]>();
+		this.marginalData = new HashMap<RV, double[]>();
+		this.marginalDataHist = new HashMap<RV, int[]>();
+		this.tNodes = tNodes;
 	}
 	
-	private void initMarginals(RV X) {
-		double[] data = X.getData();
-		this.marginalData.put(X, data);
+	private void initMarginals(RV x) {
+		double[] data = x.getData();
+		this.marginalData.put(x, data);
 		Histogram h = new Histogram(0.0, 1.0, data);
 		boolean stop = false;
 		int n = maxPartitions;
@@ -49,18 +52,19 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			}
 			n = (int) Math.ceil(n/2.0);
 		}
-		this.marginalDataHist.put(X, pdata);
+		this.marginalDataHist.put(x, pdata);
 	}
 	
 	@Override
-	public double pvalue(RV X, RV Y) {
-		if (!marginalData.containsKey(X)) {
-			this.initMarginals(X);
+	public double pvalue(RV x, RV y) {
+		if (!this.marginalData.containsKey(x)) {
+			this.initMarginals(x);
 		}
-		if (!marginalData.containsKey(Y)) {
-			initMarginals(Y);
+		if (!this.marginalData.containsKey(y)) {
+			initMarginals(y);
 		}
-		double[][] data = X.getData(Y, Collections.<RV>emptyList());
+		Iterator<double[]> data = tNodes.getDataIterator(x, y, Collections.emptyList());
+		double[][] data = x.getData(y, Collections.<RV>emptyList());
 		if (data == null) {
 			// If X and Y share no variables, return a high pvalue, meaning
 			// they are probably independent.
@@ -70,10 +74,12 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		double[] nmax = new double[2];
 		Arrays.fill(nmin, 0.0);
 		Arrays.fill(nmax, 1.0);
-		Histogram h = new Histogram(2, nmin, nmax, data);
-		int[] nbins = {marginalDataHist.get(X).length, marginalDataHist.get(Y).length};
-		double[] gmean = {Util.geometricMean(marginalDataHist.get(X)), Util.geometricMean(marginalDataHist.get(X))}; 
-		int[][] matrix = to2x2Matrix(h.getHistogram(nbins), 2)[0];
+		Histogram histogram = new Histogram(2, nmin, nmax, data);
+		int[] nbins = {this.marginalDataHist.get(x).length,
+				       this.marginalDataHist.get(y).length};
+		double[] gmean = {Util.geometricMean(this.marginalDataHist.get(x)), 
+				          Util.geometricMean(this.marginalDataHist.get(x))}; 
+		int[][] matrix = to2x2Matrix(histogram.getHistogram(nbins), 2)[0];
 
 		// Reduces the data count matrix size until satisfies Pearson conditions, 
 		// or reach a 2x2 matrix, in this case applies Fisher Exact test.
@@ -88,20 +94,20 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			if (Double.compare(gmean[0], gmean[1]) < 0) {
 				if (nbins[0] > 2) {
 					nbins[0] = (int) Math.ceil(nbins[0]/2.0);
-					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(X))).getHistogram(nbins[0]));
+					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(x))).getHistogram(nbins[0]));
 				} else {
 					nbins[1] = (int) Math.ceil(nbins[1]/2.0);
-					gmean[1] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(Y))).getHistogram(nbins[1]));
+					gmean[1] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(y))).getHistogram(nbins[1]));
 				}
 			} else {
 				if (nbins[1] > 2) {
 					nbins[1] = (int) Math.ceil(nbins[1]/2.0);
-					gmean[1] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(Y))).getHistogram(nbins[1]));
+					gmean[1] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(y))).getHistogram(nbins[1]));
 				} else {
 					nbins[0] = (int) Math.ceil(nbins[0]/2.0);
-					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(X))).getHistogram(nbins[0]));
+					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(x))).getHistogram(nbins[0]));
 				}
-				matrix = to2x2Matrix(h.getHistogram(nbins), 2)[0];
+				matrix = to2x2Matrix(histogram.getHistogram(nbins), 2)[0];
 			}
 			
 		}

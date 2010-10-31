@@ -13,7 +13,7 @@ import org.apache.commons.math.distribution.TDistributionImpl;
 
 import stat.DefaultTest;
 import stat.IndependenceTest;
-import fol.Atom;
+import fol.Predicate;
 
 public class Settings {
   // TODO: FAZER ESSES VALORES VIREM DE UM XML!!
@@ -83,7 +83,8 @@ public class Settings {
 	public List<String> closedWorld;
 	
 	// GSIMN Parameter
-	public IndependenceTest<Atom> itest;
+//	public IndependenceTest<Atom> itest; // TODO: usar esse!
+	public IndependenceTest<Predicate> itest;
 	
 	// TNODES max variables per domain.
 	public int maxVar;
@@ -108,7 +109,8 @@ public class Settings {
 		threads = 2;
 		fpt = 30;
 		closedWorld = Collections.emptyList();
-		itest = new DefaultTest<Atom>(alpha);
+//		itest = new DefaultTest<Atom>(alpha); TODO: usar esse!
+		itest = new DefaultTest<Predicate>(alpha);
 		maxAtoms = 6;
 		maxVar = 2;
 	}

@@ -5,13 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import parse.ParseDataSet;
 import parse.ParseDomain;
-import structureLearner.FormulaGenerator;
 import GSIMN.GSIMN;
-import fol.Atom;
 import fol.Predicate;
 
 public class Main {
@@ -32,9 +29,10 @@ public class Main {
 		System.out.println("setting Closed World...");
 		setCW();
 		System.out.println("generating tnodes...");
-		Set<Atom> tnodes = FormulaGenerator.getTNodes(domain.getPredicates(), settings.maxVar);
+//		Set<Atom> tnodes = FormulaGenerator.getTNodes(domain.getPredicates(), settings.maxVar);
 		System.out.println("running GSIMN...");
-		GSIMN<Atom> gs = new GSIMN<Atom>(tnodes, settings.itest, settings.alpha);
+//		GSIMN<Atom> gs = new GSIMN<Atom>(tnodes, settings.itest, settings.alpha); // TODO: USAR ESSE!!
+		GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), settings.itest, settings.alpha);
 		//GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), new DefaultTest<Predicate>(settings.alpha), settings.alpha);
 		System.out.println(gs.run());
 	}

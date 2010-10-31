@@ -11,7 +11,7 @@ public interface IndependenceTest<RV extends RandomVariable<RV>> {
 	/**
 	 * @return true if X and Y are independent given Z.
 	 */
-	public boolean test(RV X, RV Y, Set<RV> Z);
+	public boolean test(RV x, RV y, Set<RV> z);
 	
 	
 	/**
@@ -22,6 +22,6 @@ public interface IndependenceTest<RV extends RandomVariable<RV>> {
 	 * low pvalues, more likely to be dependent.
 	 * @return Likelihood of independence [0,1].
 	 */
-	public double pvalue(RV X, RV Y);
+	public double pvalue(RV x, RV y);
 
 }
