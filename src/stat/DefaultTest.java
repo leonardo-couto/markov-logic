@@ -33,7 +33,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		this.marginalDataHist = new HashMap<RV, int[]>();
 		this.tNodes = tNodes;
 	}
-	
+
 	private void initMarginals(RV x) {
 		double[] data = x.getData();
 		this.marginalData.put(x, data);
@@ -55,7 +55,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		}
 		this.marginalDataHist.put(x, pdata);
 	}
-	
+
 	@Override
 	public double pvalue(RV x, RV y) {
 		if (!this.marginalData.containsKey(x)) {
@@ -64,12 +64,14 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		if (!this.marginalData.containsKey(y)) {
 			initMarginals(y);
 		}
-		Iterator<double[]> data = this.tNodes.getDataIterator(x, y, Collections.<RV>emptyList());
-		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
-		
-		
-		double[][] data = x.getData(y, Collections.<RV>emptyList());
-		if (data == null) {
+		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, Collections.<RV>emptyList());
+		// TODO: testar a convergencia ao invez de pegar todos os dados? Fazer o teste rodar paralelamente?
+		List<double[]> data = new ArrayList<double[]>();
+		while (dataIterator.hasNext()) {
+			data.add(dataIterator.next());
+		}
+
+		if (data.isEmpty()) {
 			// If X and Y share no variables, return a high pvalue, meaning
 			// they are probably independent.
 			return 0.99;
@@ -79,45 +81,19 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		Arrays.fill(nmin, 0.0);
 		Arrays.fill(nmax, 1.0);
 		Histogram histogram = new Histogram(2, nmin, nmax, data);
-		int[] nbins = {this.marginalDataHist.get(x).length,
-				       this.marginalDataHist.get(y).length};
-		double[] gmean = {Util.geometricMean(this.marginalDataHist.get(x)), 
-				          Util.geometricMean(this.marginalDataHist.get(x))}; 
-		int[][] matrix = to2dMatrices(histogram.getHistogram(nbins), 2)[0]; // TODO: PAREI AQUI! pegar o histograma e fazer o teste!
+		List<RV> nodes = new ArrayList<RV>(2);
+		nodes.add(x);
+		nodes.add(y);
+		int[][] matrix = this.reduce(histogram, nodes)[0];
 
-		// Reduces the data count matrix size until satisfies Pearson conditions, 
-		// or reach a 2x2 matrix, in this case applies Fisher Exact test.
-		while (true) {
-			ContingencyTable ct = new ContingencyTable(matrix);
-			if (ct.pearson()) {
-				return (new PearsonChiSquare2D(ct)).pvalue();
-			}
-			if (ct.fisher()) {
-				return fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
-			}
-			if (Double.compare(gmean[0], gmean[1]) < 0) {
-				if (nbins[0] > 2) {
-					nbins[0] = (int) Math.ceil(nbins[0]/2.0);
-					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(x))).getHistogram(nbins[0]));
-				} else {
-					nbins[1] = (int) Math.ceil(nbins[1]/2.0);
-					gmean[1] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(y))).getHistogram(nbins[1]));
-				}
-			} else {
-				if (nbins[1] > 2) {
-					nbins[1] = (int) Math.ceil(nbins[1]/2.0);
-					gmean[1] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(y))).getHistogram(nbins[1]));
-				} else {
-					nbins[0] = (int) Math.ceil(nbins[0]/2.0);
-					gmean[0] = Util.geometricMean((new Histogram(0.0, 1.0, marginalData.get(x))).getHistogram(nbins[0]));
-				}
-				matrix = to2dMatrices(histogram.getHistogram(nbins), 2)[0];
-			}
-			
+		ContingencyTable ct = new ContingencyTable(matrix);
+		if (ct.pearson()) {
+			return (new PearsonChiSquare2D(ct)).pvalue();
 		}
+		return fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
 	}
-	
-	
+
+
 	/**
 	 * Transform a multidimensional matrix in a series of two dimensional matrices.
 	 * @param matrix
@@ -152,41 +128,85 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 
 	@Override
-	public boolean test(RV x, RV y,	Set<RV> Z) {
-		List<RV> nodes = new ArrayList<RV>(Z.size()+2);
-		nodes.addAll(Z);
-		nodes.add(x);
-		nodes.add(y);
-		double[][] data = x.getData(y, zList);
+	public boolean test(RV x, RV y,	Set<RV> z) {
+
+		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, new ArrayList<RV>(z));
+		// TODO: testar a converg�ncia ao invez de pegar todos os dados? Fazer o teste rodar paralelamente?
+		List<double[]> data = new ArrayList<double[]>();
+		while (dataIterator.hasNext()) {
+			data.add(dataIterator.next());
+		}
+
 		if (data == null) {
 			// Return false (X and Y dependent) to do not
 			// break Strong Union axiom.
 			return false;
 		}
-		
-		zList.add(x);
-		zList.add(y);
-		for (RV rv : zList) {
+
+		List<RV> nodes = new ArrayList<RV>(z.size()+2);
+		nodes.addAll(z);
+		nodes.add(x);
+		nodes.add(y);
+
+		for (RV rv : nodes) {
 			if (!marginalData.containsKey(rv)) {
 				initMarginals(rv);
 			}
 		}
 
-		int dimension = zList.size();
+		int dimension = nodes.size();
 		double[] nmin = new double[dimension];
 		double[] nmax = new double[dimension];
 		Arrays.fill(nmin, 0.0);
 		Arrays.fill(nmax, 1.0);
-		Histogram h = new Histogram(dimension, nmin, nmax, data);
-		int[] nbins = new int[dimension];
-		Pair[] gmean = new Pair[dimension];
+		Histogram histogram = new Histogram(dimension, nmin, nmax, data);
+		int[][][] matrices = this.reduce(histogram, nodes);
+
+		// All Matrices satisfies Pearson conditions, or are 2x2 matrices.
+		// Run the tests
+		boolean independent = true;
+		// TODO: A probabilidade de se atingir um valor menor do que alpha para o pvalue
+		// para muitas tentativas eh alta, tentar corrigir isso quando o numero de matrizes
+		// eh grande. * pvalue -> eh a probabilidade de encontrar valores pelo menos tao
+		// extremos quanto os encontrados, assumindo que X e Y sao independentes. Ou seja
+		// mesmo se X e Y forem independentes, para alpha = 0.05, 5 por cento das vezes
+		// o teste dira que eles sao dependentes.
+		for (int[][] matrix : matrices) {
+
+			ContingencyTable ct = new ContingencyTable(matrix);
+			if (ct.pearson()) {
+				double pvalue = (new PearsonChiSquare2D(ct)).pvalue();
+				if (Double.compare(pvalue, this.alpha) < 1) {
+					independent = false;
+					break;
+				}
+			} else {
+				double pvalue = fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
+				if (Double.compare(pvalue, this.alpha) < 1) {
+					independent = false;
+					break;
+				}
+			}
+		}
+		return independent;
+
+	}
+
+	/*
+	 * Return a matrix set where each matrix satisfies the Pearson
+	 * conditions, or all matrices are reduced to 2x2 matrices.
+	 */
+	private int[][][] reduce(Histogram histogram, List<RV> nodes) {
+
+		int[] nbins = new int[histogram.dimension];
+		Pair[] gmean = new Pair[histogram.dimension];
 		for (int i = 0; i < nbins.length; i++) {
-			nbins[i] = marginalDataHist.get(zList.get(i)).length;
-			gmean[i] = new Pair(Util.geometricMean(marginalDataHist.get(zList.get(i))),i);
+			nbins[i] = marginalDataHist.get(nodes.get(i)).length;
+			gmean[i] = new Pair(Util.geometricMean(marginalDataHist.get(nodes.get(i))),i);
 		}
 
-		int[][][] matrices = to2dMatrices(h.getHistogram(nbins), dimension);
-		
+		int[][][] matrices = to2dMatrices(histogram.getHistogram(nbins), histogram.dimension);
+
 		// Check if all matrices satisfies Pearson conditions, or reduces matrix size
 		// until reach 2x2 matrices.
 		while (true) {
@@ -213,7 +233,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 				for (int i = 0; i < gmean.length; i++) {
 					if (nbins[gmean[i].i] > 2) {
 						nbins[gmean[i].i] = (int) Math.ceil(nbins[gmean[i].i]/2.0);
-						Histogram h1 = new Histogram(0.0, 1.0, marginalData.get(zList.get(gmean[i].i)));
+						Histogram h1 = new Histogram(0.0, 1.0, this.marginalData.get(nodes.get(gmean[i].i)));
 						gmean[i].d = Util.geometricMean(h1.getHistogram(nbins[gmean[i].i]));
 						break;
 					}
@@ -221,38 +241,12 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			} else {
 				break;
 			}
-			matrices = to2dMatrices(h.getHistogram(nbins), dimension);
+			matrices = to2dMatrices(histogram.getHistogram(nbins), histogram.dimension);
 		}
-		
-		// All Matrices satisfies Pearson conditions, or are 2x2 matrices.
-		// Run the tests
-		boolean independent = true;
-		// TODO: A probabilidade de se atingir um valor menor do que alpha para o pvalue
-		// para muitas tentativas eh alta, tentar corrigir isso quando o numero de matrizes
-		// eh grande. * pvalue -> eh a probabilidade de encontrar valores pelo menos tao
-		// extremos quanto os encontrados, assumindo que X e Y sao independentes. Ou seja
-		// mesmo se X e Y forem independentes, para alpha = 0.05, 5 por cento das vezes
-		// o teste dira que eles sao dependentes.
-		for (int[][] matrix : matrices) {
 
-			ContingencyTable ct = new ContingencyTable(matrix);
-			if (ct.pearson()) {
-				double pvalue = (new PearsonChiSquare2D(ct)).pvalue();
-				if (Double.compare(pvalue, alpha) < 1) {
-					independent = false;
-					break;
-				}
-			} else {
-				double pvalue = fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
-				if (Double.compare(pvalue, alpha) < 1) {
-					independent = false;
-					break;
-				}
-			}
-		}
-		return independent;
+		return matrices;
 	}
-	
+
 	public static void main(String[] args) {
 		int dimension = 3;
 		Random r = new Random();
@@ -275,18 +269,18 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			max[i] = 1;
 			nbins[i] = 3;
 		}
-		Histogram hist = new Histogram(dimension, min, max, data.toArray(new double[0][]));
+		Histogram hist = new Histogram(dimension, min, max, data);
 		int[][][] out = to2dMatrices(hist.getHistogram(nbins), dimension);
 		System.out.println(Arrays.deepToString(out));
-		
+
 	}
-	
+
 }
 
 class Pair implements Comparable<Pair> {
 	public double d;
 	public final int i;
-	
+
 	public Pair(double d, int i) {
 		this.d = d;
 		this.i = i;
@@ -296,5 +290,5 @@ class Pair implements Comparable<Pair> {
 	public int compareTo(Pair o) {
 		return Double.compare(this.d, o.d);
 	}
-	
+
 }

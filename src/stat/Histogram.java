@@ -1,23 +1,24 @@
 package stat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Histogram {
-	
-	public final int dimensions;
+
+	public final int dimension;
 	public final double[] nmin;
 	public final double[] nmax;
-	private double[][] data;
-	
-	public Histogram(int dimensions, double[] nmin, double[] nmax, double[][] data) {
-		this.dimensions = dimensions;
+	private final List<double[]> data;
+
+	public Histogram(int dimension, double[] nmin, double[] nmax, List<double[]> data) {
+		this.dimension = dimension;
 		this.nmax = nmax;
 		this.nmin = nmin;
 		this.data = data;
-		this.checkDataBounds();
 	}
-	
-	
+
+
 	/**
 	 * One dimensional histogram
 	 * @param nmax
@@ -25,55 +26,52 @@ public class Histogram {
 	 * @param data
 	 */
 	public Histogram(double nmin, double nmax, double[] data) {
-		this.dimensions = 1;
+		this.dimension = 1;
 		this.nmax = new double[1];
 		this.nmin = new double[1];
-		this.data = new double[data.length][1];
+		this.data = new ArrayList<double[]>(data.length);
 		this.nmax[0] = nmax;
 		this.nmin[0] = nmin;
-		for (int i = 0; i < data.length; i++) {
-			this.data[i][0] = data[i];
-		}
-		checkDataBounds();
-	}
-	
-	private void checkDataBounds() throws IllegalArgumentException {
-		for (double[] point : this.data) {
-			for (int i = 0; i < point.length; i++) {
-				if ((Double.compare(point[i], this.nmin[i]) < 0) || 
-						(Double.compare(point[i], this.nmax[i]) > 0)) {
-					throw new IllegalArgumentException("Data outside specified range [" + 
-							this.nmin[i] + ", " + this.nmax[i] + "]. d = " + point[i]);
-				}
-			}
+		for (double d : data) {
+			this.data.add(new double[] { d });
 		}
 	}
+
+	//	private void checkDataBounds(double[] point) throws IllegalArgumentException {
+	//		for (int i = 0; i < point.length; i++) {
+	//			if ((Double.compare(point[i], this.nmin[i]) < 0) || 
+	//					(Double.compare(point[i], this.nmax[i]) > 0)) {
+	//				throw new IllegalArgumentException("Data outside specified range [" + 
+	//						this.nmin[i] + ", " + this.nmax[i] + "]. d = " + point[i]);
+	//			}
+	//		}
+	//	}
 
 	/**
 	 * For one dimensional histogram
 	 * @param nbins
 	 */
 	public int[] getHistogram(int nbins) {
-		if (this.dimensions != 1) {
+		if (this.dimension != 1) {
 			throw new IllegalArgumentException("Data has more than one dimension.");
 		}
 		int[] out = new int[nbins];
 		Arrays.fill(out, 0);
 		double dbin = (this.nmax[0] - this.nmin[0])/((double) nbins);
-		
+
 		for (double[] point : this.data) {
 			int idx = Math.min((int) Math.floor(((point[0] - this.nmin[0])/dbin)), nbins-1);
 			out[idx]++;
 		}
-		
+
 		return out;
 	}
-	
+
 	/**
 	 * @param nbins
 	 */
 	public Object[] getHistogram(int[] nbins) {
-		if (nbins.length != this.dimensions) {
+		if (nbins.length != this.dimension) {
 			throw new IllegalArgumentException("Dimensions do not match");
 		}
 		Object[] out = (nbins.length > 1) ? new Object[nbins[0]] : new Object[1];
@@ -83,12 +81,12 @@ public class Histogram {
 			aux = deepInitialize(aux, nbins[i]);
 		}
 		deepInitializeInt(aux, nbins[nbins.length-1]);
-		
+
 		double[] dbin = new double[nbins.length];
 		for (int i = 0; i < nbins.length; i++) {
 			dbin[i] = (this.nmax[i] - this.nmin[i])/((double) nbins[i]);
 		}
-		
+
 		for (double[] point : this.data) {
 			Object[] counts = out;
 			int[] data = null;
@@ -104,10 +102,10 @@ public class Histogram {
 				}
 			}
 		}
-		
+
 		return out;
 	}
-	
+
 	@SuppressWarnings("unused")
 	private static void recursiveDeepInitialize(Object[] oArray, int n) {
 		if (oArray[0] == null) {
@@ -120,7 +118,7 @@ public class Histogram {
 			}
 		}
 	}
-	
+
 	private static Object[][] deepInitialize(Object[][] oArray, int n) {
 		Object[][] out = new Object[oArray.length*oArray[0].length][];
 		int idx = 0;
@@ -134,8 +132,8 @@ public class Histogram {
 		}
 		return out;
 	}
-	
-	@SuppressWarnings("unused")
+
+	//@SuppressWarnings("unused")
 	private static void recursiveDeepInitializeInt(Object[] oArray, int n) {
 		if (oArray[0] == null) {
 			for (int i = 0; i < oArray.length; i++) {
@@ -149,7 +147,7 @@ public class Histogram {
 			}
 		}
 	}
-	
+
 	private static void deepInitializeInt(Object[][] oArray, int n) {
 		for (int i = 0; i < oArray.length; i++) {
 			for (int j = 0; j < oArray[0].length; j++) {
@@ -159,5 +157,5 @@ public class Histogram {
 			}
 		}
 	}
-	
+
 }
