@@ -83,7 +83,7 @@ public class Settings {
 
 	// GSIMN Parameter
 	//	public IndependenceTest<Atom> itest; // TODO: usar esse!
-	public IndependenceTest<Predicate> itest;
+	//public IndependenceTest<Predicate> itest;
 
 	// TNODES max variables per domain.
 	public int maxVar;

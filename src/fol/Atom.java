@@ -19,8 +19,8 @@ public final class Atom extends Formula implements NameID { // implements Random
 	public final Term[] terms;
 	public final double value;	
 	
-  public static final Atom TRUE = new Atom(null, 1, Collections.<Term>emptyList());
-  public static final Atom FALSE = new Atom(null, 0, Collections.<Term>emptyList());	
+  public static final Atom TRUE = new Atom(Predicate.emptyPredicate, 1, Collections.<Term>emptyList());
+  public static final Atom FALSE = new Atom(Predicate.emptyPredicate, 0, Collections.<Term>emptyList());	
 
 	/**
 	 * @param formulas
@@ -115,26 +115,30 @@ public final class Atom extends Formula implements NameID { // implements Random
 	
 	@Override
 	public Atom replaceVariables(List<Variable> x, List<Constant> c) {
-		Term[] newterms = Arrays.copyOf(terms, terms.length);
+		Term[] newTerms = Arrays.copyOf(terms, terms.length);
 		boolean replaced = false;
 		boolean grounded = true;
-		for (int i = 0; i < x.size(); i++) {
-			for (int j = 0; j < terms.length; j++) {
-				if (x.get(i).equals(newterms[j])) {
-					replaced = true;
-					newterms[j] = c.get(i);
+		for (int i = 0; i < this.terms.length; i++) {
+			if (terms[i] instanceof Variable) {
+				for (int j = 0; j < x.size(); j++) {
+					if (terms[i].equals(x.get(j))) {
+						replaced = true;
+						newTerms[i] = c.get(j);
+						break;
+					}
 				}
-				if (grounded && !(newterms[j] instanceof Constant)) {
+				if (grounded && !(newTerms[i] instanceof Constant)) {
 					grounded = false;
 				}
 			}
 		}
+
 		if (replaced) {
-			Atom a = new Atom(predicate, newterms);
+			Atom a = new Atom(predicate, newTerms);
 			if(grounded) {
 				// Look into the dataset for this grounding.
 				if (predicate.getGroundings().containsKey(a)) {
-					return new Atom(predicate, predicate.getGroundings().get(a), newterms) ;
+					return new Atom(predicate, predicate.getGroundings().get(a), newTerms) ;
 				}
 			}
 			return a;

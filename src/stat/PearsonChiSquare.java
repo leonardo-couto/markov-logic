@@ -10,13 +10,13 @@ import org.apache.commons.math.stat.inference.ChiSquareTestImpl;
  * @author Leonardo Castilho Couto
  *
  */
-public class PearsonChiSquare2D {
+public class PearsonChiSquare {
 	
 	private final ContingencyTable observed;
 	private final ContingencyTable expected;
 	private final ChiSquaredDistribution csd;
 	
-	public PearsonChiSquare2D(ContingencyTable observed, ContingencyTable expected) {
+	public PearsonChiSquare(ContingencyTable observed, ContingencyTable expected) {
 		if (observed.m != expected.m || observed.n != expected.n) {
 			throw new IllegalArgumentException("Observed and expected table dimensions do not match.");
 		}
@@ -25,7 +25,7 @@ public class PearsonChiSquare2D {
 		this.csd = new ChiSquaredDistributionImpl(degreesOfFreedom());
 	}
 	
-	public PearsonChiSquare2D(ContingencyTable observed) {
+	public PearsonChiSquare(ContingencyTable observed) {
 		this.observed = observed;
 		this.expected = observed.expected();
 		this.csd = new ChiSquaredDistributionImpl(degreesOfFreedom());
@@ -35,6 +35,19 @@ public class PearsonChiSquare2D {
 		return (observed.m -1)*(observed.n -1);
 	}
 	
+    /**
+     * Returns the p-value (observed significance level) associates with
+     * a ChiSquare two sample teste comparing bin frequency counts in
+     * <code>observed</code> and <code>expected</code>.
+     * 
+     * The number returned is the smallest significance level at which one
+     * can reject the null hypothesis that the observed and expected counts 
+     * conform to the same distribution.
+     * 
+     * @param observed array of observed frequency counts
+     * @param expected array of expected frequency counts
+     * @return p-value
+     */
 	public double pvalue() {
 		double x2 = 0;
 		for (int i = 0; i < observed.m; i++) {
@@ -63,7 +76,7 @@ public class PearsonChiSquare2D {
 		long[][] ltable = {{62, 16}, {94, 10}};
 		ContingencyTable ct = new ContingencyTable(table);
 		System.out.println(ct.expected());
-		PearsonChiSquare2D test = new PearsonChiSquare2D(ct, ct.expected());
+		PearsonChiSquare test = new PearsonChiSquare(ct, ct.expected());
 		ChiSquareTest cst = new ChiSquareTestImpl();
 		System.out.println("EU: " + test.pvalue());
 		System.out.println("APACHE: " + cst.chiSquare(ltable));

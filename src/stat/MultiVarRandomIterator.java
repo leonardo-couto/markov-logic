@@ -83,7 +83,7 @@ public class MultiVarRandomIterator<T> implements Iterator<List<T>> {
 	public List<T> next() {
 		i++;
 		List<T> out = nextElement;
-		nextElement = makeNext();
+		nextElement = this.makeNext();
 		return out;
 	}
 

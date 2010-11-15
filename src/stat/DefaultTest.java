@@ -34,7 +34,13 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		this.tNodes = tNodes;
 	}
 
-	private void initMarginals(RV x) {
+	/**
+	 * Gets the marginal data and generate a histogram
+	 * with intervals such that all cells have counts
+	 * higher than ten, or it has only two intervals.
+	 * @param x the RandomVariable to get the marginal data. 
+	 */
+	private void initMarginalData(RV x) {
 		double[] data = x.getData();
 		this.marginalData.put(x, data);
 		Histogram h = new Histogram(0.0, 1.0, data);
@@ -58,12 +64,33 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 	@Override
 	public double pvalue(RV x, RV y) {
-		if (!this.marginalData.containsKey(x)) {
-			this.initMarginals(x);
+		if (!this.marginalData.containsKey(x)) { this.initMarginalData(x); }
+		if (!this.marginalData.containsKey(y)) { this.initMarginalData(y); }
+		
+		int dimension = 2;
+		int[] marginalDataX = this.marginalDataHist.get(x);
+		int[] marginalDataY = this.marginalDataHist.get(y);
+		double[] marginalProportionX = new double[marginalDataX.length];
+		double[] marginalProportionY = new double[marginalDataY.length];
+		int sumX = 0, sumY = 0;
+		for (int value : marginalDataX) { sumX = sumX + value; };
+		for (int value : marginalDataY) { sumY = sumY + value; };
+		for (int i = 0; i < marginalDataX.length; i++) { 
+			marginalProportionX[i] = ((double) marginalDataX[i])/sumX;
+		};
+		for (int i = 0; i < marginalDataY.length; i++) { 
+			marginalProportionY[i] = ((double) marginalDataY[i])/sumY;
+		};
+		// TODO: ISSO AQUI EH UM CROSSJOIN DE DOIS VETORES!! achar um método que faz isso.
+		double[][] proportionMatrix = new double[marginalDataX.length][marginalDataY.length];
+		for (int i = 0; i < proportionMatrix.length; i++) {
+			for (int j = 0; j < proportionMatrix[i].length; j++) {
+				proportionMatrix[i][j] = marginalProportionX[i] * marginalProportionY[j];
+			}
 		}
-		if (!this.marginalData.containsKey(y)) {
-			initMarginals(y);
-		}
+		
+		
+		
 		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, Collections.<RV>emptyList());
 		// TODO: testar a convergencia ao invez de pegar todos os dados? Fazer o teste rodar paralelamente?
 		List<double[]> data = new ArrayList<double[]>();
@@ -88,7 +115,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 		ContingencyTable ct = new ContingencyTable(matrix);
 		if (ct.pearson()) {
-			return (new PearsonChiSquare2D(ct)).pvalue();
+			return (new PearsonChiSquare(ct)).pvalue();
 		}
 		return fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
 	}
@@ -137,7 +164,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			data.add(dataIterator.next());
 		}
 
-		if (data == null) {
+		if (data.isEmpty()) {
 			// Return false (X and Y dependent) to do not
 			// break Strong Union axiom.
 			return false;
@@ -150,7 +177,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 		for (RV rv : nodes) {
 			if (!marginalData.containsKey(rv)) {
-				initMarginals(rv);
+				initMarginalData(rv);
 			}
 		}
 
@@ -175,7 +202,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 			ContingencyTable ct = new ContingencyTable(matrix);
 			if (ct.pearson()) {
-				double pvalue = (new PearsonChiSquare2D(ct)).pvalue();
+				double pvalue = (new PearsonChiSquare(ct)).pvalue();
 				if (Double.compare(pvalue, this.alpha) < 1) {
 					independent = false;
 					break;

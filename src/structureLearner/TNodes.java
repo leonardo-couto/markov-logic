@@ -30,7 +30,7 @@ public class TNodes<T extends RandomVariable<T>> implements Set<T> {
 
 	private final UndirectedGraph<T, DefaultEdge> tNodes;
 
-  public TNodes() {
+	public TNodes() {
 		tNodes = new SimpleGraph<T, DefaultEdge>(DefaultEdge.class);
 	}
 
@@ -41,13 +41,14 @@ public class TNodes<T extends RandomVariable<T>> implements Set<T> {
 
 	@Override
 	public boolean add(T e) {
-		Set<T> nodes = this.tNodes.vertexSet();
 		if (!this.tNodes.addVertex(e)) {
 			return false;
 		}
-		for (T node : nodes) {
-			if (!e.isIndependent(node)) {
-				this.tNodes.addEdge(e, node);
+		for (T node : this.tNodes.vertexSet()) {
+			if (!node.equals(e)) {
+				if (!e.isIndependent(node)) {
+					this.tNodes.addEdge(e, node);
+				}
 			}
 		}
 		return true;
@@ -57,7 +58,8 @@ public class TNodes<T extends RandomVariable<T>> implements Set<T> {
 	public boolean addAll(Collection<? extends T> c) {
 		boolean modified = false;
 		for (T element : c) {
-			modified = modified || this.add(element);
+			boolean b = this.add(element);
+			modified =  modified || b;
 		}
 		return modified;
 	}
@@ -101,7 +103,8 @@ public class TNodes<T extends RandomVariable<T>> implements Set<T> {
 	public boolean removeAll(Collection<?> c) {
 		boolean modified = false;
 		for (Object element : c) {
-			modified = modified || this.remove(element);
+			boolean b = this.remove(element);
+			modified = modified || b;
 		}
 		return modified;
 	}
@@ -132,38 +135,34 @@ public class TNodes<T extends RandomVariable<T>> implements Set<T> {
 	public <P> P[] toArray(P[] a) {
 		return this.tNodes.vertexSet().toArray(a);
 	}
-	
+
 	public UndirectedGraph<T, DefaultEdge> getGraph() {
-	    return tNodes;
-	 }
-	
-	 public Iterator<double[]> getDataIterator(T x, T y, List<T> z) {
-	    Set<T> nodes = new HashSet<T>(z);
-	    nodes.add(x);
-	    nodes.add(y);
-	    Graph<T, DefaultEdge> graph = new Subgraph<T, DefaultEdge, UndirectedGraph<T, DefaultEdge>>(this.tNodes, nodes);
-	    
-	    if (DijkstraShortestPath.findPathBetween(graph, x, y) == null) {
-	      return Collections.<double[]>emptyList().iterator();
-	    }
-	    
-	    List<T> nodesList = new ArrayList<T>(z.size()+2);
-	    
-	    for (T node : nodes) {
-	      if (DijkstraShortestPath.findPathBetween(graph, x, node) == null) {
-	        nodesList.add(x.emptyVariable());
-	      } else {
-	        nodesList.add(node);
-	      }
-	    }
-	    nodesList.add(x);
-	    nodesList.add(y);
-	    
-	    
-	    
-	    
-	    // TODO: PAREI AQUI!!!!
-	    return null;
-	  }
+		return tNodes;
+	}
+
+	public Iterator<double[]> getDataIterator(T x, T y, List<T> z) {
+		Set<T> nodes = new HashSet<T>(z);
+		nodes.add(x);
+		nodes.add(y);
+		Graph<T, DefaultEdge> graph = new Subgraph<T, DefaultEdge, UndirectedGraph<T, DefaultEdge>>(this.tNodes, nodes);
+
+		if (DijkstraShortestPath.findPathBetween(graph, x, y) == null) {
+			return Collections.<double[]>emptyList().iterator();
+		}
+
+		List<T> nodesList = new ArrayList<T>(z.size()+2);
+
+		for (T node : z) {
+			if (DijkstraShortestPath.findPathBetween(graph, x, node) == null) {
+				nodesList.add(x.emptyVariable());
+			} else {
+				nodesList.add(node);
+			}
+		}
+		nodesList.add(x);
+		nodesList.add(y);
+
+		return x.getDataIterator(nodesList);
+	}
 
 }

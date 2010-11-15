@@ -8,6 +8,9 @@ import java.util.List;
 
 import parse.ParseDataSet;
 import parse.ParseDomain;
+import stat.DefaultTest;
+import stat.IndependenceTest;
+import structureLearner.TNodes;
 import GSIMN.GSIMN;
 import fol.Predicate;
 
@@ -32,7 +35,9 @@ public class Main {
 //		Set<Atom> tnodes = FormulaGenerator.getTNodes(domain.getPredicates(), settings.maxVar);
 		System.out.println("running GSIMN...");
 //		GSIMN<Atom> gs = new GSIMN<Atom>(tnodes, settings.itest, settings.alpha); // TODO: USAR ESSE!!
-		GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), settings.itest, settings.alpha);
+		TNodes<Predicate> tNodes = new TNodes<Predicate>(domain.getPredicates());
+		IndependenceTest<Predicate> iTest = new DefaultTest<Predicate>(0.05, tNodes);
+		GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), iTest, settings.alpha);
 		//GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), new DefaultTest<Predicate>(settings.alpha), settings.alpha);
 		System.out.println(gs.run());
 	}
@@ -66,10 +71,10 @@ public class Main {
 	public static void main(String[] args) {
 		List<File> db = new ArrayList<File>();
 		db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.1.db"));
-		//db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.2.db"));
-		//db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.3.db"));
-		//db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.4.db"));
-		//db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.5.db"));		
+		db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.2.db"));
+		db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.3.db"));
+		db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.4.db"));
+		db.add(new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.5.db"));		
 		Settings settings = new Settings(new File("/home/leonardo/opt/alchemy/datasets/imdb/empty.mln"), db , null);
 		//settings.itest = new MockIndependenceTest<Predicate>();
 		Main m = new Main(settings);

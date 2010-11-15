@@ -52,7 +52,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 		
 		// TODO: PARALELIZAR? PROCURAR FOR PARALELO NO JAVA
 		// TODO: remover prints;
-		int npv = V.size()*(V.size()-1);
+		int npv = (V.size()*(V.size()-1))/2;
 		int blah = 0;
 		for (RV X : V) {
 			aux.remove(X);

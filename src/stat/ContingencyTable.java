@@ -4,10 +4,15 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 
 /**
- * @author Leonardo Castilho Couto
- *
+ * <strong>Contingency table preconditions</strong>: <ul>
+ * <li>Observed counts must be non-negative.</li>
+ * <li>Observed counts for a specific sample must not all be 0.</li>
+ * <li>The arrays length must be at least 2.</li>
+ * 
+ * If any of the preconditions are not met, an
+ * <code>IllegalArgumentException</code> is thrown.</p>
  */
-public class ContingencyTable {
+public class ContingencyTable { // TODO: EXTENDER Array2DRowRealMatrix
 	
 	// Checa a tabela
 	// cria uma expected table
@@ -155,10 +160,12 @@ public class ContingencyTable {
 	 * Check if conditions to apply the Pearson Chi Squared independence
 	 * test are met.
 	 * The recommendation is that every cell as more than five counts.
+	 * TODO: E NUMERO DE ELEMENTOS MENOR QUE X, CASO CONTRARIO APLICAR PEARSON COM
+	 * YATTES CORRECAO!!
 	 * @return true if conditions to apply pearson test are met.
 	 */
 	public boolean pearson() {
-		return pearson;
+		return this.pearson;
 	}
 	
 	/**
@@ -167,7 +174,7 @@ public class ContingencyTable {
 	 * @return true if the contingency table is 2x2.
 	 */
 	public boolean fisher() {
-		return fisher;
+		return this.fisher;
 	}
 	
 	/**

@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math.util.MathUtils;
+
 import stat.RandomVariable;
 import stat.Sampler;
 import structureLearner.FormulaGenerator;
@@ -184,8 +186,8 @@ public class Predicate implements RandomVariable<Predicate> {
 		return out;
 	}
 
-	public static Iterator<double[]> staticDataIterator(List<Predicate> nodes) {
-		
+	private static Iterator<double[]> staticDataIterator(List<Predicate> nodes) {
+
 		Set<Variable> variablesSet = new HashSet<Variable>();
 		final List<Atom> atoms = new ArrayList<Atom>();
 		for (Predicate p : nodes) {
@@ -197,56 +199,72 @@ public class Predicate implements RandomVariable<Predicate> {
 				atoms.add(Atom.FALSE);
 			}
 		}
-		
+
 		final List<Variable> variables = new ArrayList<Variable>(variablesSet);
 		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
+		int size = 1;
 		for (Variable v : variables) {
-			constants.add(v.getConstants());
+			Set<Constant> set = v.getConstants();
+			constants.add(set);
+			try {
+				size = MathUtils.mulAndCheck(size, set.size());
+			} catch (ArithmeticException e) {
+				size = Integer.MAX_VALUE;
+			}
 		}
-		
+
 		final Sampler<Constant> sampler = new Sampler<Constant>(constants);
+		sampler.setMaxSamples(size);
 		final Iterator<List<Constant>> iterator = sampler.iterator();
-		
+
 		return new Iterator<double[]>() {
+
+			private double[] next = this.makeNext();
+			
+			private double[] makeNext() {
+				double[] out = new double[atoms.size()];
+				next:
+					while (iterator.hasNext()) {
+						List<Constant> grounds = iterator.next();
+						int outIndex = 0;
+						for (Atom a : atoms) {
+							a = a.replaceVariables(variables, grounds);
+							double d = a.getValue();
+							if (Double.isNaN(d)) {
+								continue next; // try to find another set of grounds
+							} else {
+								out[outIndex] = d;
+								outIndex++;
+							}
+						}
+						return out;
+					}
+				return null;
+			}
 
 			@Override
 			public boolean hasNext() {
-				return iterator.hasNext();
+				return (this.next != null);
 			}
 
 			@Override
 			public double[] next() {
-				double[] out = new double[atoms.size()];
-				next:
-				while (iterator.hasNext()) {
-					List<Constant> grounds = iterator.next();
-					int outIndex = 0;
-					for (Atom a : atoms) {
-						a.replaceVariables(variables, grounds);
-						double d = a.getValue();
-						if (Double.isNaN(d)) {
-							continue next; // try to find another set of grounds
-						} else {
-							out[outIndex] = d;
-							outIndex++;
-						}
-					}
-					return out;
-				}
-				return null;
+				double[] out = this.next;
+				this.next = this.makeNext();
+				return out;
 			}
 
 			@Override
 			public void remove() {
 				// do nothing				
 			}
-			
+
 		};
 	}
 
 	@Override
 	public Iterator<double[]> getDataIterator(List<Predicate> nodes) {
-		return getDataIterator(nodes);
+		return staticDataIterator(nodes);
 	}
 
 
