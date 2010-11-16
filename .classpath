@@ -2,14 +2,14 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/home/leonardo/opt/workspace/commons-math-2.0/commons-math-2.0.jar" sourcepath="/home/leonardo/opt/workspace/commons-math-2.0/commons-math-2.0-sources.jar">
+	<classpathentry kind="lib" path="libs/commons-math-2.0/commons-math-2.0.jar" sourcepath="libs/commons-math-2.0/commons-math-2.0-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/home/leonardo/opt/workspace/commons-math-2.0/commons-math-2.0-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/mestrado/libs/commons-math-2.0/commons-math-2.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/home/leonardo/opt/workspace/jgrapht-0.8.1/jgrapht-jdk1.6.jar" sourcepath="/home/leonardo/opt/workspace/jgrapht-0.8.1/src/">
+	<classpathentry kind="lib" path="libs/jgrapht-0.8.1/jgrapht-jdk1.6.jar" sourcepath="libs/jgrapht-0.8.1/src">
 		<attributes>
-			<attribute name="javadoc_location" value="file:/home/leonardo/opt/workspace/jgrapht-0.8.1/javadoc/"/>
+			<attribute name="javadoc_location" value="file:/home/leonardo/opt/workspaces/mestrado/mestrado/libs/jgrapht-0.8.1/javadoc/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>

@@ -158,7 +158,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	public boolean test(RV x, RV y,	Set<RV> z) {
 
 		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, new ArrayList<RV>(z));
-		// TODO: testar a converg�ncia ao invez de pegar todos os dados? Fazer o teste rodar paralelamente?
+		// TODO: testar a convergencia ao invez de pegar todos os dados? Fazer o teste rodar paralelamente?
 		List<double[]> data = new ArrayList<double[]>();
 		while (dataIterator.hasNext()) {
 			data.add(dataIterator.next());
