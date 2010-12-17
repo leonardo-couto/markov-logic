@@ -52,7 +52,7 @@ public class ConvergenceTester {
 	}
 	
 	public boolean hasConverged() {
-		return converged;
+		return this.converged;
 	}
 
 	public boolean increment(double next) {
