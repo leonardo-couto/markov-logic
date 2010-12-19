@@ -12,7 +12,7 @@ import java.util.Arrays;
  * If any of the preconditions are not met, an
  * <code>IllegalArgumentException</code> is thrown.</p>
  */
-public class ContingencyTable { // TODO: EXTENDER Array2DRowRealMatrix
+public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 	
 	// Checa a tabela
 	// cria uma expected table
@@ -207,6 +207,14 @@ public class ContingencyTable { // TODO: EXTENDER Array2DRowRealMatrix
 			s = s + "]\n";
 		}
 		return s.substring(0, s.length()-1);
+	}
+	
+	public void applyYates() { // TODO: ERRADO, ARRUMAR!
+		for (double[] d : table) {
+			for (int i = 0; i < d.length; i++) {
+				d[i] = d[i] + 0.5;
+			}
+		}
 	}
 
 

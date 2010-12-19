@@ -40,15 +40,13 @@ public class Sampler<T> implements Iterable<List<T>> {
 			n = MathUtils.mulAndCheck(n, domains.get(i).size());
 
 			// test for population size
-			if (noReplacement && n < NO_REPLACEMENT_LIMIT) {
-
-				if (shuffle && n > SHUFFLE_LIMIT) {
-					shuffle = false;
-				}
-				if (n > NO_REPLACEMENT_LIMIT) {
-					noReplacement = false;
-				}
+			if (shuffle && n > SHUFFLE_LIMIT) {
+				shuffle = false;
 			}
+			if (noReplacement && n > NO_REPLACEMENT_LIMIT) {
+				noReplacement = false;
+			}
+
 		}
 		if (n == 0) {
 			this.empty = true;

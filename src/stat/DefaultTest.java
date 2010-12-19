@@ -76,8 +76,8 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		}
 
 
-		int increment = 10*cells;
-		int sampledElements = 2*increment;
+		int increment = 100*cells;
+		int sampledElements = 3*increment;
 
 		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, z);
 		List<double[]> data = new ArrayList<double[]>(sampledElements);
@@ -141,13 +141,16 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 					if (ct.fisher() && ct.getSum() < 100.0) {
 						pvalues[i] = fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
 					} else {
-						PearsonChiSquare pearson = new PearsonChiSquare(ct);
 						if (ct.pearson()) {
+							PearsonChiSquare pearson = new PearsonChiSquare(ct);
 							pvalues[i] = pearson.pvalue();
 						} else {
 							// TODO: APLICAR CORRECAO DE YATES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 							// problemas: com muitas dimensoes podem ter zeros, ver o que fazer
-							pvalues[i] = 0.99; // por enquanto devolve um alto p-value, mas esta errado!
+							//pvalues[i] = 0.993; // por enquanto devolve um alto p-value, mas esta errado!
+							ct.applyYates();
+							PearsonChiSquare pearson = new PearsonChiSquare(ct);
+							pvalues[i] = pearson.pvalue();
 						}
 					}
 					i++;
@@ -156,6 +159,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 			// TODO: SE A ARRAY FOR MUITO GRANDE, PEGAR A MEDIA DOS 10% MENORES!!
 			double pvalue = min(pvalues);
+			System.out.println("pvalue: " + pvalue);
 			tester.increment(pvalue);
 			if (!getNextNElements(data, dataIterator, increment)) {
 				if (data.isEmpty()) {
@@ -213,7 +217,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 	@Override
 	public boolean test(RV x, RV y,	Set<RV> z) {
-		boolean independent = Double.compare(this.getPvalue(x, y, new ArrayList<RV>(z)), this.alpha) > 1;
+		boolean independent = Double.compare(this.getPvalue(x, y, new ArrayList<RV>(z)), this.alpha) > 0;
 		return independent;
 	}
 

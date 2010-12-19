@@ -60,12 +60,12 @@ public class PearsonChiSquare {
 			// a long time returns an exception, if x2 cumulative probability is higher
 			// than 0.99 do not run the test.
 			if (Double.compare(csd.inverseCumulativeProbability(0.99),x2) < 0) {
-				return 0.01;
+				return 0.005;
 			}
 			return 1.0 - csd.cumulativeProbability(x2);
 		} catch (MathException e) {
 			e.printStackTrace();
-			return 0.99;
+			return 0.999;
 		}
 	}
 	
