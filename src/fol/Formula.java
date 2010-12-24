@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import main.Settings;
-import stat.ConvergenceTester;
+import stat.SequentialConvergenceTester;
 import stat.Sampler;
 import util.ListPointer;
 
@@ -213,7 +213,7 @@ public class Formula implements Comparable<Formula> {
 		}
 
 		List<Atom> original = this.atoms;
-		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
+		SequentialConvergenceTester tester = SequentialConvergenceTester.lowPrecisionConvergence();
 
 		for (List<Constant> arg : sampler) {
 			this.atoms = replaceAtomVariables(original, variables, arg);

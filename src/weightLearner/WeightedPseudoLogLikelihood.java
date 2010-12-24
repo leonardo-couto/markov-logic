@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import main.Settings;
-import stat.ConvergenceTester;
+import stat.SequentialConvergenceTester;
 import stat.Sampler;
 import util.ListPointer;
 import fol.Atom;
@@ -355,7 +355,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 
 		public void addFormula(Formula formula) {
-			ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
+			SequentialConvergenceTester tester = SequentialConvergenceTester.lowPrecisionConvergence();
 
 
 			if (!this.atoms.isEmpty()) {

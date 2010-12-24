@@ -98,7 +98,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		//int xyMatrices = cells / (nbins[nbins.length-2] + nbins[nbins.length-1]);
 
 		MultiDimensionalHistogram histogram = new MultiDimensionalHistogram(nodes.size());
-		ConvergenceTester tester = ConvergenceTester.lowPrecisionConvergence();
+		SequentialConvergenceTester tester = SequentialConvergenceTester.lowPrecisionConvergence();
 		histogram.addAll(data);
 		data.clear();
 
