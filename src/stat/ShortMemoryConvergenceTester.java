@@ -1,5 +1,7 @@
 package stat;
 
+import java.util.Arrays;
+
 public class ShortMemoryConvergenceTester extends SequentialConvergenceTester {
 	
 	private final int memory;
@@ -39,8 +41,16 @@ public class ShortMemoryConvergenceTester extends SequentialConvergenceTester {
 
 	@Override
 	public boolean evaluate(double[] values) {
-		// TODO Auto-generated method stub
-		return super.evaluate(values);
+		if (values.length > this.memory) {
+			values = Arrays.copyOfRange(values, values.length-memory, values.length);
+			this.index = this.memory;
+		} else {
+			this.index = values.length;
+		}
+		boolean b = super.evaluate(values);
+		this.mean = super.mean();
+		this.variance = super.variance();
+		return b;
 	}
 
 	@Override
