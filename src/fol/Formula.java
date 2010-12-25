@@ -213,7 +213,7 @@ public class Formula implements Comparable<Formula> {
 		}
 
 		List<Atom> original = this.atoms;
-		SequentialConvergenceTester tester = SequentialConvergenceTester.lowPrecisionConvergence();
+		SequentialConvergenceTester tester = new SequentialConvergenceTester(.95, .05);
 
 		for (List<Constant> arg : sampler) {
 			this.atoms = replaceAtomVariables(original, variables, arg);

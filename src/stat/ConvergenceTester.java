@@ -48,7 +48,7 @@ public class ConvergenceTester {
 			double tStudent = inverseCumulative(tStudentDist,confidenceLevel);
 			tStudentList.add(new Double(tStudent));
 			if (Double.compare(Math.abs(tStudent-normal), epslon) < 1) {
-				b = true;
+				b = false;
 			}
 			i++;
 		}
@@ -89,7 +89,7 @@ public class ConvergenceTester {
 		} else {
 			// TODO: Caso w = 0 varias vezes, calcular o numero de vezes para determinado
 			// grau de confianca e erro. Assumir uma distribuicao discreta de 0 e 1.
-			if (n > 10) {
+			if (n >= 10) {
 				return true;
 			}
 		}
@@ -97,11 +97,11 @@ public class ConvergenceTester {
 	}
 
 	public double getPrecision() {
-		return precision;
+		return this.precision;
 	}
 
 	public double getConfidenceLevel() {
-		return confidenceLevel;
+		return this.confidenceLevel;
 	}	
 
 	/**

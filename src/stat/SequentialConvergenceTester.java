@@ -27,29 +27,25 @@ public class SequentialConvergenceTester {
 	}
 
 	public boolean hasConverged() {
-		return this.converged;
+		return this.testConvergence();
 	}
 
 	public boolean increment(double next) {
 		this.count++;
-		this.testConvergence(next);
-		return this.converged;
+		this.mean.increment(next);
+		this.variance.increment(next);
+		return this.testConvergence();
 	}
 
-	private void testConvergence(double nextValue) {
-		this.mean.increment(nextValue);
-		this.variance.increment(nextValue);
-
+	private boolean testConvergence() {
 		// need to converge twice before setting this.converged = true;
-		if (tester.hasConverged(this.variance(), this.mean(), this.count)) {
-			if(this.convergedOnce) {
-				this.converged = true;
-			} else {
-				this.convergedOnce = true;
-			}
-		} else {
-			this.convergedOnce = false;
+		if (tester.hasConverged(this.variance(), this.mean(), this.getCount())) {
+			this.converged = this.convergedOnce ? true : false;
+			this.convergedOnce = true;
+			return this.converged;
 		}
+		this.convergedOnce = false;
+		return false;
 	}
 
 
@@ -57,7 +53,7 @@ public class SequentialConvergenceTester {
 		this.count = values.length;
 		this.mean.evaluate(values);
 		this.variance.evaluate(values);
-		if (tester.hasConverged(this.variance(), this.mean(), this.count)) {
+		if (tester.hasConverged(this.variance(), this.mean(), this.getCount())) {
 			this.convergedOnce = true;
 			this.converged = true;
 		}
@@ -90,5 +86,16 @@ public class SequentialConvergenceTester {
 		return this.variance.getResult();
 	}
 	
+	public int getCount() {
+		return this.count;
+	}
+	
+	public double getPrecision() {
+		return this.tester.getPrecision();
+	}
+
+	public double getConfidenceLevel() {
+		return this.tester.getConfidenceLevel();
+	}	
 
 }

@@ -355,7 +355,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 
 		public void addFormula(Formula formula) {
-			SequentialConvergenceTester tester = SequentialConvergenceTester.lowPrecisionConvergence();
+			SequentialConvergenceTester tester = new SequentialConvergenceTester(.95, .05);
 
 
 			if (!this.atoms.isEmpty()) {

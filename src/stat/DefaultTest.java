@@ -75,7 +75,6 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			cells = cells * this.marginalData.get(r).maxBins;
 		}
 
-
 		int increment = 100*cells;
 		int sampledElements = 3*increment;
 
@@ -98,7 +97,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		//int xyMatrices = cells / (nbins[nbins.length-2] + nbins[nbins.length-1]);
 
 		MultiDimensionalHistogram histogram = new MultiDimensionalHistogram(nodes.size());
-		SequentialConvergenceTester tester = SequentialConvergenceTester.lowPrecisionConvergence();
+		SequentialConvergenceTester tester = new ShortMemoryConvergenceTester(.95, .01, 10);
 		histogram.addAll(data);
 		data.clear();
 
@@ -163,6 +162,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			tester.increment(pvalue);
 			if (!getNextNElements(data, dataIterator, increment)) {
 				if (data.isEmpty()) {
+					System.out.println("Pegou todos os elementos");
 					return pvalue;
 				}
 			}
@@ -172,6 +172,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			nbins = Arrays.copyOf(originalNbins, originalNbins.length);
 
 		}
+		System.out.println("CONVERGIU");
 
 		return tester.mean();
 	}

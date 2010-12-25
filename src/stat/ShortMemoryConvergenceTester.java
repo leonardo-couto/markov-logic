@@ -19,7 +19,6 @@ public class ShortMemoryConvergenceTester extends SequentialConvergenceTester {
 		this.index = 0;
 	}
 	
-	
 	@Override
 	public boolean increment(double next) {
 		if (this.index < this.memory) {
@@ -71,5 +70,8 @@ public class ShortMemoryConvergenceTester extends SequentialConvergenceTester {
 		return this.variance;
 	}
 	
-
+	@Override
+	public int getCount() {
+		return Math.min(index, memory);
+	}
 }
