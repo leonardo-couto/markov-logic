@@ -5,7 +5,7 @@ package fol;
  * @author Leonardo Castilho Couto
  *
  */
-public class Disjunction extends Operator {
+public final class Disjunction extends Operator {
 	
 	private static final String disjunctionOP = "v";
 	private static final int disjunctionArity = 2;
@@ -19,7 +19,7 @@ public class Disjunction extends Operator {
 	}
 	
 	@Override
-	public double _value(double ... values) {
+	protected double _value(double ... values) {
 		return or(values[0], values[1]);
 	}
 

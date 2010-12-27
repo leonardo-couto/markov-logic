@@ -8,7 +8,7 @@ import java.util.List;
  * @author Leonardo Castilho Couto
  *
  */
-public class Negation extends Operator {
+public final class Negation extends Operator {
 	
 	private static final String negationOP = "!";
 	private static final int negationArity = 1;
@@ -22,7 +22,7 @@ public class Negation extends Operator {
 	}
 	
 	@Override
-	public double _value(double ... values) {
+	protected double _value(double ... values) {
 		return not(values[0]);
 	}
 

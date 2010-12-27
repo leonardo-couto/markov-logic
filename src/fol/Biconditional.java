@@ -5,7 +5,7 @@ package fol;
  * @author Leonardo Castilho Couto
  *
  */
-public class Biconditional extends Operator {
+public final class Biconditional extends Operator {
 	
 	private static final String biconditionalOP = "<->";
 	private static final int biconditionalArity = 2;
@@ -19,7 +19,7 @@ public class Biconditional extends Operator {
 	}
 	
 	@Override
-	public double _value(double ... values) {
+	protected double _value(double ... values) {
 		return bic(values[0], values[1]);
 	}
 

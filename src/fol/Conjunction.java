@@ -5,7 +5,7 @@ package fol;
  * @author Leonardo Castilho Couto
  *
  */
-public class Conjunction extends Operator {
+public final class Conjunction extends Operator {
 	
 	private static final String conjunctionOP = "^";
 	private static final int conjunctionArity = 2;
@@ -19,7 +19,7 @@ public class Conjunction extends Operator {
 	}
 	
 	@Override
-	public double _value(double ... values) {
+	protected double _value(double ... values) {
 		return and(values[0], values[1]);
 	}
 

@@ -5,7 +5,6 @@ package fol;
  *
  */
 public abstract class Operator {
-	// TODO: SUBCLASSES SERAO SINGLETON, TODOS OS ATRIBUTOS FINAL!
 
 	protected final int arity;
 	protected final String operator;
