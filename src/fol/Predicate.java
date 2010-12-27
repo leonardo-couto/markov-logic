@@ -31,7 +31,7 @@ public class Predicate implements RandomVariable<Predicate> {
 	private Set<Atom> neGroundings;
 
 	public static final Predicate equals = new Predicate("equals", Domain.universe, Domain.universe);
-	public static final Predicate emptyPredicate = new Predicate("empty", Collections.<Domain>emptyList());
+	public static final Predicate empty = new Predicate("empty", Collections.<Domain>emptyList());
 
 	/**
 	 * 
@@ -191,7 +191,7 @@ public class Predicate implements RandomVariable<Predicate> {
 		Set<Variable> variablesSet = new HashSet<Variable>();
 		final List<Atom> atoms = new ArrayList<Atom>();
 		for (Predicate p : nodes) {
-			if (!p.equals(emptyPredicate)) {
+			if (!p.equals(empty)) {
 				Atom a = FormulaGenerator.generateAtom(p, variablesSet);
 				variablesSet.addAll(a.getVariables());
 				atoms.add(a);
@@ -281,13 +281,13 @@ public class Predicate implements RandomVariable<Predicate> {
 	}
 
 	@Override
-	public boolean isIndependent(Predicate y) {
-		return !shareDomain(this, y);
+	public boolean isConnected(Predicate y) {
+		return shareDomain(this, y);
 	}
 
 	@Override
 	public Predicate emptyVariable() {
-		return emptyPredicate;
+		return empty;
 	}
 
 }

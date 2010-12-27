@@ -24,13 +24,12 @@ public interface RandomVariable<T extends RandomVariable<?>> extends NameID {
    * @return true if both RandomVariables are independent in
    * the absence of other variables.
    */
-	public boolean isIndependent(T y);
+	public boolean isConnected(T y);
 	
 	/**
 	 * TODO: refazer esse comentário!
 	 * Devolve valores de TNodes na ordem Z_0, Z_1, ... , Z_n, X, Y. Onde
-	 * X = this. 
-	 * TODO: devolver um iterador!!!
+	 * X = this.
 	 * TODO: ver o que fazer quando a variavel nao estiver conectada pelo grafo!
 	 * @return This variable marginal data.
 	 */

@@ -46,7 +46,7 @@ public class TNodes<T extends RandomVariable<T>> implements Set<T> {
 		}
 		for (T node : this.tNodes.vertexSet()) {
 			if (!node.equals(e)) {
-				if (!e.isIndependent(node)) {
+				if (e.isConnected(node)) {
 					this.tNodes.addEdge(e, node);
 				}
 			}

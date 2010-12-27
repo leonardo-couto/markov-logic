@@ -1,11 +1,19 @@
 package fol;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.math.util.MathUtils;
+
+import stat.RandomVariable;
+import stat.Sampler;
+import util.MyException;
 import util.NameID;
 import util.Util;
 
@@ -13,14 +21,14 @@ import util.Util;
  * @author Leonardo Castilho Couto
  *
  */
-public final class Atom extends Formula implements NameID { // implements RandomVariable<Atom> {
+public final class Atom extends Formula implements NameID, RandomVariable<Atom> {
 	
 	public final Predicate predicate;
 	public final Term[] terms;
 	public final double value;	
 	
-  public static final Atom TRUE = new Atom(Predicate.emptyPredicate, 1, Collections.<Term>emptyList());
-  public static final Atom FALSE = new Atom(Predicate.emptyPredicate, 0, Collections.<Term>emptyList());	
+  public static final Atom TRUE = new Atom(Predicate.empty, 1, Collections.<Term>emptyList());
+  public static final Atom FALSE = new Atom(Predicate.empty, 0, Collections.<Term>emptyList());	
 
 	/**
 	 * @param formulas
@@ -213,183 +221,111 @@ public final class Atom extends Formula implements NameID { // implements Random
 	public Atom copy() {
 		return new Atom(this.predicate, this.value, Arrays.copyOf(this.terms,this.terms.length));
 	}
-
-//	@Override 
-//	public double[] getData() {
-//		Map<Atom, Double> groundings = predicate.getGroundings();
-//		if (!this.variablesOnly()) {
-//			throw new MyException("Cannot handle TNodes with constants yet.");
-//		}
-//		double[] out = new double[groundings.size()];
-//		int i = 0;
-//		for (Double d : groundings.values()) {
-//			out[i] = d.doubleValue();
-//			i++;
-//		}
-//		return out;
-//
-//	}
-
-//	@Override
-//	public double[][] getData(Atom Y, List<Atom> Z) {
-//		
-//		// Make a graph of all Atoms as vertices, where the atoms that share a variable
-//		// are connected with a edge
-//		UndirectedGraph<Atom, DefaultEdge> graph = new SimpleGraph<Atom, DefaultEdge>(DefaultEdge.class);
-//		graph.addVertex(this);
-//		graph.addVertex(Y);
-//		if (shareVariable(this, Y)) {
-//			graph.addEdge(this, Y);
-//		}
-//		
-//		for (Atom a : Z) {
-//			graph.addVertex(a);
-//			if (shareVariable(this, a)) {
-//				graph.addEdge(this, a);
-//			}
-//			if (shareVariable(Y, a)) {
-//				graph.addEdge(Y, a);
-//			}
-//		}
-//		
-//		for (int i = 0; i < Z.size(); i++) {
-//			for (int j = i +1; j < Z.size(); j++) {
-//				if (shareVariable(Z.get(i), Z.get(j))) {
-//					graph.addEdge(Z.get(i), Z.get(j));
-//				}
-//			}
-//		}
-//		// End construction of graph
-//
-//		// If there is no path between X and Y, there is no data for then
-//		if (DijkstraShortestPath.findPathBetween(graph, this, Y) == null) {
-//			return null;
-//		}
-//		
-//		Map<Variable, Constant> ground = new HashMap<Variable,Constant>();
-//		Map<Atom, Variable[]> aVars = new HashMap<Atom, Variable[]>();
-//		Map<Atom, Constant[]> aCons = new HashMap<Atom, Constant[]>();
-//		Map<Atom, Double> lastValue = new HashMap<Atom, Double>();
-//		
-//		List<Atom> atoms = new ArrayList<Atom>(Z);
-//		atoms.add(this);
-//		atoms.add(Y);
-//		Map<Atom, Boolean> connected = new HashMap<Atom, Boolean>((int) (Math.ceil(atoms.size()*1.4)));
-//		connected.put(this, true);
-//		connected.put(Y, true);
-//		Set<Variable> vSet = new HashSet<Variable>(getVariables());
-//		aVars.put(this, vSet.toArray(new Variable[vSet.size()]));
-//		aCons.put(this, new Constant[vSet.size()]);
-//		{
-//			Set<Variable> v = Y.getVariables();
-//			vSet.addAll(v);
-//			aVars.put(Y, v.toArray(new Variable[v.size()]));
-//			aCons.put(Y, new Constant[v.size()]);
-//		}
-//		for (Atom a : Z) {
-//			if (DijkstraShortestPath.findPathBetween(graph, this, a) == null) {
-//				connected.put(a, false);
-//			} else {
-//				connected.put(a, true);
-//				Set<Variable> v = a.getVariables();
-//				vSet.addAll(v);
-//				aVars.put(a, v.toArray(new Variable[v.size()]));
-//				aCons.put(a, new Constant[v.size()]);
-//			}
-//		}
-//		
-//		// initialize sampler
-//		List<Variable> variables = new ArrayList<Variable>(vSet);
-//		List<Set<Constant>> cList = new ArrayList<Set<Constant>>();
-//		for (Variable v : variables) {
-//			cList.add(v.getConstants());
-//		}
-//		Sampler<Constant> sampler = new Sampler<Constant>(cList);
-//		
-//		//Constant[] c = new Constant[var.length];
-//		List<double[]> out = new ArrayList<double[]>();
-//		boolean converged = false;
-//
-//		constants:
-//		for (List<Constant> constants : sampler) {
-//			// map between the Variable and the sampled Constant
-//			for (int i = 0; i < constants.size(); i++) {
-//				ground.put(variables.get(i), constants.get(i));
-//			}
-//			
-//			for (Atom a : atoms) {
-//				if (connected.get(a)) {
-//					
-//				} else { // not connected
-//					
-//				}
-//			}
-//			
-//		}
-//
-//		constants:
-//		for (long i = 0; i < n; i++) {
-//			
-//			List<double[]> d = new ArrayList<double[]>();
-//			d.add(new double[atoms.size()]);
-//			
-//			for (int j = 0; j < variables.length; j++) {
-//				if (counter[j] == length[j]) {
-//					counter[j] = 0;
-//					counter[j+1]++;
-//				}
-//				//c[j] = constants.get(j)[counter[j]];
-//				ground.put(variables[j], constants.get(j)[counter[j]]);
-//			}
-//			counter[0]++;
-//			
-//			for (int j = 0; j < atoms.size(); j++) {
-//				if (connected.get(atoms.get(j)).booleanValue()) {
-//					Atom a = atoms.get(j);
-//					Variable[] av = aVars.get(a);
-//					Constant[] ac = aCons.get(a);
-//					boolean changed = false;
-//					for (int k = 0; k < av.length; k++) {
-//						if (ground.get(av[k]) != ac[k]) {
-//							changed = true;
-//							ac[k] = ground.get(av[k]);
-//						}
-//					}
-//					double value = 0;
-//					if (changed) {
-//						value = ((Atom) a.replaceVariables(Arrays.asList(av), Arrays.asList(ac))).value;
-//						lastValue.put(a, value);
-//					} else {
-//						value = lastValue.get(a);
-//					}
-//					if (Double.isNaN(value)) {
-//						continue constants;
-//					}
-//					for (double[] elem : d) {
-//						elem[j] = value;
-//					}
-//				} else {
-//					// duplicate array with 0 and 1 in the current position
-//					double[][] copy = new double[d.size()][];
-//					int k = 0;
-//					for (double[] elem : d) {
-//						copy[k] = Arrays.copyOf(elem, elem.length);
-//						copy[k][j] = 1;
-//						elem[j] = 0;
-//						k++;
-//					}
-//					for (double[] elem : copy) {
-//						d.add(elem);
-//					}
-//				}
-//			}
-//			out.addAll(d);			
-//		}
-//			
-//		return out.toArray(new double[out.size()][]);
-//	}
 	
-	@SuppressWarnings("unused")
+	private static Iterator<double[]> staticDataIterator(List<Atom> nodes) {
+
+		final List<Variable> variables = new ArrayList<Variable>();
+		final List<Atom> atoms = new ArrayList<Atom>(nodes);
+		{
+			Set<Variable> variablesSet = new HashSet<Variable>();
+			for (Atom a : nodes) {
+				variablesSet.addAll(a.getVariables());
+			}
+			variables.addAll(variablesSet);
+		}
+
+		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
+		int size = 1;
+		for (Variable v : variables) {
+			Set<Constant> set = v.getConstants();
+			constants.add(set);
+			try {
+				size = MathUtils.mulAndCheck(size, set.size());
+			} catch (ArithmeticException e) {
+				size = Integer.MAX_VALUE;
+			}
+		}
+
+		final Sampler<Constant> sampler = new Sampler<Constant>(constants);
+		sampler.setMaxSamples(size);
+		final Iterator<List<Constant>> iterator = sampler.iterator();
+
+		return new Iterator<double[]>() {
+
+			private double[] next = this.makeNext();
+			
+			private double[] makeNext() {
+				double[] out = new double[atoms.size()];
+				next:
+					while (iterator.hasNext()) {
+						List<Constant> grounds = iterator.next();
+						int outIndex = 0;
+						for (Atom a : atoms) {
+							a = a.replaceVariables(variables, grounds);
+							double d = a.getValue();
+							if (Double.isNaN(d)) {
+								continue next; // try to find another set of grounds
+							} else {
+								out[outIndex] = d;
+								outIndex++;
+							}
+						}
+						return out;
+					}
+				return null;
+			}
+
+			@Override
+			public boolean hasNext() {
+				return (this.next != null);
+			}
+
+			@Override
+			public double[] next() {
+				double[] out = this.next;
+				this.next = this.makeNext();
+				return out;
+			}
+
+			@Override
+			public void remove() {
+				// do nothing				
+			}
+
+		};
+	}
+	
+	@Override
+	public Iterator<double[]> getDataIterator(List<Atom> nodes) {
+		return staticDataIterator(nodes);
+	}
+	
+	@Override
+	public boolean isConnected(Atom y) {
+		return shareVariable(this, y);
+	}
+
+	@Override
+	public Atom emptyVariable() {
+		return TRUE;
+	}
+
+	@Override 
+	public double[] getData() {
+		Map<Atom, Double> groundings = predicate.getGroundings();
+		if (!this.variablesOnly()) {
+			throw new MyException("Cannot handle TNodes with constants yet.");
+		}
+		double[] out = new double[groundings.size()];
+		int i = 0;
+		for (Double d : groundings.values()) {
+			out[i] = d.doubleValue();
+			i++;
+		}
+		return out;
+
+	}
+
 	private static boolean shareVariable(Atom a0, Atom a1) {
 		for (Variable v0 : a0.getVariables()) {
 			for (Variable v1 : a1.getVariables()) {
