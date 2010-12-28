@@ -23,6 +23,7 @@ import util.Util;
  */
 public class Predicate implements RandomVariable<Predicate> {
 	// TODO: ASSURE UNIQUE PREDICATE NAMES.
+	// TODO: PREDICADO NAO TEM QUE IMPLEMENTAR RANDOMVARIABLE!
 
 	private String name;
 	private List<Domain> argDomains;
