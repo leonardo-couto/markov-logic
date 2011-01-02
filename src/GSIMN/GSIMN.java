@@ -21,14 +21,12 @@ import util.Util;
 public class GSIMN<RV extends RandomVariable<RV>> {
 	private UndirectedGraph<RV, DefaultEdge> graph;
 	private Set<RV> V;
-	private final double alpha;
 	private final IndependenceTest<RV> independence;
 
-	public GSIMN(Set<RV> V, IndependenceTest<RV> independence, double alpha) {
+	public GSIMN(Set<RV> V, IndependenceTest<RV> independence) {
 		this.graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
 		this.V = V;
 		this.independence = independence;
-		this.alpha = alpha;
 	}
 	
 	public UndirectedGraph<RV, DefaultEdge> run() {
@@ -100,29 +98,20 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			
 			// Grown phase
 			List<RV> S = new ArrayList<RV>();
-			Map<RV, Double> pvaluesx = WeightedRV.getMap(pvalues.get(X));
 			
 			for (RV Y : lambdaX) {
 				
 				List<RV> lambdaY = lambda.get(Y);
-				
-				// Get the p-value of XY
-				double pvaluexy = pvaluesx.get(Y).doubleValue();
-				
-				// Compares with alpha (significance level)
-				//if(Double.compare(pvaluexy, alpha) < 0) {
-				if(true) {
-					// sao dependentes
-					if(!gsIndependence.test(X, Y, S, independent.get(X), dependent.get(X))) {
-						// move X to the beginning of lambdaY
-						lambdaY.remove(X);
-						lambdaY.add(0, X);
-						// reorders lambdaY
-						lambdaY.removeAll(S);
-						lambdaY.addAll(0, S);
-						
-						S.add(Y);
-					}
+
+				if(!gsIndependence.test(X, Y, S, independent.get(X), dependent.get(X))) {
+					// move X to the beginning of lambdaY
+					lambdaY.remove(X);
+					lambdaY.add(0, X);
+					// reorders lambdaY
+					lambdaY.removeAll(S);
+					lambdaY.addAll(0, S);
+
+					S.add(Y);
 				}
 			}
 			
@@ -168,7 +157,6 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			for (RV Y : aux) {
 				if(dependent.get(X).contains(Y)) {
 					graph.addEdge(X, Y);
-					//this.temp = this.temp +  X.getName() + " - " + Y.getName();	// TODO: remove
 				}
 			}
 		}

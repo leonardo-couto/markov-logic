@@ -37,7 +37,7 @@ public class Main {
 //		GSIMN<Atom> gs = new GSIMN<Atom>(tnodes, settings.itest, settings.alpha); // TODO: USAR ESSE!!
 		TNodes<Predicate> tNodes = new TNodes<Predicate>(domain.getPredicates());
 		IndependenceTest<Predicate> iTest = new DefaultTest<Predicate>(0.05, tNodes);
-		GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), iTest, settings.alpha);
+		GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), iTest);
 		//GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), new DefaultTest<Predicate>(settings.alpha), settings.alpha);
 		System.out.println(gs.run());
 	}
