@@ -24,14 +24,12 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 	private double[] rowSum, colSum;
 	private double sum;
 	public final int m, n;
-	private boolean pearson;
-	private boolean fisher;
+	private ContingencyTable expected = null;
 	
 	public ContingencyTable(int[][] table) {
 		this.table = init(table);
 		m = this.table.length;
 		n = this.table[0].length;
-		this.fisher = ((m == 2) && (n == 2));
 	}
 	
 	public ContingencyTable(double[][] table) {
@@ -39,7 +37,6 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 		this.table = table;
 		m = this.table.length;
 		n = this.table[0].length;
-		this.fisher = ((m == 2) && (n == 2));
 	}
 	
 	protected ContingencyTable(double[][] table, ContingencyTable ct) {
@@ -65,7 +62,6 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 		if (colDimension < 2) {
 			throw new IllegalArgumentException("Must have at least 2 columns.");
 		}
-		boolean pearson = true;
 		int sum = 0;
 		double[] colSum = new double[colDimension];
 		double[] rowSum = new double[table.length];
@@ -84,9 +80,6 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 				if (row[j] < 0) {
 					throw new IllegalArgumentException("All matrix entries must be nonnegative and finite.");
 				}
-				if (row[j] < 6) {
-					pearson = false;
-				}
 				rowSum[i] = rowSum[i] + row[j];
 				colSum[j] = colSum[j] + row[j];
 				dtable[i][j] = row[j];
@@ -96,7 +89,6 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 		this.rowSum = rowSum;
 		this.colSum = colSum;
 		this.sum = sum;
-		this.pearson = pearson;
 		return dtable;	
 	}
 
@@ -132,7 +124,7 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 				if (Double.compare(row[j], 0.0) < 0) {
 					throw new IllegalArgumentException("All matrix entries must be nonnegative and finite.");
 				}
-				if (Double.compare(row[j], 5.0) < 1) {
+				if (Double.compare(row[j], 5.0) < 0) {
 					pearson = false;
 				}
 				rowSum[i] = rowSum[i] + row[j];
@@ -140,32 +132,63 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 				sum = sum + row[j];
 			}
 		}
+		if (pearson) {
+			for (double d : rowSum) {
+				if (Double.compare(d, colSum.length*20) < 0) {
+					pearson = false;
+					break;
+				}
+			}
+		}
+		if (pearson) {
+			for (double d : colSum) {
+				if (Double.compare(d, rowSum.length*20) < 0) {
+					pearson = false;
+					break;
+				}
+			}
+		}
 		this.rowSum = rowSum;
 		this.colSum = colSum;
 		this.sum = sum;
-		this.pearson = pearson;
 	}
 	
 	public ContingencyTable expected() {
-		double[][] expected = new double[table.length][table[0].length];
-		for (int i = 0; i < m; i++) {
-			for (int j = 0; j < n; j++) {
-				expected[i][j] = ((rowSum[i]*colSum[j])/sum);
+		if (this.expected == null) {
+			double[][] expected = new double[table.length][table[0].length];
+			for (int i = 0; i < m; i++) {
+				for (int j = 0; j < n; j++) {
+					expected[i][j] = ((rowSum[i]*colSum[j])/sum);
+				}
 			}
+			this.expected = new ContingencyTable(expected, this);
 		}
-		return new ContingencyTable(expected, this);
+		return this.expected;
 	}
 	
 	/**
 	 * Check if conditions to apply the Pearson Chi Squared independence
 	 * test are met.
-	 * The recommendation is that every cell as more than five counts.
-	 * TODO: E NUMERO DE ELEMENTOS MENOR QUE X, CASO CONTRARIO APLICAR PEARSON COM
-	 * YATTES CORRECAO!!
+	 * The recommendation is that every cell in the expected table 
+	 * as five or more counts.
 	 * @return true if conditions to apply pearson test are met.
 	 */
 	public boolean pearson() {
-		return this.pearson;
+		for (double d : this.rowSum) {
+			if (d < 10) return false;
+		}
+		for (double d : this.colSum) {
+			if (d < 10) return false;
+		}
+		ContingencyTable expected = this.expected();
+		for (double[] row : expected.table) {
+			for (double d : row) {
+				if (Double.compare(d, 5.0) < 0) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 	
 	/**
@@ -174,7 +197,7 @@ public class ContingencyTable { // TODO: ESTENDER Array2DRowRealMatrix
 	 * @return true if the contingency table is 2x2.
 	 */
 	public boolean fisher() {
-		return this.fisher;
+		return ((m == 2) && (n == 2));
 	}
 	
 	/**

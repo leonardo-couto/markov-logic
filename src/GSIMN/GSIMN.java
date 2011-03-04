@@ -58,6 +58,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 				blah++;
 				long time = System.currentTimeMillis();
 				double d = independence.pvalue(X, Y);
+				gsIndependence.addPValue(X, Y, d);
 				System.out.println(d + " : " + blah + "/" + npv + " t = " + (System.currentTimeMillis()-time) +
 						" X = " + X + " Y = " + Y);
 				pvalues.get(X).add(new WeightedRV<RV>(Y, d));
@@ -102,16 +103,18 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			for (RV Y : lambdaX) {
 				
 				List<RV> lambdaY = lambda.get(Y);
+				
+				if (!gsIndependence.test(X, Y, Collections.<RV>emptySet(), independent.get(X), dependent.get(X))) {
+					if(!gsIndependence.test(X, Y, S, independent.get(X), dependent.get(X))) {
+						// move X to the beginning of lambdaY
+						lambdaY.remove(X);
+						lambdaY.add(0, X);
+						// reorders lambdaY
+						lambdaY.removeAll(S);
+						lambdaY.addAll(0, S);
 
-				if(!gsIndependence.test(X, Y, S, independent.get(X), dependent.get(X))) {
-					// move X to the beginning of lambdaY
-					lambdaY.remove(X);
-					lambdaY.add(0, X);
-					// reorders lambdaY
-					lambdaY.removeAll(S);
-					lambdaY.addAll(0, S);
-
-					S.add(Y);
+						S.add(Y);
+					}
 				}
 			}
 			

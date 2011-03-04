@@ -50,19 +50,19 @@ public class PearsonChiSquare {
      */
 	public double pvalue() {
 		double x2 = 0;
-		for (int i = 0; i < observed.m; i++) {
-			for (int j = 0; j < observed.n; j++) {
-				x2 = x2 + (Math.pow(observed.table[i][j] - expected.table[i][j], 2)/expected.table[i][j]);
+		for (int i = 0; i < this.observed.m; i++) {
+			for (int j = 0; j < this.observed.n; j++) {
+				x2 = x2 + (Math.pow(this.observed.table[i][j] - this.expected.table[i][j], 2)/this.expected.table[i][j]);
 			}
 		}
 		try {
 			// If x2 is too big the cumulativeProbability does not converge, and after 
 			// a long time returns an exception, if x2 cumulative probability is higher
 			// than 0.99 do not run the test.
-			if (Double.compare(csd.inverseCumulativeProbability(0.99),x2) < 0) {
-				return 0.005;
+			if (Double.compare(this.csd.inverseCumulativeProbability(0.999),x2) < 0) {
+				return 0.0005;
 			}
-			return 1.0 - csd.cumulativeProbability(x2);
+			return 1.0 - this.csd.cumulativeProbability(x2);
 		} catch (MathException e) {
 			e.printStackTrace();
 			return 0.999;

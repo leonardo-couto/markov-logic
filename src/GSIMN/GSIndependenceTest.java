@@ -14,34 +14,61 @@ import stat.RandomVariable;
 public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 	// Maps a tuple of RandomVariable (order independent) into a Map of tests results
 	// (X,Y) -> {(Z0 -> true/false), (Z1 -> true/false), ...}
-	private Map<Set<RV>, Map<Collection<RV>, Boolean>> knowledgeBase;
-	private IndependenceTest<RV> itest;
+	private final Map<Set<RV>, Map<Collection<RV>, Boolean>> knowledgeBase;
+	private final IndependenceTest<RV> itest;
+	private final Map<Set<RV>,Double> pvalueMap;
 	
 	public GSIndependenceTest(IndependenceTest<RV> itest) {
 		this.knowledgeBase = new HashMap<Set<RV>, Map<Collection<RV>,Boolean>>();
 		this.itest = itest;
+		pvalueMap = new HashMap<Set<RV>, Double>();
+	}
+	
+	private Set<RV> getXYSet(RV x, RV y) {
+		Set<RV> xy = new HashSet<RV>();
+		xy.add(x);
+		xy.add(y);
+		return xy;
+	}
+	
+	public void addPValue(RV x, RV y, double pvalue) {
+		Set<RV> xy = this.getXYSet(x, y);
+		this.pvalueMap.put(xy, pvalue);
 	}
 	
 	/**
 	 * Tests whether X and Y are independent given Z.
-	 * @param X RandomVariable to be tested
-	 * @param Y RandomVariable to be tested
-	 * @param Z Evidence, Collection of RandonVariable.
+	 * @param x RandomVariable to be tested
+	 * @param y RandomVariable to be tested
+	 * @param z Evidence, Collection of RandonVariable.
 	 * @param F Collection of RandomVariable known to be independent of X
 	 * @param T Collection of RandomVariable known to be dependent of X
 	 * @return true if X and Y are independent given Z
 	 */
-	public boolean test(RV X, RV Y, Collection<RV> Z, Collection<RV> F, Collection<RV> T) {
-		Set<RV> xy = new HashSet<RV>();
-		xy.add(X);
-		xy.add(Y);
+	public boolean test(RV x, RV y, Collection<RV> z, Collection<RV> F, Collection<RV> T) {
+		Set<RV> xy = this.getXYSet(x, y);
+		
+		// check the p-value between 
+		// TODO: ERRADO! SÓ DEVE FUNCIONAR QUANDO INDEPENDENTE, OU DEPENDENTE *NAO LEMBRO, VER*
+		// POR ISSO CHECAVA DUAS VEZES no if do GSIMN!!!!!!!!!!!!!!
+		if (this.pvalueMap.containsKey(xy)) {
+			if (itest.test(this.pvalueMap.get(xy))) {
+				addKB(xy, z, true);
+				imprime(x, y, z, true, "teste estatistico");
+				return true;
+			}
+			// else
+			addKB(xy, z, false);
+			imprime(x, y, z, false, "teste estatistico");
+			return false;
+		}
 		
 		// Check the KB for this test
 		if(this.knowledgeBase.containsKey(xy)) {
 			Map<Collection<RV>,Boolean> kb = this.knowledgeBase.get(xy);
 			for (Collection<RV> A : this.knowledgeBase.get(xy).keySet()) {
-				if (A.containsAll(Z)) {
-					if (Z.containsAll(A)) {
+				if (A.containsAll(z)) {
+					if (z.containsAll(A)) {
 						return kb.get(A).booleanValue();
 					}
 				}
@@ -49,45 +76,41 @@ public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 		}
 		
 		// Attempt to infer dependence by propagation.
-		if (T.contains(Y)) {
-			addKB(xy, Z, false);
-			imprime(X, Y, Z, false, "propagation");
+		if (T.contains(y)) {
+			addKB(xy, z, false);
+			imprime(x, y, z, false, "propagation");
 			return false;
 		}
 		// Attempt to infer independence by propagation.
-		if (F.contains(Y)) {
-			addKB(xy, Z, true);
-			imprime(X, Y, Z, true, "propagation");
+		if (F.contains(y)) {
+			addKB(xy, z, true);
+			imprime(x, y, z, true, "propagation");
 			return true;
 		}
 		// Attempt to infer dependence by Strong Union.
 		if(this.knowledgeBase.containsKey(xy)) {
 			for (Collection<RV> A : this.knowledgeBase.get(xy).keySet()) {
-				if(!this.knowledgeBase.get(xy).get(A).booleanValue() && A.containsAll(Z)) {
-					addKB(xy, Z, false);
-					imprime(X, Y, Z, false, "Strong Union");
+				if(!this.knowledgeBase.get(xy).get(A).booleanValue() && A.containsAll(z)) {
+					addKB(xy, z, false);
+					imprime(x, y, z, false, "Strong Union");
 					return false;
 				}
 			}
 		}
 		// Attempt to infer dependence by the D-triangle rule.
-		for (RV W : Z) {
-			Set<RV> xw = new HashSet<RV>();
-			xw.add(X);
-			xw.add(W);
-			Set<RV> wy = new HashSet<RV>();
-			wy.add(W);
-			wy.add(Y);			
+		for (RV w : z) {
+			Set<RV> xw = this.getXYSet(x, w);
+			Set<RV> wy = this.getXYSet(w, y);
 			if(this.knowledgeBase.containsKey(xw) && this.knowledgeBase.containsKey(wy)) {
 				for (Collection<RV> A : this.knowledgeBase.get(xw).keySet()) {
-					if(!this.knowledgeBase.get(xw).get(A).booleanValue() &&  A.containsAll(Z)) {
+					if(!this.knowledgeBase.get(xw).get(A).booleanValue() &&  A.containsAll(z)) {
 						for (Collection<RV> B : this.knowledgeBase.get(wy).keySet()) {
-							if(!this.knowledgeBase.get(wy).get(B).booleanValue() && B.containsAll(Z)) {
+							if(!this.knowledgeBase.get(wy).get(B).booleanValue() && B.containsAll(z)) {
 								Set<RV> C = new HashSet<RV>(A);
 								C.retainAll(B);
 								addKB(xy, C, false);
-								addKB(xy, Z, false);
-								imprime(X, Y, Z, false, "D-triangle");
+								addKB(xy, z, false);
+								imprime(x, y, z, false, "D-triangle");
 								return false;
 							}
 						}
@@ -98,29 +121,25 @@ public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 		// Attempt to infer independence by Strong Union.
 		if(this.knowledgeBase.containsKey(xy)) {
 			for (Collection<RV> A : this.knowledgeBase.get(xy).keySet()) {
-				if(this.knowledgeBase.get(xy).get(A).booleanValue() && Z.containsAll(A)) {
-					addKB(xy, Z, true);
-					imprime(X, Y, Z, true, "Strong Union");
+				if(this.knowledgeBase.get(xy).get(A).booleanValue() && z.containsAll(A)) {
+					addKB(xy, z, true);
+					imprime(x, y, z, true, "Strong Union");
 					return true;
 				}
 			}
 		}
 		// Attempt to infer independence by the I-triangle rule.
-		for (RV W : Z) {
-			Set<RV> xw = new HashSet<RV>();
-			xw.add(X);
-			xw.add(W);
-			Set<RV> wy = new HashSet<RV>();
-			wy.add(W);
-			wy.add(Y);			
+		for (RV w : z) {
+			Set<RV> xw = this.getXYSet(x, w);
+			Set<RV> wy = this.getXYSet(w, y);
 			if(this.knowledgeBase.containsKey(xw) && this.knowledgeBase.containsKey(wy)) {
 				for (Collection<RV> A : this.knowledgeBase.get(xw).keySet()) {
-					if(this.knowledgeBase.get(xw).get(A).booleanValue() &&  Z.containsAll(A)) {
+					if(this.knowledgeBase.get(xw).get(A).booleanValue() &&  z.containsAll(A)) {
 						for (Collection<RV> B : this.knowledgeBase.get(wy).keySet()) {
 							if(!this.knowledgeBase.get(wy).get(B).booleanValue() && B.containsAll(A)) {
 								addKB(xy, A, true);
-								addKB(xy, Z, true);
-								imprime(X, Y, Z, true, "I-triangle");
+								addKB(xy, z, true);
+								imprime(x, y, z, true, "I-triangle");
 								return true;
 							}
 						}
@@ -128,14 +147,14 @@ public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 				}
 			}
 		}
-		if(itest.test(X, Y, new HashSet<RV>(Z))) {
-			addKB(xy, Z, true);
-			imprime(X, Y, Z, true, "teste estatistico");
+		if(itest.test(x, y, new HashSet<RV>(z))) {
+			addKB(xy, z, true);
+			imprime(x, y, z, true, "teste estatistico");
 			return true;
 		}
 		// else
-		addKB(xy, Z, false);
-		imprime(X, Y, Z, false, "teste estatistico");
+		addKB(xy, z, false);
+		imprime(x, y, z, false, "teste estatistico");
 		return false;
 	}
 	

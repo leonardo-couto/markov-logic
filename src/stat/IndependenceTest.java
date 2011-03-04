@@ -13,6 +13,10 @@ public interface IndependenceTest<RV extends RandomVariable<RV>> {
 	 */
 	public boolean test(RV x, RV y, Set<RV> z);
 	
+	/**
+	 * @return true if pvalue > alpha.
+	 */
+	public boolean test(double pvalue);
 	
 	/**
 	 * Return the probability of obtaining data at least as extreme 

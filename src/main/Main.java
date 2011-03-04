@@ -5,13 +5,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import parse.ParseDataSet;
 import parse.ParseDomain;
 import stat.DefaultTest;
 import stat.IndependenceTest;
+import structureLearner.FormulaGenerator;
 import structureLearner.TNodes;
 import GSIMN.GSIMN;
+import fol.Atom;
 import fol.Predicate;
 
 public class Main {
@@ -35,9 +38,10 @@ public class Main {
 //		Set<Atom> tnodes = FormulaGenerator.getTNodes(domain.getPredicates(), settings.maxVar);
 		System.out.println("running GSIMN...");
 //		GSIMN<Atom> gs = new GSIMN<Atom>(tnodes, settings.itest, settings.alpha); // TODO: USAR ESSE!!
-		TNodes<Predicate> tNodes = new TNodes<Predicate>(domain.getPredicates());
-		IndependenceTest<Predicate> iTest = new DefaultTest<Predicate>(0.05, tNodes);
-		GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), iTest);
+		Set<Atom> atoms = FormulaGenerator.getTNodes(domain.getPredicates(), 2);
+		TNodes<Atom> tNodes = new TNodes<Atom>(atoms);
+		IndependenceTest<Atom> iTest = new DefaultTest<Atom>(0.01, tNodes);
+		GSIMN<Atom> gs = new GSIMN<Atom>(atoms, iTest);
 		//GSIMN<Predicate> gs = new GSIMN<Predicate>(domain.getPredicates(), new DefaultTest<Predicate>(settings.alpha), settings.alpha);
 		System.out.println(gs.run());
 	}

@@ -20,10 +20,10 @@ import util.Util;
 public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceTest<RV> {
 
 	private final Map<RV, RandomVariableData> marginalData;
-	public static int maxPartitions = 10;
+	private static int maxPartitions = 10;
 	public final double alpha;
-	private final FisherExact fe = new FisherExact(100);
 	private final TNodes<RV> tNodes;
+	private final FisherExact fe = new FisherExact(1000);
 
 	public DefaultTest(double alpha, TNodes<RV> tNodes) {
 		this.alpha = alpha;
@@ -54,15 +54,6 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		return data;
 	}
 
-	private static double min(double[] values) {
-		double min = Double.MAX_VALUE;
-		for(double value : values) {
-			if(value < min)
-				min = value;
-		}
-		return min;
-	}
-
 	private double getPvalue(RV x, RV y, List<RV> z) {
 		// initialize the marginal data
 		List<RV> nodes = new ArrayList<RV>(z.size()+2);
@@ -76,7 +67,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		}
 
 		int increment = 100*cells;
-		int sampledElements = 3*increment;
+		int sampledElements = increment;
 
 		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, z);
 		List<double[]> data = new ArrayList<double[]>(sampledElements);
@@ -92,89 +83,73 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		for (int i = 0; i < nodes.size(); i++) {
 			nbins[i] = this.marginalData.get(nodes.get(i)).maxBins;
 		}
-		int[] originalNbins = Arrays.copyOf(nbins, nbins.length);
-
-		//int xyMatrices = cells / (nbins[nbins.length-2] + nbins[nbins.length-1]);
+		int nMatrices = cells / (nbins[nbins.length-1] * nbins[nbins.length-2]);
 
 		MultiDimensionalHistogram histogram = new MultiDimensionalHistogram(nodes.size());
-		SequentialConvergenceTester tester = new ShortMemoryConvergenceTester(.95, .01, 10);
 		histogram.addAll(data);
 		data.clear();
+		
+		boolean[] stopped = new boolean[nMatrices];
+		double pvalue = 1.0;
 
-		while (!tester.hasConverged()) {
-
-			boolean moreThan2Bins = false;
-			for (int nbin : nbins) {
-				if (nbin > 2) {
-					moreThan2Bins = true;
-					break;
-				}
-			}
-
-			// The idea is to have the approximate cell counts, based on each variable's 
-			// marginal data frequency, to determine the number of bins for each variable 
-			// according to the number of sample points taken.
-			// The heuristic approach is: if any cell has a count smaller then 10
-			// and any variable has more than 2 bins, reduce the number of bins of some 
-			// variable. We need only the cell with smaller proportion to that.
-			if (moreThan2Bins) {
-				double min = 1.0;
-				for (int i = 0; i < nodes.size(); i++) {
-					min = min * min(this.marginalData.get(nodes.get(i)).getProportion(nbins[i]));
-				}
-
-				if (Double.compare(10.0, min*sampledElements) < 0) {
-					this.reduce(nbins, nodes);
-					break;
-				}
-
-			}
-
+		while (true) {
 
 			int[][][] matrices = to2dMatrices(histogram.getHistogram(nbins), nodes.size());
-			double[] pvalues = new double[matrices.length];
-			{
-				int i = 0;
-				for (int[][] matrix : matrices) {
+
+			for (int i = 0; i < matrices.length; i++) { 
+				if (!stopped[i]) {
+					int[][] matrix = matrices[i]; 
+					System.out.println(Arrays.deepToString(matrix));
 					ContingencyTable ct = new ContingencyTable(matrix);
-					if (ct.fisher() && ct.getSum() < 100.0) {
-						pvalues[i] = fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]);
-					} else {
-						if (ct.pearson()) {
-							PearsonChiSquare pearson = new PearsonChiSquare(ct);
-							pvalues[i] = pearson.pvalue();
-						} else {
-							// TODO: APLICAR CORRECAO DE YATES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-							// problemas: com muitas dimensoes podem ter zeros, ver o que fazer
-							//pvalues[i] = 0.993; // por enquanto devolve um alto p-value, mas esta errado!
-							ct.applyYates();
-							PearsonChiSquare pearson = new PearsonChiSquare(ct);
-							pvalues[i] = pearson.pvalue();
+					if (ct.pearson()) {
+						stopped[i] = true;
+						PearsonChiSquare pearson = new PearsonChiSquare(ct);
+						pvalue = Math.min(pearson.pvalue(), pvalue);
+						if (Double.compare(pvalue, 0.01) < 0) {
+							System.out.println("pvalue: " + pvalue);
+							return pvalue;
+						}
+					} else if (ct.fisher() && ct.getSum() > 40 && ct.getSum() < 1000) {
+						boolean fisher = true;
+						for (double row : ct.getRowSum()) {
+							if (row < 10) {
+								fisher = false;
+							}
+						}
+						for (double col : ct.getColSum()) {
+							if (col < 10) {
+								fisher = false;
+							}
+						}
+						if (fisher) {
+						  stopped[i] = true;
+						  pvalue = Math.min(fe.getTwoTailedP(matrix[0][0], matrix[0][1], matrix[1][0], matrix[1][1]), pvalue);
 						}
 					}
-					i++;
 				}
 			}
 
-			// TODO: SE A ARRAY FOR MUITO GRANDE, PEGAR A MEDIA DOS 10% MENORES!!
-			double pvalue = min(pvalues);
-			System.out.println("pvalue: " + pvalue);
-			tester.increment(pvalue);
+			//System.out.println("pvalue: " + pvalue);
+			
+			boolean stop = true;
+			for (boolean b : stopped) {
+				stop = stop && b;
+			}
+			if (stop || sampledElements > 10000 * cells) {
+				System.out.println("pvalue: " + pvalue);
+				return pvalue;
+			}
+
 			if (!getNextNElements(data, dataIterator, increment)) {
 				if (data.isEmpty()) {
-					System.out.println("Pegou todos os elementos");
+					System.out.println("pvalue: " + pvalue);
 					return pvalue;
 				}
 			}
 			sampledElements = sampledElements + increment;
 			histogram.addAll(data);
 			data.clear();
-			nbins = Arrays.copyOf(originalNbins, originalNbins.length);
-
 		}
-		System.out.println("CONVERGIU");
-
-		return tester.mean();
 	}
 
 	@Override
@@ -214,39 +189,54 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		}
 		return out;
 	}	
+	
+	
+	private List<List<RV>> getPermutations(List<RV> variables) {
+		List<List<RV>> permutations = new ArrayList<List<RV>>();
+		for (RV var : variables) {
+			permutations.add(Collections.singletonList(var));
+		}
+		List<RV> rvList = new ArrayList<RV>(3);
+		rvList.add(null);
+		rvList.add(null);
+		for (int i = 0; i < variables.size(); i++) {
+			rvList.set(0, variables.get(i));
+			for (int j = i+1; j < variables.size(); j++) {
+				rvList.set(1, variables.get(j));
+				permutations.add(new ArrayList<RV>(rvList));				
+			}
+		}
+		rvList.add(null);
+		for (int i = 0; i < variables.size(); i++) {
+			rvList.set(0, variables.get(i));
+			for (int j = i+1; j < variables.size(); j++) {
+				rvList.set(1, variables.get(j));
+				for (int k = j+1; k < variables.size(); k++) {
+					rvList.set(2, variables.get(k));
+					permutations.add(new ArrayList<RV>(rvList));
+				}
+			}
+		}
+		return permutations;
+	}
 
 
 	@Override
 	public boolean test(RV x, RV y,	Set<RV> z) {
+		ArrayList<RV> zList = new ArrayList<RV>(z);
+		for (List<RV> p : this.getPermutations(zList)) {
+			if (Double.compare(this.getPvalue(x, y, p), this.alpha) > 0) {
+				return true;
+			}
+		}
 		boolean independent = Double.compare(this.getPvalue(x, y, new ArrayList<RV>(z)), this.alpha) > 0;
 		return independent;
 	}
-
-	/*
-	 * Find and reduces the number of bins for the variable
-	 * that has more than two bins and the lowest marginal 
-	 * data geometric mean
-	 */
-	private void reduce(int[] nbins, List<RV> nodes) {
-		// find the bin which has the lowest marginal data geometric mean
-		int index = -1;
-		double min = Double.MAX_VALUE;
-		for (int i = 0; i < nbins.length; i++) {
-			if (nbins[i] > 2) {
-				double gmean = this.marginalData.get(nodes.get(i)).getGeometricMean(nbins[i]);
-				if (Double.compare(gmean, min) < 0) {
-					min = gmean;
-					index = i;
-				}
-			}
-		}
-
-		// reduce the chosen bin
-		if (index > -1) {
-			nbins[index] = (int) Math.ceil(nbins[index]/2.0);
-		}
+	
+	@Override
+	public boolean test(double pvalue) {
+		return Double.compare(pvalue, this.alpha) > 0;
 	}
-
 
 	public static void main(String[] args) { // TODO: REMOVER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//		int dimension = 3;
@@ -298,8 +288,8 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			this.binsHistogram = new HashMap<Integer, int[]>();
 			this.binsGeometricMean = new HashMap<Integer, Double>();
 			this.binsProportion = new HashMap<Integer, double[]>();
-
-
+			
+			int total = this.data.length;
 			boolean stop = false;
 			int n = DefaultTest.maxPartitions;
 			int[] pdata = null;
@@ -307,7 +297,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 				pdata = this.histogram.getHistogram(n);
 				stop = true;
 				for (int count : pdata) {
-					if (count < 10) {
+					if ((count < 10) || Double.compare((count/total), 0.01) < 0) {
 						// Each cell has at least 10 counts.
 						stop = false;
 						break;
@@ -352,29 +342,6 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			this.init(n);
 			return this.binsHistogram.get(n);
 		}
-
-		public double getGeometricMean(int n) {
-			if (this.binsGeometricMean.containsKey(n)) {
-				return this.binsGeometricMean.get(n);
-			}
-			if (n > maxBins) {
-				throw new IllegalArgumentException("");
-			}
-			this.init(n);
-			return this.binsGeometricMean.get(n);
-		}
-
-		public double[] getProportion(int n) {
-			if (this.binsProportion.containsKey(n)) {
-				return this.binsProportion.get(n);
-			}
-			if (n > maxBins) {
-				throw new IllegalArgumentException("");
-			}
-			this.init(n);
-			return this.binsProportion.get(n);
-		}
-
 
 	}
 
