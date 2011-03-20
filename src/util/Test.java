@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -34,7 +35,7 @@ import fol.Variable;
 
 @SuppressWarnings("unused")
 public class Test {
-	
+		
 	public static void clean(int[][] matriz) {
 		matriz[0][0] = 0;
 		matriz[0][1] = 0;

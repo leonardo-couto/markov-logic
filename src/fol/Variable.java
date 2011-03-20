@@ -2,6 +2,7 @@ package fol;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -63,6 +64,16 @@ public class Variable extends Term implements Comparable<Variable>{
 				set.addAll(d);
 			}
 			return set;
+		}
+	}
+	
+	public Constant newConstant() {
+		int size = this.domain.size();
+		if (size == 1) {
+			return this.domain.get(0).newConstant();
+		} else {
+			Random r = new Random();
+			return this.domain.get(r.nextInt(size)).newConstant();
 		}
 	}
 	

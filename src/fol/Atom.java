@@ -88,6 +88,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 
 	@Override
 	public String toString() {
+		if (this == Atom.FALSE) return "false";
+		if (this == Atom.TRUE) return "true";
 		return predicate.getName() + "(" + Util.join(terms, ",") + ")";
 	}
 	
@@ -154,6 +156,10 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		return this;
 	}
 
+	/**
+	 * Check whether this Atom is grounded (all terms are Constants)
+	 * @return true if the Atom does not contain any Variables
+	 */
 	public boolean isGround() {
 		for (Term t : terms) {
 			if (!(t instanceof Constant)) {
@@ -340,6 +346,11 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	@Override
 	public String getName() {
 		return toString();
+	}
+	
+	@Override
+	public List<Atom> getAtoms() {
+		return Collections.singletonList(this);
 	}
 
 }

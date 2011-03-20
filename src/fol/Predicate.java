@@ -5,25 +5,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.math.util.MathUtils;
-
-import stat.RandomVariable;
-import stat.Sampler;
-import structureLearner.FormulaGenerator;
+import util.NameID;
 import util.Util;
 
 /**
  * @author Leonardo Castilho Couto
  *
  */
-public class Predicate implements RandomVariable<Predicate> {
+public class Predicate implements NameID {
 	// TODO: ASSURE UNIQUE PREDICATE NAMES.
-	// TODO: PREDICADO NAO TEM QUE IMPLEMENTAR RANDOMVARIABLE!
 
 	private String name;
 	private List<Domain> argDomains;
@@ -174,121 +168,6 @@ public class Predicate implements RandomVariable<Predicate> {
 			i = i * (long) d.size();
 		}
 		return i;
-	}
-
-	@Override
-	public double[] getData() {
-		double[] out = new double[groundings.size()];
-		int i = 0;
-		for (Double d : groundings.values()) {
-			out[i] = d.doubleValue();
-			i++;
-		}
-		return out;
-	}
-
-	private static Iterator<double[]> staticDataIterator(List<Predicate> nodes) {
-
-		Set<Variable> variablesSet = new HashSet<Variable>();
-		final List<Atom> atoms = new ArrayList<Atom>();
-		for (Predicate p : nodes) {
-			if (!p.equals(empty)) {
-				Atom a = FormulaGenerator.generateAtom(p, variablesSet);
-				variablesSet.addAll(a.getVariables());
-				atoms.add(a);
-			} else {
-				atoms.add(Atom.FALSE);
-			}
-		}
-
-		final List<Variable> variables = new ArrayList<Variable>(variablesSet);
-		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
-		int size = 1;
-		for (Variable v : variables) {
-			Set<Constant> set = v.getConstants();
-			constants.add(set);
-			try {
-				size = MathUtils.mulAndCheck(size, set.size());
-			} catch (ArithmeticException e) {
-				size = Integer.MAX_VALUE;
-			}
-		}
-
-		final Sampler<Constant> sampler = new Sampler<Constant>(constants);
-		sampler.setMaxSamples(size);
-		final Iterator<List<Constant>> iterator = sampler.iterator();
-
-		return new Iterator<double[]>() {
-
-			private double[] next = this.makeNext();
-			
-			private double[] makeNext() {
-				double[] out = new double[atoms.size()];
-				next:
-					while (iterator.hasNext()) {
-						List<Constant> grounds = iterator.next();
-						int outIndex = 0;
-						for (Atom a : atoms) {
-							a = a.replaceVariables(variables, grounds);
-							double d = a.getValue();
-							if (Double.isNaN(d)) {
-								continue next; // try to find another set of grounds
-							} else {
-								out[outIndex] = d;
-								outIndex++;
-							}
-						}
-						return out;
-					}
-				return null;
-			}
-
-			@Override
-			public boolean hasNext() {
-				return (this.next != null);
-			}
-
-			@Override
-			public double[] next() {
-				double[] out = this.next;
-				this.next = this.makeNext();
-				return out;
-			}
-
-			@Override
-			public void remove() {
-				// do nothing				
-			}
-
-		};
-	}
-
-	@Override
-	public Iterator<double[]> getDataIterator(List<Predicate> nodes) {
-		return staticDataIterator(nodes);
-	}
-
-
-	private static boolean shareDomain(Predicate x, Predicate y) {
-		// TODO: Do not account for parent/child relationship between Domains.
-		for (Domain d : x.argDomains) {
-			for (Domain d1 : y.argDomains) {
-				if (d.equals(d1)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	@Override
-	public boolean isConnected(Predicate y) {
-		return shareDomain(this, y);
-	}
-
-	@Override
-	public Predicate emptyVariable() {
-		return empty;
 	}
 
 }

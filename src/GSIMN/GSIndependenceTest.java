@@ -49,8 +49,6 @@ public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 		Set<RV> xy = this.getXYSet(x, y);
 		
 		// check the p-value between 
-		// TODO: ERRADO! SÓ DEVE FUNCIONAR QUANDO INDEPENDENTE, OU DEPENDENTE *NAO LEMBRO, VER*
-		// POR ISSO CHECAVA DUAS VEZES no if do GSIMN!!!!!!!!!!!!!!
 		if (this.pvalueMap.containsKey(xy)) {
 			if (itest.test(this.pvalueMap.get(xy))) {
 				addKB(xy, z, true);
@@ -58,9 +56,11 @@ public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 				return true;
 			}
 			// else
-			addKB(xy, z, false);
-			imprime(x, y, z, false, "teste estatistico");
-			return false;
+			if (z.isEmpty()) {
+			  addKB(xy, z, false);
+			  imprime(x, y, z, false, "teste estatistico");
+			  return false;
+			}
 		}
 		
 		// Check the KB for this test

@@ -1,6 +1,8 @@
 package fol;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -60,7 +62,7 @@ public class Formula implements Comparable<Formula> {
 		Stack<Double> values = new Stack<Double>();
 		Iterator<Atom> atom = this.atoms.iterator();
 		Iterator<Operator> operator = this.operators.iterator();
-		for (Boolean isAtom : stack) {
+		for (Boolean isAtom : this.stack) {
 			if(isAtom) {
 				values.push(atom.next().getValue());
 			} else { // operator
@@ -94,7 +96,7 @@ public class Formula implements Comparable<Formula> {
 				for (int i = 0; i < op.getArity(); i++) {
 					args[i] = values.pop();
 				}
-				values.push("( " + op.toString(args) + " )");
+				values.push(op.toString(args));
 			}
 		}
 		if (values.size() != 1) {
@@ -113,6 +115,7 @@ public class Formula implements Comparable<Formula> {
 			} else {
 				sb.append(operator.next());
 			}
+			sb.append(" ");
 		}
 		return sb.toString();
 	}
@@ -130,7 +133,8 @@ public class Formula implements Comparable<Formula> {
 	}
 
 	/**
-	 * Replaces all occurrences of Variable X[i] by the Constant c[i].
+	 * Replaces all occurrences of Variable X[i] by the Constant c[i]
+	 * @return a COPY of this formula with all variables in X replaced
 	 */
 	public Formula replaceVariables(List<Variable> x, List<Constant> c) {
 		List<Atom> newAtoms = replaceAtomVariables(this.atoms, x, c);
@@ -236,7 +240,6 @@ public class Formula implements Comparable<Formula> {
 
 	}
 
-	// TODO: Testar!!!!!!!!!!!!!!!!!
 	public double trueCounts() {
 		List<Variable> variables = new ArrayList<Variable>(this.getVariables());
 
@@ -284,8 +287,34 @@ public class Formula implements Comparable<Formula> {
 		return this.toString().compareTo(o.toString());
 	}
 	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Formula) {
+			Formula f = (Formula) obj;
+			return this.toString().equals(f.toString());
+		}
+		return super.equals(obj);
+	}
 	
+	@Override
+	public int hashCode() {
+		return this.toString().hashCode();
+	}
+
+	
+	/**
+	 * Apply a one arity operator to the formula f
+	 * @param op one arity operator
+	 * @param f formula where the opperator shall be applied
+	 * @return formula with the applied operator
+	 */
 	public static Formula oneArityOp(Operator op, Formula f) {
+		if (f instanceof Atom) {
+			return new Formula(Collections.singletonList((Atom) f),
+					Collections.singletonList(op),
+					Arrays.asList(new Boolean[] {true, false}),
+					Collections.singleton(((Atom) f).predicate));
+		}
 		List<Operator> newop = new ArrayList<Operator>(f.operators.size() +1);
 		List<Boolean> newstack = new ArrayList<Boolean>(f.stack.size()+1);
 		List<Atom> newAtoms = new ArrayList<Atom>(f.atoms);
@@ -296,20 +325,47 @@ public class Formula implements Comparable<Formula> {
 		return new Formula(newAtoms, newop, newstack, f.getPredicates());
 	}
 
+	// TODO: FAZER BENCHMARK, VER SE A DIFERENCA ENTRE CHAMAR O TWOARITY
+	// E O nARITY É SIGINIFICANTE, VER SE NAO TERA NENHUM BUG, CASO
+	// NEGATIVO, CHAMAR O nARITY A PARTIR DESTE MÉTODO!!!!!!!
 	public static Formula twoArityOp(Operator op, Formula f0, Formula f1) {
-		List<Boolean> newStack = new ArrayList<Boolean>(f0.stack.size() + f1.stack.size() +1);
-		newStack.addAll(f0.stack);
-		newStack.addAll(f1.stack);
+		boolean isAtomf0 = f0 instanceof Atom;
+		boolean isAtomf1 = f1 instanceof Atom;
+		List<Boolean> f0stack = f0.stack;
+		List<Boolean> f1stack = f1.stack;
+		List<Atom> f0atoms = f0.atoms;
+		List<Atom> f1atoms = f1.atoms;
+		List<Operator> f0operators = f0.operators;
+		List<Operator> f1operators = f1.operators;
+		Set<Predicate> f0predicates = f0.predicates;
+		Set<Predicate> f1predicates = f1.predicates;
+		if (isAtomf0) {
+			Atom a = (Atom) f0;
+			f0stack = Collections.singletonList(true);
+			f0atoms = Collections.singletonList(a);
+			f0operators = Collections.emptyList();
+			f0predicates = Collections.singleton(a.predicate);
+		}
+		if (isAtomf1) {
+			Atom a = (Atom) f1;
+			f1stack = Collections.singletonList(true);
+			f1atoms = Collections.singletonList(a);
+			f1operators = Collections.emptyList();
+			f1predicates = Collections.singleton(a.predicate);
+		}
+		List<Boolean> newStack = new ArrayList<Boolean>(f0stack.size() + f1stack.size() +1);
+		newStack.addAll(f0stack);
+		newStack.addAll(f1stack);
 		newStack.add(false);
-		List<Atom> newAtoms = new ArrayList<Atom>(f0.atoms.size() + f1.atoms.size());
-		newAtoms.addAll(f0.atoms);
-		newAtoms.addAll(f1.atoms);
-		List<Operator> newOp = new ArrayList<Operator>(f0.operators.size() + f1.operators.size() +1);
-		newOp.addAll(f0.operators);
-		newOp.addAll(f1.operators);
+		List<Atom> newAtoms = new ArrayList<Atom>(f0atoms.size() + f1atoms.size());
+		newAtoms.addAll(f0atoms);
+		newAtoms.addAll(f1atoms);
+		List<Operator> newOp = new ArrayList<Operator>(f0operators.size() + f1operators.size() +1);
+		newOp.addAll(f0operators);
+		newOp.addAll(f1operators);
 		newOp.add(op);
-		Set<Predicate> newPredicates = new HashSet<Predicate>(f0.predicates);
-		newPredicates.addAll(f1.predicates);		
+		Set<Predicate> newPredicates = new HashSet<Predicate>(f0predicates);
+		newPredicates.addAll(f1predicates);		
 		return new Formula(newAtoms, newOp, newStack, newPredicates);
 	}
 	
@@ -317,20 +373,35 @@ public class Formula implements Comparable<Formula> {
 		int stackSize = 1;
 		int atomsSize = 0;
 		int opSize = 1;
-		for (Formula f : formulas) {
-			stackSize += f.stack.size();
-			atomsSize += f.atoms.size();
-			opSize += f.operators.size();
+		boolean[] atom = new boolean[formulas.length];
+		for (int i = 0; i < formulas.length; i++) {
+			Formula f = formulas[i];
+			if (f instanceof Atom) {
+				atomsSize += 1;
+				atom[i] = true;
+			} else {
+				stackSize += f.stack.size();
+				atomsSize += f.atoms.size();
+				opSize += f.operators.size();
+			}
 		}
 		List<Boolean> newStack = new ArrayList<Boolean>(stackSize);
 		List<Atom> newAtoms = new ArrayList<Atom>(atomsSize);
 		List<Operator> newOp = new ArrayList<Operator>(opSize);
 		Set<Predicate> newPredicates = new HashSet<Predicate>();
-		for (Formula f : formulas) {
-			newStack.addAll(f.stack);
-			newAtoms.addAll(f.atoms);
-			newOp.addAll(f.operators);
-			newPredicates.addAll(f.predicates);
+		for (int i = 0; i < formulas.length; i++) {
+			Formula f = formulas[i];
+			if (atom[i]) {
+				Atom a = (Atom) f;
+				newStack.add(true);
+				newAtoms.add(a);
+				newPredicates.add(a.predicate);
+			} else {
+				newStack.addAll(f.stack);
+				newAtoms.addAll(f.atoms);
+				newOp.addAll(f.operators);
+				newPredicates.addAll(f.predicates);
+			}
 		}
 		newStack.add(false);
 		newOp.add(op);

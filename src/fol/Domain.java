@@ -49,7 +49,12 @@ public class Domain extends HashSet<Constant> implements NameID {
 	
 	public Variable newVariable() {
 		varcount++;
-		return new Variable("v" + getName() + varcount, this);
+		return new Variable("v" + this.getName() + varcount, this);
+	}
+	
+	public Constant newConstant() {
+		varcount++;
+		return new Constant("c" + this.getName() + this.size(), this);
 	}
 
 	/**

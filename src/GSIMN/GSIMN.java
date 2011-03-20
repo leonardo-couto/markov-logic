@@ -19,13 +19,13 @@ import stat.WeightedRV;
 import util.Util;
 
 public class GSIMN<RV extends RandomVariable<RV>> {
-	private UndirectedGraph<RV, DefaultEdge> graph;
-	private Set<RV> V;
+	private final UndirectedGraph<RV, DefaultEdge> graph;
+	private final Set<RV> V;
 	private final IndependenceTest<RV> independence;
 
 	public GSIMN(Set<RV> V, IndependenceTest<RV> independence) {
 		this.graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
-		this.V = V;
+		this.V = new HashSet<RV>(V);
 		this.independence = independence;
 	}
 	

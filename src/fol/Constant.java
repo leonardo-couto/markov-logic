@@ -42,12 +42,4 @@ public class Constant extends Term {
 		this.domain = domain;
 	}
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
-	}
-
 }
