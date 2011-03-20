@@ -17,14 +17,14 @@ import fol.Predicate;
 import fol.Term;
 import fol.Variable;
 
-public class GroundMarkovNetwork { // TODO: trocar o nome
+public class GroundedMarkovNetwork {
 	
 	private final List<Formula> formulas;
 	private final List<Double> weights;
 	private final List<Atom> groundings;
 	private final List<List<Integer>> mapFormulaGrounding;
 	
-	private GroundMarkovNetwork() {
+	private GroundedMarkovNetwork() {
 		super();
 		this.formulas = new LinkedList<Formula>();
 		this.weights = new LinkedList<Double>();
@@ -52,8 +52,8 @@ public class GroundMarkovNetwork { // TODO: trocar o nome
 	
 	// TODO: se tiver dois predicados iguais na mesma formula, ver o que fazer.
 	//       se eles gerarem groundings diferentes, deveriam estar os dois
-	public static GroundMarkovNetwork ground(MarkovLogicNetwork mln, Atom query, List<Atom> given) {
-		GroundMarkovNetwork groundedMln = new GroundMarkovNetwork();
+	public static GroundedMarkovNetwork ground(MarkovLogicNetwork mln, Atom query, List<Atom> given) {
+		GroundedMarkovNetwork groundedMln = new GroundedMarkovNetwork();
 		
 		// Store the atomicFormulas
 		HashMap<Predicate,Double> atomicFormulas = new HashMap<Predicate,Double>();

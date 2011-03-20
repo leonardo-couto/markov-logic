@@ -27,11 +27,11 @@ import structureLearner.ShortestFirstSearch;
 import weightLearner.FormulaCount;
 import fol.Atom;
 import fol.Constant;
-import fol.Disjunction;
 import fol.Domain;
 import fol.Formula;
 import fol.Predicate;
 import fol.Variable;
+import fol.operator.Disjunction;
 
 @SuppressWarnings("unused")
 public class Test {

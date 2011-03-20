@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import fol.operator.Operator;
+
 import main.Settings;
 import stat.SequentialConvergenceTester;
 import stat.Sampler;

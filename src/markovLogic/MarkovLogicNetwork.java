@@ -32,7 +32,7 @@ public class MarkovLogicNetwork implements Map<Formula, Double> {
 	 * @return the markovBlanket of a
 	 */
 	public Set<Atom> markovBlanket(Atom a) {
-		GroundMarkovNetwork mln = this.ground(a, Collections.<Atom>emptyList());
+		GroundedMarkovNetwork mln = this.ground(a, Collections.<Atom>emptyList());
 		Map<Formula, Double> groundedFormulas = mln.getGroundedFormulas();
 		Set<Atom> markovBlanket = new HashSet<Atom>();
 		formula: for (Formula f : groundedFormulas.keySet()) {
@@ -46,12 +46,12 @@ public class MarkovLogicNetwork implements Map<Formula, Double> {
 		return markovBlanket;
 	}
 	
-	public GroundMarkovNetwork ground(Atom query, List<Atom> given) {
-		return GroundMarkovNetwork.ground(this, query, given);
+	public GroundedMarkovNetwork ground(Atom query, List<Atom> given) {
+		return GroundedMarkovNetwork.ground(this, query, given);
 	}
 
-	public GroundMarkovNetwork ground(Atom query) {
-		return GroundMarkovNetwork.ground(this, query, Collections.<Atom>emptyList());
+	public GroundedMarkovNetwork ground(Atom query) {
+		return GroundedMarkovNetwork.ground(this, query, Collections.<Atom>emptyList());
 	}
 	
 	@Override

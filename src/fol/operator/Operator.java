@@ -1,4 +1,6 @@
-package fol;
+package fol.operator;
+
+import fol.Formula;
 
 /**
  * @author Leonardo Castilho Couto

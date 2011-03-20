@@ -6,17 +6,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import markovLogic.GroundMarkovNetwork;
+import markovLogic.GroundedMarkovNetwork;
 import markovLogic.MarkovLogicNetwork;
 import stat.Sampler;
 import fol.Atom;
 import fol.Constant;
-import fol.Disjunction;
 import fol.Domain;
 import fol.Formula;
-import fol.Negation;
 import fol.Predicate;
 import fol.Variable;
+import fol.operator.Biconditional;
+import fol.operator.Disjunction;
+import fol.operator.Negation;
 
 public class ExactInference implements Inference {
 	
@@ -74,7 +75,7 @@ public class ExactInference implements Inference {
 	// TODO: ver o que fazer para o caso de o mesmo predicado aparecer duas vezes
 	// na mesma formula, exemplo: P(X) && R(X,Y) && P(Y).
 	private double pr(Atom a) {
-		GroundMarkovNetwork groundedMln = this.mln.ground(a);
+		GroundedMarkovNetwork groundedMln = this.mln.ground(a);
 		int totalAtoms = groundedMln.getGroundings().size();
 		
 		
@@ -136,6 +137,7 @@ public class ExactInference implements Inference {
 		Predicate p = new Predicate("p", da);
 		Predicate q = new Predicate("q", da, db);
 		Predicate r = new Predicate("r", da, dc);
+		Predicate s = new Predicate("s", dc);
 		
 		Variable x = da.newVariable();
 		Variable y = db.newVariable();
@@ -145,6 +147,8 @@ public class ExactInference implements Inference {
 		Atom f3 = new Atom(r, x, z);
 		Formula f4 = Disjunction.operator.getFormula(f1, Negation.operator.getFormula(f2));
 		Formula f5 = Disjunction.operator.getFormula(f1, f3);
+		Formula f6 = new Atom(s, z);
+		Formula f7 = Biconditional.operator.getFormula(f3, f6);
 		
 		MarkovLogicNetwork mln = new MarkovLogicNetwork();
 		mln.put(f1, 1.0);
@@ -152,6 +156,8 @@ public class ExactInference implements Inference {
 		mln.put(f3, 1.5);
 		mln.put(f4, 3.0);
 		mln.put(f5, 2.2);
+		mln.put(f6, 10.0);
+		mln.put(f7, 0.1);
 		
 		Inference infer = new ExactInference(mln);
 		Constant c0 = new Constant("c0", da);

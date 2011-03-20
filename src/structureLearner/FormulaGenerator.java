@@ -11,15 +11,15 @@ import java.util.Map;
 import java.util.Set;
 
 import fol.Atom;
-import fol.Biconditional;
-import fol.Conjunction;
-import fol.Disjunction;
 import fol.Domain;
 import fol.Formula;
-import fol.Negation;
-import fol.Operator;
 import fol.Predicate;
 import fol.Variable;
+import fol.operator.Biconditional;
+import fol.operator.Conjunction;
+import fol.operator.Disjunction;
+import fol.operator.Negation;
+import fol.operator.Operator;
 
 /**
  * @author Leonardo Castilho Couto

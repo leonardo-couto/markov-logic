@@ -1,4 +1,6 @@
-package fol;
+package fol.operator;
+
+import fol.Formula;
 
 
 /**

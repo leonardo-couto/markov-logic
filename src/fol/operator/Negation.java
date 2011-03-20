@@ -1,7 +1,10 @@
-package fol;
+package fol.operator;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import fol.Atom;
+import fol.Formula;
 
 
 /**
