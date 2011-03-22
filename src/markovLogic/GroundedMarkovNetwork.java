@@ -1,6 +1,7 @@
 package markovLogic;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -52,7 +53,7 @@ public class GroundedMarkovNetwork {
 	
 	// TODO: se tiver dois predicados iguais na mesma formula, ver o que fazer.
 	//       se eles gerarem groundings diferentes, deveriam estar os dois
-	public static GroundedMarkovNetwork ground(MarkovLogicNetwork mln, Atom query, List<Atom> given) {
+	public static GroundedMarkovNetwork ground(MarkovLogicNetwork mln, Atom query, Collection<Atom> given) {
 		GroundedMarkovNetwork groundedMln = new GroundedMarkovNetwork();
 		
 		// Store the atomicFormulas
@@ -136,7 +137,7 @@ public class GroundedMarkovNetwork {
 	 * @param container
 	 * @return true is the container contains the groundedAtom
 	 */
-	private static boolean groundedAtomIn(List<Atom> groundedAtoms, int atomIndex, List<Atom> container) {
+	private static boolean groundedAtomIn(List<Atom> groundedAtoms, int atomIndex, Collection<Atom> container) {
 		Atom gAtom = groundedAtoms.get(atomIndex);
 		for (Atom g : container) {
 			if (gAtom.equals(g)) {

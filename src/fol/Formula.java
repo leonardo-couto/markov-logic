@@ -14,7 +14,7 @@ import fol.operator.Operator;
 
 import main.Settings;
 import stat.SequentialConvergenceTester;
-import stat.Sampler;
+import stat.sampling.DefaultSampler;
 import util.ListPointer;
 
 /**
@@ -205,7 +205,7 @@ public class Formula implements Comparable<Formula> {
 		return null;		
 	}
 
-	public double trueCounts(List<Variable> variables, Sampler<Constant> sampler) {
+	public double trueCounts(List<Variable> variables, DefaultSampler<Constant> sampler) {
 		// TODO: override no ATOM?
 
 		if (variables.isEmpty()) {
@@ -238,7 +238,7 @@ public class Formula implements Comparable<Formula> {
 			return 0;
 		}
 
-		return sampler.n*tester.mean();
+		return sampler.getCardinality()*tester.mean();
 
 	}
 
@@ -260,7 +260,7 @@ public class Formula implements Comparable<Formula> {
 			constants.add(v.getConstants());
 		}
 
-		Sampler<Constant> sampler = new Sampler<Constant>(constants);
+		DefaultSampler<Constant> sampler = new DefaultSampler<Constant>(constants);
 		sampler.setMaxSamples(Settings.formulaCountMaxSamples);
 
 		return this.trueCounts(variables, sampler);

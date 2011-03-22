@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,7 +45,7 @@ public class MarkovLogicNetwork implements Map<Formula, Double> {
 		return markovBlanket;
 	}
 	
-	public GroundedMarkovNetwork ground(Atom query, List<Atom> given) {
+	public GroundedMarkovNetwork ground(Atom query, Collection<Atom> given) {
 		return GroundedMarkovNetwork.ground(this, query, given);
 	}
 

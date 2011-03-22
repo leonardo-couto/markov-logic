@@ -11,7 +11,8 @@ import java.util.Set;
 
 import main.Settings;
 import stat.SequentialConvergenceTester;
-import stat.Sampler;
+import stat.sampling.DefaultSampler;
+import stat.sampling.RandomIterator;
 import util.ListPointer;
 import fol.Atom;
 import fol.Constant;
@@ -254,15 +255,14 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		private final Set<Formula> formulas;
 		private final List<Atom> atoms;
 		public final Predicate predicate;
-		private final Iterator<List<Atom>> iterator;
+		private final Iterator<Atom> iterator;
 
 		public DataCount(Predicate p) {
 			this.predicate = p;
 			this.atoms = new ArrayList<Atom>();
 			this.formulas = new HashSet<Formula>();
-			Sampler<Atom> sampler = new Sampler<Atom>(p.getGroundings().keySet());
-			sampler.setMaxSamples(Settings.formulaCountMaxSamples);
-			this.iterator = sampler.iterator();
+			this.iterator = new RandomIterator<Atom>(p.getGroundings().keySet(),
+					Settings.formulaCountMaxSamples).iterator();
 		}
 		
 		private DataCount(DataCount old) {
@@ -272,9 +272,8 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			this.predicate = old.predicate;
 			Set<Atom> groundings = new HashSet<Atom>(this.predicate.getGroundings().keySet());
 			groundings.removeAll(this.atoms);
-			Sampler<Atom> sampler = new Sampler<Atom>(groundings);
-			sampler.setMaxSamples(Settings.formulaCountMaxSamples-this.atoms.size());
-			this.iterator = sampler.iterator();
+			this.iterator = new RandomIterator<Atom>(groundings, 
+					Settings.formulaCountMaxSamples-this.atoms.size()).iterator();
 		}
 
 		public int sampledAtoms() {
@@ -291,12 +290,12 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			return out;
 		}
 
-		private static Sampler<Constant> getSampler(List<Variable> variables) {
+		private static DefaultSampler<Constant> getSampler(List<Variable> variables) {
 			List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
 			for (Variable v : variables) {
 				constants.add(v.getConstants());
 			}
-			return new Sampler<Constant>(constants);
+			return new DefaultSampler<Constant>(constants);
 		}
 
 		private List<Data> addAtoms(Formula formula, List<Atom> atoms) {
@@ -321,7 +320,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			List<Variable> atomVariables = new ArrayList<Variable>(at.getVariables());
 			variablesSet.removeAll(atomVariables);
 			List<Variable> variables = new ArrayList<Variable>(variablesSet);
-			Sampler<Constant> sampler = getSampler(variables);
+			DefaultSampler<Constant> sampler = getSampler(variables);
 			sampler.setMaxSamples(Settings.formulaCountMaxSamples);
 			int i = 0;
 
@@ -370,7 +369,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			if(!tester.hasConverged()) {
 				List<Atom> atoms = new ArrayList<Atom>();
 				while(!tester.hasConverged() && iterator.hasNext()) {
-					Atom a = iterator.next().get(0);
+					Atom a = iterator.next();
 					atoms.add(a);
 					Map<Formula, Data> map = new HashMap<Formula, Data>(2*this.formulas.size());
 					this.put(a, map);

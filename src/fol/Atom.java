@@ -12,7 +12,7 @@ import java.util.Set;
 import org.apache.commons.math.util.MathUtils;
 
 import stat.RandomVariable;
-import stat.Sampler;
+import stat.sampling.DefaultSampler;
 import util.MyException;
 import util.NameID;
 import util.Util;
@@ -252,7 +252,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 			}
 		}
 
-		final Sampler<Constant> sampler = new Sampler<Constant>(constants);
+		final DefaultSampler<Constant> sampler = new DefaultSampler<Constant>(constants);
 		sampler.setMaxSamples(size);
 		final Iterator<List<Constant>> iterator = sampler.iterator();
 

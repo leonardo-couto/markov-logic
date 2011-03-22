@@ -3,12 +3,14 @@ package inference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import markovLogic.GroundedMarkovNetwork;
 import markovLogic.MarkovLogicNetwork;
-import stat.Sampler;
+import stat.sampling.Sampler;
+import stat.sampling.TreeSampler;
 import fol.Atom;
 import fol.Constant;
 import fol.Domain;
@@ -54,28 +56,27 @@ public class ExactInference implements Inference {
 	}
 
 	@Override
-	public double pr(Formula f, Set<Formula> given) {
+	public double pr(Formula f, Set<Atom> given) {
+		if (f instanceof Atom) {
+			Atom a = (Atom) f;
+			if (a.isGround()) {
+				return this.prAtom(a, given);
+			}
+		}
 		// TODO Auto-generated method stub
-		return 0;
+		return 0;	
 	}
 
 	@Override
 	public double pr(Formula f) {
-		if (f instanceof Atom) {
-			Atom a = (Atom) f;
-			if (a.isGround()) {
-				return this.pr(a);
-			}
-		}
-		// TODO Auto-generated method stub
-		return 0;
+		return this.pr(f, Collections.<Atom>emptySet());
 	}
 	
 	// grounded atom a
 	// TODO: ver o que fazer para o caso de o mesmo predicado aparecer duas vezes
 	// na mesma formula, exemplo: P(X) && R(X,Y) && P(Y).
-	private double pr(Atom a) {
-		GroundedMarkovNetwork groundedMln = this.mln.ground(a);
+	private double prAtom(Atom a, Set<Atom> given) {
+		GroundedMarkovNetwork groundedMln = this.mln.ground(a, given);
 		int totalAtoms = groundedMln.getGroundings().size();
 		
 		
@@ -102,7 +103,7 @@ public class ExactInference implements Inference {
 		for (Double d : wf) {
 			sumf = sumf + Math.exp(d);
 		}
-		
+
 		return (sumt / (sumt + sumf));
 	}
 	
@@ -112,7 +113,7 @@ public class ExactInference implements Inference {
 		for (int i = 0; i < dimensions; i++) {
 			domain.add(truefalse);
 		}
-		return new Sampler<Atom>(domain);
+		return new TreeSampler<Atom>(domain);
 	}
 	
 	public static void main (String[] args) {
@@ -163,8 +164,16 @@ public class ExactInference implements Inference {
 		Constant c0 = new Constant("c0", da);
 		Constant c1 = new Constant("c1", db);
 		Constant c2 = new Constant("c2", dc);
-		System.out.println("p(c0): " + infer.pr(new Atom(p, c0)));
-		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1)));
+		Constant c01 = new Constant("c01", da);
+		Constant c11 = new Constant("c11", db);
+		Constant c21 = new Constant("c21", dc);
+		Atom e0 = new Atom(r, 0.0, c0, c2);
+		Atom e1 = new Atom(q, 0.0, c0, c1);
+		Set<Atom> evidence = new HashSet<Atom>();
+		evidence.add(e0);
+		//evidence.add(e1);
+		System.out.println("p(c0): " + infer.pr(new Atom(p, c0), evidence));
+		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1), evidence));
 		System.out.println("r(c0,c2): " + infer.pr(new Atom(r, c0, c2)));
 		
 //		Domain d0 = new Domain("d0");
