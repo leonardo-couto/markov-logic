@@ -10,12 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import markovLogic.MarkovLogicNetwork;
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
 import weightLearner.Score;
 import weightLearner.WeightedPseudoLogLikelihood;
+import fol.Atom;
 import fol.Formula;
-import fol.Predicate;
 
 /**
  * @author Leonardo Castilho Couto
@@ -31,13 +32,13 @@ public class ShortestFirstSearch extends AbstractLearner {
 	private Score wpll;
 	AutomatedLBFGS weightLearner;
 
-	public ShortestFirstSearch(Set<Predicate> p) {
-		super(p);
-		clauses = new ArrayList<Formula>(FormulaGenerator.unitClauses(p));
-		cg = new FormulaGenerator(p);
+	public ShortestFirstSearch(Set<Atom> atoms) {
+		super(atoms);
+		clauses = new ArrayList<Formula>(atoms);
+		cg = new FormulaGenerator(atoms);
 		lengthClauses = new HashMap<Integer, List<Formula>>();
 		lengthClauses.put(new Integer(1), new ArrayList<Formula>(clauses));
-		wpll = new WeightedPseudoLogLikelihood(p);
+		wpll = new WeightedPseudoLogLikelihood(this.predicates);
 		wpll.addFormulas(clauses);
 		weightLearner = new AutomatedLBFGS();
 		m = 1000;
@@ -46,7 +47,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 	}
 
 	@Override
-	public Set<Formula> learn() {
+	public MarkovLogicNetwork learn() {
 		double[] weights = new double[clauses.size()];
 		Arrays.fill(weights, 0);
 		try {
@@ -64,7 +65,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 			System.out.println("**********" + score);
 			Set<Formula> formulas = findBestClauses(score, weights);
 			if (formulas.isEmpty()) {
-				return new HashSet<Formula>(clauses);
+				return MarkovLogicNetwork.toMarkovLogic(clauses, weights);
 			}
 			for (Formula f : formulas) {
 				System.out.println(f); // TODO: remove!!
@@ -80,7 +81,7 @@ public class ShortestFirstSearch extends AbstractLearner {
 			}
 			score = wpll.getScore(weights);
 		}
-		return new HashSet<Formula>(clauses);
+		return MarkovLogicNetwork.toMarkovLogic(clauses, weights);
 	}
 	
 	public Set<Formula> findBestClauses(double score, double[] weights) {

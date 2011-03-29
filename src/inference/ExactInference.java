@@ -164,11 +164,11 @@ public class ExactInference implements Inference {
 		Constant c0 = new Constant("c0", da);
 		Constant c1 = new Constant("c1", db);
 		Constant c2 = new Constant("c2", dc);
-		Constant c01 = new Constant("c01", da);
-		Constant c11 = new Constant("c11", db);
-		Constant c21 = new Constant("c21", dc);
+		//Constant c01 = new Constant("c01", da);
+		//Constant c11 = new Constant("c11", db);
+		//Constant c21 = new Constant("c21", dc);
 		Atom e0 = new Atom(r, 0.0, c0, c2);
-		Atom e1 = new Atom(q, 0.0, c0, c1);
+		//Atom e1 = new Atom(q, 0.0, c0, c1);
 		Set<Atom> evidence = new HashSet<Atom>();
 		evidence.add(e0);
 		//evidence.add(e1);

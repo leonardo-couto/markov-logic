@@ -10,12 +10,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import fol.operator.Operator;
-
-import main.Settings;
 import stat.SequentialConvergenceTester;
 import stat.sampling.DefaultSampler;
 import util.ListPointer;
+import fol.operator.Operator;
 
 /**
  * @author Leonardo Castilho Couto
@@ -155,6 +153,9 @@ public class Formula implements Comparable<Formula> {
 		return new Formula(atomsCopy, operatorsCopy, stackCopy);
 	}
 
+	/**
+	 * @return a new Set containing all variables in this formula
+	 */
 	public Set<Variable> getVariables() {
 		Set<Variable> set = new HashSet<Variable>();
 		for(Atom a : this.atoms) {
@@ -205,7 +206,7 @@ public class Formula implements Comparable<Formula> {
 		return null;		
 	}
 
-	public double trueCounts(List<Variable> variables, DefaultSampler<Constant> sampler) {
+	private double trueCounts(List<Variable> variables, DefaultSampler<Constant> sampler) {
 		// TODO: override no ATOM?
 
 		if (variables.isEmpty()) {
@@ -232,12 +233,6 @@ public class Formula implements Comparable<Formula> {
 		}
 		this.atoms = original;
 
-		if (!tester.hasConverged()) {
-			// TODO: tirar, ou colocar num log
-			System.out.println("nao convergiu");
-			return 0;
-		}
-
 		return sampler.getCardinality()*tester.mean();
 
 	}
@@ -261,7 +256,7 @@ public class Formula implements Comparable<Formula> {
 		}
 
 		DefaultSampler<Constant> sampler = new DefaultSampler<Constant>(constants);
-		sampler.setMaxSamples(Settings.formulaCountMaxSamples);
+		//sampler.setMaxSamples(Settings.formulaCountMaxSamples);
 
 		return this.trueCounts(variables, sampler);
 
@@ -274,7 +269,7 @@ public class Formula implements Comparable<Formula> {
 	public int length() {
 		int i = this.atoms.size();
 		for (Atom a : this.atoms) {
-			if (a.predicate.equals(Predicate.equals)) {
+			if (a.predicate == Predicate.equals) {
 				i--;
 			}
 		}

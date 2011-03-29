@@ -16,9 +16,9 @@ import fol.Formula;
  */
 public interface Score extends RnToRFunction, RnToRnFunction {
 	
-	public void addFormula(Formula f);
+	public boolean addFormula(Formula f);
 	
-	public void addFormulas(List<Formula> formulas);
+	public boolean addFormulas(List<Formula> formulas);
 	
 	public boolean removeFormula(Formula f);
 	

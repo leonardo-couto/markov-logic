@@ -46,28 +46,29 @@ public abstract class AbstractScore implements Score {
 	 * @see weightLearner.Score#addFormula(fol.Formula)
 	 */
 	@Override
-	public void addFormula(Formula f) {
+	public boolean addFormula(Formula f) {
+		if (this.formulas.contains(f)) { return false; }
 		this.formulas.add(0, f);
 		Set<Predicate> predicates = f.getPredicates();
+		predicates.remove(Predicate.empty);
+		predicates.remove(Predicate.equals);
 		this.formulaPredicates.put(f, predicates);
 		for (Predicate p : predicates) {
-			predicateFormulas.get(p).add(f);
+			this.predicateFormulas.get(p).add(f);
 		}
+		return true;
 	}
 
 	/* (non-Javadoc)
 	 * @see weightLearner.Score#addFormulas(java.util.List)
 	 */
 	@Override
-	public void addFormulas(List<Formula> formulas) {
-		this.formulas.addAll(0, formulas);
+	public boolean addFormulas(List<Formula> formulas) {
+		boolean b = true;
 		for (Formula f : formulas) {
-			Set<Predicate> predicates = f.getPredicates();
-			this.formulaPredicates.put(f, predicates);
-			for (Predicate p : predicates) {
-				predicateFormulas.get(p).add(f);
-			}
+			b = b && this.addFormula(f);
 		}
+		return b;
 	}
 
 	/* (non-Javadoc)
@@ -77,7 +78,9 @@ public abstract class AbstractScore implements Score {
 	public boolean removeFormula(Formula f) {
 		if (this.formulas.remove(f)) {
 			for (Predicate p : f.getPredicates()) {
-				predicateFormulas.get(p).remove(f);
+				if (p != Predicate.equals && p != Predicate.empty) {
+					predicateFormulas.get(p).remove(f);
+				}
 			}
 			formulaPredicates.remove(f);
 			return true;

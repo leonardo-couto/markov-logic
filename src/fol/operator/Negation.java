@@ -32,7 +32,7 @@ public final class Negation extends Operator {
 	@Override
 	protected Formula _getFormula(Formula... formulas) {
 		List<Operator> operators = formulas[0].getOperators();
-		if (operators != null && operators.get(operators.size()).equals(this)) {
+		if (operators != null && operators.get(operators.size()-1).equals(this)) {
 			// Double negation
 			operators = new ArrayList<Operator>(operators);
 			operators.remove(operators.size()-1);

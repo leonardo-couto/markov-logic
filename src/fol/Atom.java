@@ -1,19 +1,13 @@
 package fol;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.math.util.MathUtils;
-
+import stat.Distribution;
 import stat.RandomVariable;
-import stat.sampling.DefaultSampler;
-import util.MyException;
 import util.NameID;
 import util.Util;
 
@@ -228,121 +222,6 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		return new Atom(this.predicate, this.value, Arrays.copyOf(this.terms,this.terms.length));
 	}
 	
-	private static Iterator<double[]> staticDataIterator(List<Atom> nodes) {
-
-		final List<Variable> variables = new ArrayList<Variable>();
-		final List<Atom> atoms = new ArrayList<Atom>(nodes);
-		{
-			Set<Variable> variablesSet = new HashSet<Variable>();
-			for (Atom a : nodes) {
-				variablesSet.addAll(a.getVariables());
-			}
-			variables.addAll(variablesSet);
-		}
-
-		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
-		int size = 1;
-		for (Variable v : variables) {
-			Set<Constant> set = v.getConstants();
-			constants.add(set);
-			try {
-				size = MathUtils.mulAndCheck(size, set.size());
-			} catch (ArithmeticException e) {
-				size = Integer.MAX_VALUE;
-			}
-		}
-
-		final DefaultSampler<Constant> sampler = new DefaultSampler<Constant>(constants);
-		sampler.setMaxSamples(size);
-		final Iterator<List<Constant>> iterator = sampler.iterator();
-
-		return new Iterator<double[]>() {
-
-			private double[] next = this.makeNext();
-			
-			private double[] makeNext() {
-				double[] out = new double[atoms.size()];
-				next:
-					while (iterator.hasNext()) {
-						List<Constant> grounds = iterator.next();
-						int outIndex = 0;
-						for (Atom a : atoms) {
-							a = a.replaceVariables(variables, grounds);
-							double d = a.getValue();
-							if (Double.isNaN(d)) {
-								continue next; // try to find another set of grounds
-							} else {
-								out[outIndex] = d;
-								outIndex++;
-							}
-						}
-						return out;
-					}
-				return null;
-			}
-
-			@Override
-			public boolean hasNext() {
-				return (this.next != null);
-			}
-
-			@Override
-			public double[] next() {
-				double[] out = this.next;
-				this.next = this.makeNext();
-				return out;
-			}
-
-			@Override
-			public void remove() {
-				// do nothing				
-			}
-
-		};
-	}
-	
-	@Override
-	public Iterator<double[]> getDataIterator(List<Atom> nodes) {
-		return staticDataIterator(nodes);
-	}
-	
-	@Override
-	public boolean isConnected(Atom y) {
-		return shareVariable(this, y);
-	}
-
-	@Override
-	public Atom emptyVariable() {
-		return TRUE;
-	}
-
-	@Override 
-	public double[] getData() {
-		Map<Atom, Double> groundings = predicate.getGroundings();
-		if (!this.variablesOnly()) {
-			throw new MyException("Cannot handle TNodes with constants yet.");
-		}
-		double[] out = new double[groundings.size()];
-		int i = 0;
-		for (Double d : groundings.values()) {
-			out[i] = d.doubleValue();
-			i++;
-		}
-		return out;
-
-	}
-
-	private static boolean shareVariable(Atom a0, Atom a1) {
-		for (Variable v0 : a0.getVariables()) {
-			for (Variable v1 : a1.getVariables()) {
-				if (v0.equals(v1)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 	@Override
 	public String getName() {
 		return toString();
@@ -351,6 +230,11 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	@Override
 	public List<Atom> getAtoms() {
 		return Collections.singletonList(this);
+	}
+	
+	@Override
+	public Class<? extends Distribution<Atom>> getDistributionClass() {
+		return AtomDistribution.class;
 	}
 
 }

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 
+import markovLogic.MarkovLogicNetwork;
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
 import math.MaxFinder;
@@ -17,8 +18,8 @@ import math.OptimizationException;
 import util.MyException;
 import weightLearner.Score;
 import weightLearner.WeightedPseudoLogLikelihood;
+import fol.Atom;
 import fol.Formula;
-import fol.Predicate;
 
 /**
  * @author Leonardo Castilho Couto
@@ -38,32 +39,33 @@ public class ParallelShortestFirst extends AbstractLearner {
 	private final MaxFinder maxFinder;
 
 
-	public ParallelShortestFirst(Set<Predicate> p) {
-		super(p);
-		clauses = new ArrayList<Formula>(FormulaGenerator.unitClauses(p));
-		generator = new FormulaGenerator(p);
-		lengthClauses = new ArrayList<List<Formula>>(generator.getMaxAtoms());
-		for (int i = 0; i < generator.getMaxAtoms(); i++) {
-			lengthClauses.add(new ArrayList<Formula>());
-		}
-		for (Formula clause : clauses) {
-			lengthClauses.get(clause.length()-1).add(clause);
-		}
-		this.wscore = new WeightedPseudoLogLikelihood(p);
-		wscore.addFormulas(clauses);
-		maxFinder = new AutomatedLBFGS();
-		m = 50;
-		k = 1;
-		epslon = 0.5;
-	}
+	public ParallelShortestFirst(Set<Atom> atoms) {
+		super(atoms);
 
+		this.clauses = new ArrayList<Formula>(atoms);
+		this.generator = new FormulaGenerator(atoms);
+		this.lengthClauses = new ArrayList<List<Formula>>(this.generator.getMaxAtoms());
+		for (int i = 0; i < this.generator.getMaxAtoms(); i++) {
+			this.lengthClauses.add(new ArrayList<Formula>());
+		}
+		for (Formula clause : this.clauses) {
+			this.lengthClauses.get(clause.length()-1).add(clause);
+		}
+		this.wscore = new WeightedPseudoLogLikelihood(this.predicates);
+		this.wscore.addFormulas(this.clauses);
+		this.maxFinder = new AutomatedLBFGS();
+		this.m = 50;
+		this.k = 1;
+		this.epslon = 0.5;
+	}
+	
 	@Override
-	public Set<Formula> learn() {
+	public MarkovLogicNetwork learn() {
 		double[] weights = new double[clauses.size()];
 		try {
 			weights = maxFinder.max(weights, this.wscore, this.wscore);
 		} catch (OptimizationException e) {
-			throw new MyException("Not able to optimize weights for initial (atomic) clauses.");
+			throw new MyException("Not able to optimize weights for initial (atomic) clauses.", e);
 		}
 		double score = wscore.getScore(weights);
 		
@@ -77,7 +79,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			Set<Formula> formulas = findBestClauses(score, weights);
 			
 			if (formulas.isEmpty()) {
-				return new HashSet<Formula>(clauses);
+				return MarkovLogicNetwork.toMarkovLogic(clauses, weights);
 			}
 			for (Formula f : formulas) {
 				System.out.println(f); // TODO: remove!! (LOG)
@@ -94,7 +96,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			}
 			score = wscore.getScore(weights);
 		}
-		return new HashSet<Formula>(clauses);
+		return MarkovLogicNetwork.toMarkovLogic(clauses, weights);
 	}
 	
 	public Set<Formula> findBestClauses(double score, double[] weights) {
@@ -235,43 +237,43 @@ public class ParallelShortestFirst extends AbstractLearner {
 		public void run() {
 			try { 
 				while (true) {
-					formulas = fArray.getElements();
-					if (formulas == null || Thread.interrupted()) {
-						done.countDown();
+					this.formulas = this.fArray.getElements();
+					if (this.formulas == null || Thread.interrupted()) {
+						this.done.countDown();
 						return;
 					}
-					double bestscore = fArray.getScore(); // TODO: REMOVE!
-					for (Formula f : formulas) {
+					double bestscore = this.fArray.getScore(); // TODO: REMOVE!
+					for (Formula f : this.formulas) {
 
-						wpll.addFormula(f);
+						if (!this.wpll.addFormula(f)) { continue; }
 						double newScore = 0;
 						double learnedWeight;
 						double[] nweights;
 						try {
-							nweights = lbfgs.max(weights, this.wpll, this.wpll);
+							nweights = this.lbfgs.max(this.weights, this.wpll, this.wpll);
 							learnedWeight = nweights[nweights.length -1]; 
-							newScore = wpll.f(nweights);
+							newScore = this.wpll.f(nweights);
 						} catch (ExceptionWithIflag e) {
-							wpll.removeFormula(f);
+							this.wpll.removeFormula(f);
 							continue;
 						}
-						wpll.removeFormula(f);
+						this.wpll.removeFormula(f);
 
-						if (Double.compare(newScore, score) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
+						if (Double.compare(newScore, this.score) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
 							if (Double.compare(newScore, bestscore) > 0) {  // TODO: Remove
-								System.out.println(Double.toString(score - newScore) + " " + f + "\n" + Arrays.toString(nweights));
+								System.out.println(Double.toString(this.score - newScore) + " " + f + "\n" + Arrays.toString(nweights));
 								bestscore = newScore;
 							}
-							bestClauses.add(new WeightedClause(f, score - newScore, learnedWeight));
+							this.bestClauses.add(new WeightedClause(f, this.score - newScore, learnedWeight));
 						} else {
-							candidates.add(new WeightedClause(f, score - newScore, learnedWeight));
+							this.candidates.add(new WeightedClause(f, this.score - newScore, learnedWeight));
 						}
 					}
-					fArray.setScore(bestscore);
+					this.fArray.setScore(bestscore);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				done.countDown();
+				this.done.countDown();
 			}
 		}
 	}

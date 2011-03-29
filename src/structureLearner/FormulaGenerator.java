@@ -1,7 +1,6 @@
 package structureLearner;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +13,7 @@ import fol.Atom;
 import fol.Domain;
 import fol.Formula;
 import fol.Predicate;
+import fol.Term;
 import fol.Variable;
 import fol.operator.Biconditional;
 import fol.operator.Conjunction;
@@ -27,7 +27,7 @@ import fol.operator.Operator;
  */
 public class FormulaGenerator {
 	
-	protected Set<Predicate> predicates;
+	protected final Set<Atom> atoms;
 	private int maxVar = 6; // Max number of distinct variables in a clause.
 	private int maxAtom = 4; // Max number of Atoms in a clause.	
 	
@@ -36,8 +36,8 @@ public class FormulaGenerator {
 	private static final Operator BICONDITIONAL = Biconditional.operator;
 	private static final Operator NEGATION = Negation.operator;
 	
-	public FormulaGenerator(Collection<Predicate> predicates) {
-		this.predicates = new HashSet<Predicate>(predicates);
+	public FormulaGenerator(Collection<Atom> atoms) {
+		this.atoms = new HashSet<Atom>(atoms);
 	}
 	
 	public static List<Formula> extendsFormula(Formula f0, Formula f1) {
@@ -63,18 +63,19 @@ public class FormulaGenerator {
 		Set<Formula> newFormulas = new HashSet<Formula>();
 		
 		for (Formula f : clauses) {
-			 if (f.length() >= maxAtom) {
+			 if (f.length() >= this.maxAtom ) {
 				 continue; 
 			 }
 			Set<Variable> variables = f.getVariables();
-			// TODO: esta errado, pode criar novas formulas com as variaveis existentes
-			if (variables.size() >= maxVar) {
+			if (variables.size() > this.maxVar) {
 				continue;
 			}
-			for (Predicate p : predicates) {
-				Set<Atom> atoms = generateAtoms(p, variables);
-				for (Atom a : atoms) {
-					newFormulas.addAll(extendsFormula(f, a));
+			nextAtom: for (Atom a : this.atoms) {
+				for (Term t : a.terms) {
+					if (variables.contains(t)) {
+						newFormulas.addAll(extendsFormula(f, a));
+						continue nextAtom;
+					}
 				}
 			}
 		}
@@ -157,16 +158,7 @@ public class FormulaGenerator {
 		
 	}
 	
-	// TODO: implementar algoritmo tnodes
-	public static Set<Atom> getTNodes(Set<Predicate> predicates, int maxVar) {
-		Set<Atom> out = new HashSet<Atom>();
-		for (Predicate p : predicates) {
-			out.addAll(generateAtoms(p, maxVar));
-		}
-		return out;
-	}
-	
-	// Generate all possible not grounded Atoms of Predicate p with distinct Variables 
+	// Generate all possible (not grounded) Atoms of Predicate p with distinct Variables 
 	// that has at least one Variable in variables
 	public static Set<Atom> generateAtoms(Predicate p, Collection<Variable> variables) {
 		// The boolean indicates whether the List of Variables created has at least
@@ -333,42 +325,4 @@ public class FormulaGenerator {
 		this.maxAtom = maxAtoms;
 	}
 	
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		
-		Domain d = new Domain("person");
-		Domain t = new Domain("empresa");
-		Predicate p0 = new Predicate("Amigos", d, d, d, d);
-		Predicate p1 = new Predicate("Trabalha", t, d);
-		
-		System.out.println(Arrays.toString(generateAtoms(p0, 3).toArray(new Atom[0])));
-		
-		if (Integer.parseInt("1") == 1) {
-			return;
-		}
-		
-		
-		Variable v0 = d.newVariable();
-		Variable v1 = d.newVariable();
-		Variable v2 = t.newVariable();
-		Atom a0 = new Atom(p0, v0, v1);
-		Atom a1 = new Atom(p1, v2, v0);
-		
-//		System.out.println("Given Variables: " + v0 + ", " + v1);
-//		Set<Atom> test = FormulaGenerator.generateAtoms(p0, Arrays.asList(v0, v1, v2));
-//		for (Atom a : test) {
-//			System.out.println(a);
-//		}
-		FormulaGenerator fg = new FormulaGenerator(Arrays.asList(p0, p1));
-		Set<Formula> set = fg.generateFormulas(new HashSet<Formula>(Arrays.asList(a0, a1)));
-		List<Formula> list = new ArrayList<Formula>(fg.generateFormulas(set));
-		Collections.sort(list);
-		for (Formula f : list) {
-			System.out.println(f.toString());
-		}
-		
-	}
-
 }

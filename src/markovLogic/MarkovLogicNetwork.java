@@ -4,11 +4,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import fol.Atom;
 import fol.Formula;
+import fol.Predicate;
 
 public class MarkovLogicNetwork implements Map<Formula, Double> {
 	
@@ -51,6 +53,26 @@ public class MarkovLogicNetwork implements Map<Formula, Double> {
 
 	public GroundedMarkovNetwork ground(Atom query) {
 		return GroundedMarkovNetwork.ground(this, query, Collections.<Atom>emptyList());
+	}
+	
+	/**
+	 * Get all predicates in this MLN
+	 * @return a Set with all the predicates in this class
+	 */
+	public Set<Predicate> getPredicates() {
+		  Set<Predicate> predicates = new HashSet<Predicate>();
+		  for (Formula f : this.keySet()) {
+			  predicates.addAll(f.getPredicates());
+		  }
+		  return predicates;
+	}
+	
+	public static MarkovLogicNetwork toMarkovLogic(List<Formula> formulas, double[] weights) {
+		MarkovLogicNetwork mln = new MarkovLogicNetwork();
+		for (int i = 0; i < formulas.size(); i++) {
+			mln.put(formulas.get(i), weights[i]);
+		}
+		return mln;
 	}
 	
 	@Override
@@ -111,6 +133,20 @@ public class MarkovLogicNetwork implements Map<Formula, Double> {
 	@Override
 	public Set<java.util.Map.Entry<Formula, Double>> entrySet() {
 		return wFormulas.entrySet();
+	}
+	
+	@Override
+	public String toString() {
+		final String comma = " : ";
+		final String eol = "\n";
+		StringBuilder sb = new StringBuilder(this.size()*150);
+		for (Entry<Formula, Double> entry : this.entrySet()) {
+			sb.append(entry.getValue());
+			sb.append(comma);
+			sb.append(entry.getKey());
+			sb.append(eol);
+		}
+		return sb.toString();
 	}
 	
 }

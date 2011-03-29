@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -346,16 +347,14 @@ public class Test {
 		// e.printStackTrace();
 		// }
 		//
-		System.out
-				.println("************* TESTANDO APRENDIZADO DE FORMULAS ****************");
-		ParallelShortestFirst sfs = new ParallelShortestFirst(
-				pmln.getPredicates());
-		Set<Formula> learnedF = sfs.learn();
-		System.out
-				.println("************* FORMULAS APRENDIDAS!!! ****************");
-		for (Formula f : learnedF) {
-			System.out.println(f);
-		}
+		System.out.println("************* TESTANDO APRENDIZADO DE FORMULAS ****************");
+		//ParallelShortestFirst sfs = new ParallelShortestFirst(
+		//		pmln.getPredicates());
+		//Set<Formula> learnedF = sfs.learn();
+		System.out.println("************* FORMULAS APRENDIDAS!!! ****************");
+		//for (Formula f : learnedF) {
+		//	System.out.println(f);
+		//}
 
 	}
 

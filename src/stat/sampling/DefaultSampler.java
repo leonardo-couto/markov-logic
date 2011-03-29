@@ -34,7 +34,7 @@ public class DefaultSampler<T> extends AbstractSampler<T> {
 	 * @param n
 	 */
 	public void setMaxSamples(int n) {
-		long card = sampler.getCardinality();
+		long card = this.getCardinality();
 		if (card < this.crossJoinLimit) {
 			if (n >= card) {
 				if (!(this.sampler instanceof CrossJoinSampler<?>)) {

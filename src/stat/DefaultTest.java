@@ -1,7 +1,6 @@
 package stat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -9,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import structureLearner.TNodes;
+import util.MyException;
 import util.Util;
 
 
@@ -22,13 +21,28 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	private final Map<RV, RandomVariableData> marginalData;
 	private static int maxPartitions = 10;
 	public final double alpha;
-	private final TNodes<RV> tNodes;
 	private final FisherExact fe = new FisherExact(1000);
+	private final Distribution<RV> distribution;
 
-	public DefaultTest(double alpha, TNodes<RV> tNodes) {
+	public DefaultTest(double alpha, Set<RV> domain) {
 		this.alpha = alpha;
 		this.marginalData = new HashMap<RV, RandomVariableData>();
-		this.tNodes = tNodes;
+		try {
+			this.distribution = domain.isEmpty() ? null : 
+				domain.iterator().next().getDistributionClass().newInstance();
+		} catch (Exception e) {
+			throw new MyException("RandomVariable Distribution class do " + 
+					"not support empty constructor.", e);
+		}
+		this.distribution.addAll(domain);
+	}
+	
+	public boolean addRandomVariable(RV r) {
+		return this.distribution.add(r);
+	}
+	
+	public boolean removeRandomVariable(RV r) {
+		return this.distribution.remove(r);		
 	}
 
 	/*
@@ -69,15 +83,32 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		int increment = 100*cells;
 		int sampledElements = increment;
 
-		Iterator<double[]> dataIterator = this.tNodes.getDataIterator(x, y, z);
-		List<double[]> data = new ArrayList<double[]>(sampledElements);
-		getNextNElements(data, dataIterator, sampledElements);
-
-		if (data.isEmpty()) {
-			// If X and Y share no variables, return a high pvalue, meaning
-			// they are probably independent.
-			return 0.99;
+		Iterator<double[]> dataIterator = this.distribution.getDataIterator(x, y, z);
+		if (dataIterator == null) {
+			return 0.99; // not connected, independent
 		}
+		List<double[]> data = new ArrayList<double[]>(sampledElements+1);
+		if (!dataIterator.hasNext()) {
+			// If X and Y share no variables, return a low pvalue, meaning
+			// they are probably dependent.
+			return 0.01;
+		} else {
+			double[] d = dataIterator.next();
+			data.add(d);
+			boolean removed = false;
+			for (int i = z.size(); i > 0; i--) {
+				if (d[i-1] == -1.0) {
+					removed = true;
+					nodes.remove(i-1);
+				}
+			}
+			if (removed) {
+				data.clear();
+				dataIterator = this.distribution.getDataIterator(x, y, nodes.subList(0, nodes.size() -2));
+			}
+		}
+		
+		getNextNElements(data, dataIterator, sampledElements);
 
 		int[] nbins = new int[nodes.size()];
 		for (int i = 0; i < nodes.size(); i++) {
@@ -99,14 +130,12 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			for (int i = 0; i < matrices.length; i++) { 
 				if (!stopped[i]) {
 					int[][] matrix = matrices[i]; 
-					System.out.println(Arrays.deepToString(matrix));
 					ContingencyTable ct = new ContingencyTable(matrix);
 					if (ct.pearson()) {
 						stopped[i] = true;
 						PearsonChiSquare pearson = new PearsonChiSquare(ct);
 						pvalue = Math.min(pearson.pvalue(), pvalue);
 						if (Double.compare(pvalue, 0.01) < 0) {
-							System.out.println("pvalue: " + pvalue);
 							return pvalue;
 						}
 					} else if (ct.fisher() && ct.getSum() > 40 && ct.getSum() < 1000) {
@@ -129,20 +158,16 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 				}
 			}
 
-			//System.out.println("pvalue: " + pvalue);
-			
 			boolean stop = true;
 			for (boolean b : stopped) {
 				stop = stop && b;
 			}
 			if (stop || sampledElements > 10000 * cells) {
-				System.out.println("pvalue: " + pvalue);
 				return pvalue;
 			}
 
 			if (!getNextNElements(data, dataIterator, increment)) {
 				if (data.isEmpty()) {
-					System.out.println("pvalue: " + pvalue);
 					return pvalue;
 				}
 			}
@@ -268,7 +293,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 	private class RandomVariableData {
 
-		public final double[] data;
+		public final List<Double> data;
 		public final Histogram histogram;
 		private final Map<Integer, int[]> binsHistogram;
 		private final Map<Integer, Double> binsGeometricMean;
@@ -282,14 +307,17 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		 * @param x the RandomVariable to get the marginal data. 
 		 */
 		public RandomVariableData(RV var) {
-			this.data = var.getData();
+			
+			this.data = new ArrayList<Double>();
+			for (Iterator<Double> it = distribution.getDataIterator(var); it.hasNext(); this.data.add(it.next()));
+			
 			this.histogram = new Histogram();
 			this.histogram.addAll(this.data);
 			this.binsHistogram = new HashMap<Integer, int[]>();
 			this.binsGeometricMean = new HashMap<Integer, Double>();
 			this.binsProportion = new HashMap<Integer, double[]>();
 			
-			int total = this.data.length;
+			int total = this.data.size();
 			boolean stop = false;
 			int n = DefaultTest.maxPartitions;
 			int[] pdata = null;
