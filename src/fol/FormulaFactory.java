@@ -1,4 +1,4 @@
-package structureLearner;
+package fol;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,12 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fol.Atom;
-import fol.Domain;
-import fol.Formula;
-import fol.Predicate;
-import fol.Term;
-import fol.Variable;
 import fol.operator.Biconditional;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;
@@ -25,18 +19,16 @@ import fol.operator.Operator;
  * @author Leonardo Castilho Couto
  *
  */
-public class FormulaGenerator {
+public class FormulaFactory {
 	
 	protected final Set<Atom> atoms;
-	private int maxVar = 6; // Max number of distinct variables in a clause.
-	private int maxAtom = 4; // Max number of Atoms in a clause.	
-	
+
 	private static final Operator DISJUNCTION = Disjunction.operator;
 	private static final Operator CONJUNCTION = Conjunction.operator;
 	private static final Operator BICONDITIONAL = Biconditional.operator;
 	private static final Operator NEGATION = Negation.operator;
 	
-	public FormulaGenerator(Collection<Atom> atoms) {
+	public FormulaFactory(Collection<Atom> atoms) {
 		this.atoms = new HashSet<Atom>(atoms);
 	}
 	
@@ -59,15 +51,15 @@ public class FormulaGenerator {
 		return out;
 	}
 	
-	public Set<Formula> generateFormulas(Collection<Formula> clauses) {
+	public Set<Formula> generateFormulas(Collection<Formula> clauses, int maxAtoms, int maxVars) {
 		Set<Formula> newFormulas = new HashSet<Formula>();
 		
 		for (Formula f : clauses) {
-			 if (f.length() >= this.maxAtom ) {
+			 if (f.length() >= maxAtoms ) {
 				 continue; 
 			 }
 			Set<Variable> variables = f.getVariables();
-			if (variables.size() > this.maxVar) {
+			if (variables.size() > maxVars) {
 				continue;
 			}
 			nextAtom: for (Atom a : this.atoms) {
@@ -290,39 +282,5 @@ public class FormulaGenerator {
 		}
 		return d.newVariable();
 	}
-	
-	/**
-	 * @return the maxVar
-	 */
-	public int getMaxVar() {
-		return maxVar;
-	}
 
-	/**
-	 * @param maxVar the maxVar to set
-	 */
-	public void setMaxVar(int maxVar) {
-		if (maxVar < 2) {
-			throw new NumberFormatException("The max number of Variables needs to be > 1. Given: " + maxVar);
-		}
-		this.maxVar = maxVar;
-	}
-
-	/**
-	 * @return the maxAtoms
-	 */
-	public int getMaxAtoms() {
-		return maxAtom;
-	}
-
-	/**
-	 * @param maxAtoms the maxAtoms to set
-	 */
-	public void setMaxAtoms(int maxAtoms) {
-		if (maxAtoms < 2) {
-			throw new NumberFormatException("The max number of Atoms needs to be > 1. Given: " + maxAtoms);
-		}
-		this.maxAtom = maxAtoms;
-	}
-	
 }

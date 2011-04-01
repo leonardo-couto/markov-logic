@@ -1,38 +1,20 @@
 package util;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
-import org.jgrapht.UndirectedGraph;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
-
-import math.AutomatedLBFGS;
 
 import parse.ParseDataSet;
 import parse.ParseDomain;
 import stat.ContingencyTable;
 import stat.Histogram;
 import stat.PearsonChiSquare;
-import structureLearner.ParallelShortestFirst;
-import structureLearner.ShortestFirstSearch;
-import weightLearner.FormulaCount;
-import fol.Atom;
-import fol.Constant;
 import fol.Domain;
-import fol.Formula;
 import fol.Predicate;
-import fol.Variable;
-import fol.operator.Disjunction;
 
 @SuppressWarnings("unused")
 public class Test {

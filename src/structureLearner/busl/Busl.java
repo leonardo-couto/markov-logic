@@ -11,7 +11,6 @@ import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
 
-import structureLearner.FormulaGenerator;
 import structureLearner.ParallelShortestFirst;
 import structureLearner.StructureLearner;
 
@@ -20,6 +19,7 @@ import weightLearner.WeightLearner;
 import GSIMN.GSIMN;
 
 import fol.Atom;
+import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
 
@@ -43,7 +43,7 @@ public class Busl implements StructureLearner {
 		
 		// create one TNode for each predicate
 		for (Predicate p : this.predicates) {
-			Atom a = FormulaGenerator.generateAtom(p, vars);
+			Atom a = FormulaFactory.generateAtom(p, vars);
 			vars.addAll(a.getVariables());
 			tNodes.add(a);
 		}
@@ -54,10 +54,12 @@ public class Busl implements StructureLearner {
 		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.run();
 		BronKerboschCliqueFinder<Atom, DefaultEdge> cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(graph);
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
+			System.out.println("CLIQUE:");
+			System.out.println(clique);
 			ParallelShortestFirst psf = new ParallelShortestFirst(clique);
-			mln.putAll(psf.learn());
+			mln.addAll(psf.learn());
 		}
-		WeightLearner.updateWeights(mln);
+		mln = WeightLearner.updateWeights(mln);
 		
 		// TODO NAO TERMINADO
 		return mln;
@@ -65,7 +67,7 @@ public class Busl implements StructureLearner {
 	
 	public void makeTNode(Predicate p) {
 		if (this.tNodes.isEmpty()) {
-			this.tNodes.add(FormulaGenerator.generateAtom(p));
+			this.tNodes.add(FormulaFactory.generateAtom(p));
 		}
 	}
 	

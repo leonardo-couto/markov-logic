@@ -19,11 +19,14 @@ import util.Util;
 public class Predicate implements NameID {
 	// TODO: ASSURE UNIQUE PREDICATE NAMES.
 
-	private String name;
-	private List<Domain> argDomains;
+	private final String name;
+	private final List<Domain> argDomains;
 	private boolean closedWorld;
-	private Map<Atom, Double> groundings;
+	private final Map<Atom, Double> groundings;
 	private Set<Atom> neGroundings;
+	
+	private final String toString;
+	private final int hash;
 
 	public static final Predicate equals = new Predicate("equals", Domain.universe, Domain.universe);
 	public static final Predicate empty = new Predicate("empty", Collections.<Domain>emptyList());
@@ -37,6 +40,8 @@ public class Predicate implements NameID {
 		this.closedWorld = false;
 		this.groundings = new HashMap<Atom, Double>();
 		this.neGroundings = new HashSet<Atom>();
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
 
 	public Predicate(String name, Domain ... domains) {
@@ -45,25 +50,31 @@ public class Predicate implements NameID {
 		this.closedWorld = false;
 		this.groundings = new HashMap<Atom, Double>();
 		this.neGroundings = new HashSet<Atom>();
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
 
 	/**
 	 * @return the name
 	 */
 	public String getName() {
-		return name;
+		return this.name;
 	}
 
 	/**
 	 * @return a List of each argument Domain
 	 */
 	public List<Domain> getDomains() {
-		return argDomains;
+		return this.argDomains;
 	}
 
+	private String _toString() {
+		return this.name + "(" + Util.join(this.argDomains.toArray(), ",") + ")";
+	}
+	
 	@Override
 	public String toString() {
-		return name + "(" + Util.join(argDomains.toArray(), ",") + ")";
+		return this.toString;
 	}
 
 	@Override
@@ -72,18 +83,18 @@ public class Predicate implements NameID {
 		if ( !(o instanceof Predicate) ) return false;
 
 		Predicate p = (Predicate) o;
-		return name.equals(p.getName());
+		return this.toString.equals(p.toString);
 	}
 
 	public int hashCode() {
-		return name.hashCode();
+		return this.hash;
 	}
 
 	/**
 	 * @return the closedWorld
 	 */
 	public boolean isClosedWorld() {
-		return closedWorld;
+		return this.closedWorld;
 	}
 
 	/**
@@ -91,17 +102,17 @@ public class Predicate implements NameID {
 	 */
 	public void setClosedWorld(boolean b) {
 		if (b == true && this.closedWorld == false) { 
-			if (neGroundings.isEmpty()) {
+			if (this.neGroundings.isEmpty()) {
 				setGroundings();
 			} else {
-				for (Atom a : neGroundings) {
-					groundings.put(a, a.value);
+				for (Atom a : this.neGroundings) {
+					this.groundings.put(a, a.value);
 				}
 			}
 		}
 		if (b == false && this.closedWorld == true) {
-			for (Atom a : neGroundings) {
-				groundings.remove(a);
+			for (Atom a : this.neGroundings) {
+				this.groundings.remove(a);
 			}
 		}
 		this.closedWorld = b;
@@ -117,13 +128,13 @@ public class Predicate implements NameID {
 		List<List<Constant>> cll = listGroundings();
 		for (List<Constant> cList : cll) {
 			Atom a = new Atom(this, 0.0, cList);
-			if (!groundings.containsKey(a)) {
+			if (!this.groundings.containsKey(a)) {
 				neGroundings.add(a);
 			}
 		}
 		this.neGroundings = neGroundings;
 		for (Atom a : neGroundings) {
-			groundings.put(a, a.value);
+			this.groundings.put(a, a.value);
 		}
 	}	
 

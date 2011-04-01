@@ -16,13 +16,16 @@ import util.Util;
  *
  */
 public final class Atom extends Formula implements NameID, RandomVariable<Atom> {
-	
+
 	public final Predicate predicate;
 	public final Term[] terms;
-	public final double value;	
+	public final double value;
 	
-  public static final Atom TRUE = new Atom(Predicate.empty, 1, Collections.<Term>emptyList());
-  public static final Atom FALSE = new Atom(Predicate.empty, 0, Collections.<Term>emptyList());	
+	private final String toString;
+	private final int hash;
+
+	public static final Atom TRUE = new Atom(Predicate.empty, 1, Collections.<Term>emptyList());
+	public static final Atom FALSE = new Atom(Predicate.empty, 0, Collections.<Term>emptyList());	
 
 	/**
 	 * @param formulas
@@ -34,14 +37,18 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.terms = terms.toArray(new Term[0]);
 		checkArguments(predicate, this.terms);
 		this.value = Double.NaN;
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
-	
+
 	public Atom(Predicate predicate, Term ... terms) {
 		super();
 		this.predicate = predicate;
 		this.terms = terms;
 		checkArguments(predicate, terms);
 		this.value = Double.NaN;
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
 
 	public Atom(Predicate predicate, double value, List<? extends Term> terms) {
@@ -50,23 +57,29 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.terms = terms.toArray(new Term[0]);
 		checkArguments(predicate, this.terms);
 		this.value = value;
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
-	
+
 	public Atom(Predicate predicate, double value, Term ... terms) {
 		super();
 		this.predicate = predicate;
 		this.terms = terms;
 		checkArguments(predicate, terms);
 		this.value = value;
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
-	
+
 	public Atom(Atom a, double value) {
 		super();
 		this.predicate = a.predicate;
 		this.terms = Arrays.copyOf(a.terms, a.terms.length);
 		this.value = value;
+		this.toString = this._toString();
+		this.hash = this.toString.hashCode();
 	}
-	
+
 	private static void checkArguments(Predicate p, Term[] args) {
 		if (args.length != p.getDomains().size()) {
 			throw new IllegalArgumentException("Wrong number of arguments creating an Atom of Predicate \"" + p.toString() + "\" with arguments: " + Util.join(args, ",") + ".");
@@ -79,21 +92,25 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 			i++;
 		}
 	}
-
-	@Override
-	public String toString() {
+	
+	private String _toString() {
 		if (this == Atom.FALSE) return "false";
 		if (this == Atom.TRUE) return "true";
 		return predicate.getName() + "(" + Util.join(terms, ",") + ")";
 	}
-	
+
+	@Override
+	public String toString() {
+		return this.toString;
+	}
+
 	/**
 	 * @return the value
 	 */
 	@Override
 	public double getValue() {
-		if (predicate.equals(Predicate.equals)) {
-			if (terms[0].equals(terms[1])) {
+		if (predicate == Predicate.equals) {
+			if (terms[0] == terms[1]) {
 				return 1.0d;
 			}
 			return 0.0d;
@@ -108,7 +125,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	public Set<Predicate> getPredicates() {
 		return Collections.singleton(predicate);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see fol.Formula#hasPredicate(fol.Predicate)
 	 */
@@ -116,7 +133,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	public boolean hasPredicate(Predicate p) {
 		return predicate.equals(p);
 	}
-	
+
 	@Override
 	public Atom replaceVariables(List<Variable> x, List<Constant> c) {
 		Term[] newTerms = Arrays.copyOf(terms, terms.length);
@@ -162,7 +179,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		}
 		return true;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see fol.Formula#getVariables()
 	 */
@@ -176,7 +193,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		}
 		return set;
 	}
-	
+
 	public boolean variablesOnly() {
 		for (Term t : terms) {
 			if(!(t instanceof Variable)) {
@@ -185,7 +202,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		}
 		return true;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see fol.Formula#length()
 	 */
@@ -196,17 +213,14 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		}
 		return 1;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
 	@Override
 	public boolean equals(Object obj) {
 		// Ignore Value
-		if (obj.toString().equals(toString())) {
-			return true;
-		}
-		return false;
+		return (obj.toString().equals(this.toString));
 	}
 
 	/* (non-Javadoc)
@@ -214,9 +228,9 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public int hashCode() {
-		return toString().hashCode();
+		return this.hash;
 	}
-	
+
 	@Override
 	public Atom copy() {
 		return new Atom(this.predicate, this.value, Arrays.copyOf(this.terms,this.terms.length));

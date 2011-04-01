@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,27 +20,23 @@ public abstract class AbstractScore implements Score {
 	
 	private final List<Formula> formulas;
 	private final Set<Predicate> predicates;
-	protected final Map<Predicate, Set<Formula>> predicateFormulas;
-	protected final Map<Formula, Set<Predicate>> formulaPredicates;
+	protected final Map<Predicate, List<Formula>> predicateFormulas;
 	
 	public AbstractScore(Set<Predicate> predicates) {
 		int defaultSize = (int) Math.ceil(predicates.size()*1.4);
 		this.predicates = predicates;
 		this.formulas = new LinkedList<Formula>();
-		this.predicateFormulas = new HashMap<Predicate, Set<Formula>>(defaultSize);
-		this.formulaPredicates = new HashMap<Formula, Set<Predicate>>(defaultSize);
+		this.predicateFormulas = new HashMap<Predicate, List<Formula>>(defaultSize);
 		for (Predicate p : predicates) {
-			this.predicateFormulas.put(p, new HashSet<Formula>(defaultSize));
+			this.predicateFormulas.put(p, new LinkedList<Formula>());
 		}
 	}
 
 	protected AbstractScore(List<Formula> formulas, Set<Predicate> predicates,
-			Map<Predicate, Set<Formula>> predicateFormulas,
-			Map<Formula, Set<Predicate>> formulaPredicates) {
+			Map<Predicate, List<Formula>> predicateFormulas) {
 		this.formulas = formulas;
 		this.predicates = predicates;
 		this.predicateFormulas = predicateFormulas;
-		this.formulaPredicates = formulaPredicates;
 	}
 	
 	/* (non-Javadoc)
@@ -49,10 +46,6 @@ public abstract class AbstractScore implements Score {
 	public boolean addFormula(Formula f) {
 		if (this.formulas.contains(f)) { return false; }
 		this.formulas.add(0, f);
-		Set<Predicate> predicates = f.getPredicates();
-		predicates.remove(Predicate.empty);
-		predicates.remove(Predicate.equals);
-		this.formulaPredicates.put(f, predicates);
 		for (Predicate p : predicates) {
 			this.predicateFormulas.get(p).add(f);
 		}
@@ -70,26 +63,39 @@ public abstract class AbstractScore implements Score {
 		}
 		return b;
 	}
+	
+	// A way to remove an Object from a list without
+	// using the equals method.
+	protected static boolean remove(List<?> l, Object f) {
+		ListIterator<?> it = l.listIterator();
+		while (it.hasNext()) {
+			Object g = it.next();
+			if (f == g) {
+				it.remove();
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/* (non-Javadoc)
 	 * @see weightLearner.Score#removeFormula(fol.Formula)
 	 */
 	@Override
 	public boolean removeFormula(Formula f) {
-		if (this.formulas.remove(f)) {
+		if (remove(this.formulas, f)) {
 			for (Predicate p : f.getPredicates()) {
 				if (p != Predicate.equals && p != Predicate.empty) {
-					predicateFormulas.get(p).remove(f);
+					remove(this.predicateFormulas.get(p), f);
 				}
 			}
-			formulaPredicates.remove(f);
 			return true;
 		}
 		return false;
 	}
 	
 	public List<Formula> getFormulas() {
-		return new ArrayList<Formula>(formulas);
+		return new ArrayList<Formula>(this.formulas);
 	}
 
 	/* (non-Javadoc)

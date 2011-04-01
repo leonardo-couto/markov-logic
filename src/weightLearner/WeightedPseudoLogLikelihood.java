@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,11 +41,10 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	
 	private WeightedPseudoLogLikelihood(List<Formula> formulas,
 			Set<Predicate> predicates,
-			Map<Predicate, Set<Formula>> predicateFormulas,
-			Map<Formula, Set<Predicate>> formulaPredicates,
+			Map<Predicate, List<Formula>> predicateFormulas,
 			Map<Predicate, DataCount> dataCounts) {
-		super(formulas, predicates, predicateFormulas, formulaPredicates);
-		this.dataCounts = dataCounts;
+		super(formulas, predicates, predicateFormulas);
+		this.dataCounts = dataCounts; // TODO: NAO EH USADO PELO COPY????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 	}
 
 	/* (non-Javadoc)
@@ -161,8 +161,10 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	@Override
 	public boolean addFormula(Formula f) {
 		boolean b = super.addFormula(f);
-		for (Predicate p : formulaPredicates.get(f)) {
-			this.dataCounts.get(p).addFormula(f);
+		for (Predicate p : f.getPredicates()) {
+			if (p != Predicate.equals) {
+				this.dataCounts.get(p).addFormula(f);
+			}
 		}
 		return b;
 	}
@@ -174,7 +176,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	public boolean addFormulas(List<Formula> formulas) {
 		boolean b = super.addFormulas(formulas);
 		for (Formula f : formulas) {
-			for (Predicate p : this.formulaPredicates.get(f)) {
+			for (Predicate p : f.getPredicates()) {
 				this.dataCounts.get(p).addFormula(f);
 			}
 		}
@@ -186,8 +188,10 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	 */
 	@Override
 	public boolean removeFormula(Formula f) {
-		for (Predicate p : formulaPredicates.get(f)) {
-			this.dataCounts.get(p).removeFormula(f);
+		for (Predicate p : f.getPredicates()) {
+			if (p != Predicate.equals) {
+				this.dataCounts.get(p).removeFormula(f);
+			}
 		}
 		return super.removeFormula(f);
 	}
@@ -397,24 +401,19 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 	@Override
 	public Score copy() {
-		Map<Predicate, Set<Formula>> predicateFormulas = 
-			new HashMap<Predicate, Set<Formula>>(this.predicateFormulas);
-		Map<Formula, Set<Predicate>> formulaPredicates = 
-			new HashMap<Formula, Set<Predicate>>(this.formulaPredicates);
+		Map<Predicate, List<Formula>> predicateFormulas = 
+			new HashMap<Predicate, List<Formula>>(this.predicateFormulas);
 		Set<Predicate> predicates = this.getPredicates();
 		List<Formula> formulas = this.getFormulas();
 		for (Predicate p : predicates) {
-			predicateFormulas.put(p, new HashSet<Formula>(predicateFormulas.get(p)));
-		}
-		for (Formula f : formulas) {
-			formulaPredicates.put(f, new HashSet<Predicate>(formulaPredicates.get(f)));
+			predicateFormulas.put(p, new LinkedList<Formula>(predicateFormulas.get(p)));
 		}
 		Map<Predicate, DataCount> dataCounts = new HashMap<Predicate, DataCount>(this.dataCounts);
 		for (Predicate p : predicates) {
 			dataCounts.put(p, dataCounts.get(p).copy());
 		}
 		return new WeightedPseudoLogLikelihood(formulas, predicates, 
-				predicateFormulas, formulaPredicates, dataCounts);
+				predicateFormulas, dataCounts);
 	}
 
 }

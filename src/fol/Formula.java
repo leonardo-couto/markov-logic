@@ -50,7 +50,9 @@ public class Formula implements Comparable<Formula> {
 		this.stack = stack;
 		this.predicates = new HashSet<Predicate>();
 		for(Atom a : atoms) {
-			this.predicates.add(a.predicate);
+			if (a.predicate != Predicate.empty) {
+				this.predicates.add(a.predicate);
+			}
 		}
 	}
 

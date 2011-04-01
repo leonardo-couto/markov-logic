@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 
 import markovLogic.MarkovLogicNetwork;
+import markovLogic.WeightedFormula;
 import math.AutomatedLBFGS;
 import math.LBFGS.ExceptionWithIflag;
 import math.MaxFinder;
@@ -20,6 +21,7 @@ import weightLearner.Score;
 import weightLearner.WeightedPseudoLogLikelihood;
 import fol.Atom;
 import fol.Formula;
+import fol.FormulaFactory;
 
 /**
  * @author Leonardo Castilho Couto
@@ -29,23 +31,28 @@ public class ParallelShortestFirst extends AbstractLearner {
 	
 	private static final int threads = Runtime.getRuntime().availableProcessors();
 	private static final int fpt = 30; // Functions per thread.
+	private final FormulaFactory generator;
+	
+	private final int maxVars = 6; // Max number of distinct variables in a clause.
+	private final int maxAtoms = 4; // Max number of Atoms in a clause.	
+	private final int k = 1; 
+	private final int m = 50;
+	private final double epslon = 0.5;
+	private final Score wscore;
+	private final MaxFinder maxFinder;
 	
 	private final List<Formula> clauses;
 	private final List<List<Formula>> lengthClauses;
-	private final FormulaGenerator generator;
-	private final int k, m;
-	private final double epslon;
-	private final Score wscore;
-	private final MaxFinder maxFinder;
+
 
 
 	public ParallelShortestFirst(Set<Atom> atoms) {
 		super(atoms);
 
 		this.clauses = new ArrayList<Formula>(atoms);
-		this.generator = new FormulaGenerator(atoms);
-		this.lengthClauses = new ArrayList<List<Formula>>(this.generator.getMaxAtoms());
-		for (int i = 0; i < this.generator.getMaxAtoms(); i++) {
+		this.generator = new FormulaFactory(atoms);
+		this.lengthClauses = new ArrayList<List<Formula>>(this.maxAtoms);
+		for (int i = 0; i < this.maxAtoms; i++) {
 			this.lengthClauses.add(new ArrayList<Formula>());
 		}
 		for (Formula clause : this.clauses) {
@@ -54,20 +61,17 @@ public class ParallelShortestFirst extends AbstractLearner {
 		this.wscore = new WeightedPseudoLogLikelihood(this.predicates);
 		this.wscore.addFormulas(this.clauses);
 		this.maxFinder = new AutomatedLBFGS();
-		this.m = 50;
-		this.k = 1;
-		this.epslon = 0.5;
 	}
 	
 	@Override
 	public MarkovLogicNetwork learn() {
 		double[] weights = new double[clauses.size()];
 		try {
-			weights = maxFinder.max(weights, this.wscore, this.wscore);
+			weights = this.maxFinder.max(weights, this.wscore, this.wscore);
 		} catch (OptimizationException e) {
 			throw new MyException("Not able to optimize weights for initial (atomic) clauses.", e);
 		}
-		double score = wscore.getScore(weights);
+		double score = this.wscore.getScore(weights);
 		
 		int i = 0;
 		
@@ -76,48 +80,49 @@ public class ParallelShortestFirst extends AbstractLearner {
 			System.out.println("**********" + score);
 			System.out.println(Arrays.toString(weights)); // TODO: REMOVE!! (LOG)
 			
-			Set<Formula> formulas = findBestClauses(score, weights);
+			List<Formula> formulas = this.findBestClauses(score, weights);
 			
 			if (formulas.isEmpty()) {
-				return MarkovLogicNetwork.toMarkovLogic(clauses, weights);
+				return new MarkovLogicNetwork(WeightedFormula.toWeightedFormulas(this.clauses, weights));
 			}
 			for (Formula f : formulas) {
 				System.out.println(f); // TODO: remove!! (LOG)
-				wscore.addFormula(f);
-				clauses.add(f);
-				lengthClauses.get(f.length()-1).add(f);
+				this.wscore.addFormula(f);
+				this.clauses.add(f);
+				this.lengthClauses.get(f.length()-1).add(f);
 			}
 			try {
-				weights = Arrays.copyOf(weights, clauses.size());
-				weights = maxFinder.max(weights, this.wscore, this.wscore);
+				weights = Arrays.copyOf(weights, this.clauses.size());
+				weights = this.maxFinder.max(weights, this.wscore, this.wscore);
 			} catch (OptimizationException e) {
 				// TODO (LOG) and do nothing
 				e.printStackTrace();
 			}
-			score = wscore.getScore(weights);
+			score = this.wscore.getScore(weights);
 		}
-		return MarkovLogicNetwork.toMarkovLogic(clauses, weights);
+		return new MarkovLogicNetwork(WeightedFormula.toWeightedFormulas(this.clauses, weights));
 	}
 	
-	public Set<Formula> findBestClauses(double score, double[] weights) {
-		Set<Formula> out = new HashSet<Formula>();
-		Vector<WeightedClause> bestClauses = new Vector<WeightedClause>();
-		Vector<WeightedClause> candidates = new Vector<WeightedClause>();
+	public List<Formula> findBestClauses(double score, double[] weights) {
+		List<Formula> out = new LinkedList<Formula>();
+		Vector<ClauseScore> bestClauses = new Vector<ClauseScore>();
+		Vector<ClauseScore> candidates = new Vector<ClauseScore>();
 		double[] newWeights = Arrays.copyOf(weights, weights.length + 1);
 		
-		for (int i = 1; i < generator.getMaxAtoms(); i++) {
+		for (int i = 1; i < this.maxAtoms; i++) {
 			// add all clauses of length i;
-			Collection<Formula> next = new ArrayList<Formula>(lengthClauses.get(i-1));
+			Collection<Formula> next = new ArrayList<Formula>(this.lengthClauses.get(i-1));
 			
 			// add all candidates to be expanded
 			Collections.sort(candidates);
-			for (int j = 0; j < Math.min(m, candidates.size()); j++) {
-				next.add(candidates.get(j).clause);
+			for (int j = 0; j < Math.min(this.m, candidates.size()); j++) {
+				next.add(candidates.get(j).getFormula());
 			}
 			
-			candidates = new Vector<WeightedClause>();
+			candidates = new Vector<ClauseScore>();
 			
-			FormulaArray formulas = new FormulaArray(generator.generateFormulas(next));
+			FormulaArray formulas = new FormulaArray(
+					this.generator.generateFormulas(next, this.maxAtoms, this.maxVars));
 			// next.removeAll(lengthClauses.get(new Integer(i+1)));
 			// TODO: Needs to make sure no clause in here is equal clauses already in mln.
 			// the above does not work because of Formula.equals.
@@ -126,7 +131,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			
 			CountDownLatch done = new CountDownLatch(threads);
 			for (int j = 0; j < threads; j++) {
-				new TestFormula(wscore, formulas, candidates, bestClauses, newWeights, score, done);
+				new TestFormula(this.wscore, formulas, candidates, bestClauses, newWeights, score, done);
 			}
 
 			try {
@@ -138,8 +143,8 @@ public class ParallelShortestFirst extends AbstractLearner {
 			
 			if (!bestClauses.isEmpty()) {
 				Collections.sort(bestClauses);
-				for (int j = 0; j < Math.min(k, bestClauses.size()); j++) {
-					out.add(bestClauses.get(j).clause);
+				for (int j = 0; j < Math.min(this.k, bestClauses.size()); j++) {
+					out.add(bestClauses.get(j).getFormula());
 				}
 				return out;
 			}
@@ -148,20 +153,17 @@ public class ParallelShortestFirst extends AbstractLearner {
 		return out;
 	}
 	
-	class WeightedClause implements Comparable<WeightedClause> {
+	class ClauseScore extends WeightedFormula implements Comparable<ClauseScore> {
 		
-		public WeightedClause(Formula clause, double score, double weight) {
+		public ClauseScore(Formula clause, double score, double weight) {
+			super(clause, weight);
 			this.score = score;
-			this.clause = clause;
-			this.weight = weight;
 		}
 		
-		double score;
-		double weight;
-		Formula clause;
+		final double score;
 		
 		@Override
-		public int compareTo(WeightedClause o) {
+		public int compareTo(ClauseScore o) {
 			return Double.compare(this.score, o.score);
 		}
 
@@ -211,8 +213,8 @@ public class ParallelShortestFirst extends AbstractLearner {
 		private Score wpll;
 		private Formula[] formulas;
 		private AutomatedLBFGS lbfgs = new AutomatedLBFGS();
-		private Vector<WeightedClause> candidates;
-		private Vector<WeightedClause> bestClauses;
+		private Vector<ClauseScore> candidates;
+		private Vector<ClauseScore> bestClauses;
 		private FormulaArray fArray;
 		private double[] weights;
 		private final double score;
@@ -220,7 +222,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		private CountDownLatch done;
 		
 		public TestFormula(Score wscore, FormulaArray fArray, 
-				Vector<WeightedClause> candidates, Vector<WeightedClause> bestClauses,
+				Vector<ClauseScore> candidates, Vector<ClauseScore> bestClauses,
 				double[] weights, double score, CountDownLatch done) {
 			this.wpll = wscore.copy();
 			this.fArray = fArray;
@@ -230,7 +232,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			this.score = score;
 			this.done = done;
 			this.t = new Thread(this);
-			t.start();
+			this.t.start();
 		}
 
 		@Override
@@ -239,7 +241,6 @@ public class ParallelShortestFirst extends AbstractLearner {
 				while (true) {
 					this.formulas = this.fArray.getElements();
 					if (this.formulas == null || Thread.interrupted()) {
-						this.done.countDown();
 						return;
 					}
 					double bestscore = this.fArray.getScore(); // TODO: REMOVE!
@@ -259,20 +260,21 @@ public class ParallelShortestFirst extends AbstractLearner {
 						}
 						this.wpll.removeFormula(f);
 
-						if (Double.compare(newScore, this.score) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
+						if (Double.compare(newScore, this.score) > 0.01 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
 							if (Double.compare(newScore, bestscore) > 0) {  // TODO: Remove
 								System.out.println(Double.toString(this.score - newScore) + " " + f + "\n" + Arrays.toString(nweights));
 								bestscore = newScore;
 							}
-							this.bestClauses.add(new WeightedClause(f, this.score - newScore, learnedWeight));
+							this.bestClauses.add(new ClauseScore(f, this.score - newScore, learnedWeight));
 						} else {
-							this.candidates.add(new WeightedClause(f, this.score - newScore, learnedWeight));
+							this.candidates.add(new ClauseScore(f, this.score - newScore, learnedWeight));
 						}
 					}
 					this.fArray.setScore(bestscore);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
 				this.done.countDown();
 			}
 		}

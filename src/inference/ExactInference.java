@@ -9,6 +9,7 @@ import java.util.Set;
 
 import markovLogic.GroundedMarkovNetwork;
 import markovLogic.MarkovLogicNetwork;
+import markovLogic.WeightedFormula;
 import stat.sampling.Sampler;
 import stat.sampling.TreeSampler;
 import fol.Atom;
@@ -152,13 +153,13 @@ public class ExactInference implements Inference {
 		Formula f7 = Biconditional.operator.getFormula(f3, f6);
 		
 		MarkovLogicNetwork mln = new MarkovLogicNetwork();
-		mln.put(f1, 1.0);
-		mln.put(f2, 0.5);
-		mln.put(f3, 1.5);
-		mln.put(f4, 3.0);
-		mln.put(f5, 2.2);
-		mln.put(f6, 10.0);
-		mln.put(f7, 0.1);
+		mln.add(new WeightedFormula(f1, 1.0));
+		mln.add(new WeightedFormula(f2, 0.5));
+		mln.add(new WeightedFormula(f3, 1.5));
+		mln.add(new WeightedFormula(f4, 3.0));
+		mln.add(new WeightedFormula(f5, 2.2));
+		mln.add(new WeightedFormula(f6, 10.0));
+		mln.add(new WeightedFormula(f7, 0.1));
 		
 		Inference infer = new ExactInference(mln);
 		Constant c0 = new Constant("c0", da);
