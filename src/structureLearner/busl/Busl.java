@@ -54,8 +54,9 @@ public class Busl implements StructureLearner {
 		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.run();
 		BronKerboschCliqueFinder<Atom, DefaultEdge> cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(graph);
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
-			System.out.println("CLIQUE:");
-			System.out.println(clique);
+			System.out.println();
+			System.out.println("CLIQUE: " + clique);
+			System.out.println();
 			ParallelShortestFirst psf = new ParallelShortestFirst(clique);
 			mln.addAll(psf.learn());
 		}

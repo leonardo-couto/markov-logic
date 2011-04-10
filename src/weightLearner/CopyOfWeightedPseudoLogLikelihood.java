@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import stat.SequentialConvergenceTester;
+import stat.convergence.SequentialConvergenceTester;
 import stat.sampling.RandomIterator;
 import util.ListPointer;
 import util.MyException;
@@ -24,12 +24,12 @@ import fol.Variable;
  * @author Leonardo Castilho Couto
  *
  */
-public class WeightedPseudoLogLikelihood extends AbstractScore {
+public class CopyOfWeightedPseudoLogLikelihood extends AbstractScore {
 
 	private final Map<Predicate, DataCount> dataCounts;
 	private double[] grad = new double[0];
 
-	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
+	public CopyOfWeightedPseudoLogLikelihood(Set<Predicate> predicates) {
 		super(predicates);
 		int defaultSize = (int) Math.ceil(predicates.size()*1.4);
 		this.dataCounts = new HashMap<Predicate, DataCount>(defaultSize);
@@ -39,7 +39,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		}
 	}
 	
-	private WeightedPseudoLogLikelihood(List<Formula> formulas,
+	private CopyOfWeightedPseudoLogLikelihood(List<Formula> formulas,
 			Set<Predicate> predicates,
 			Map<Predicate, List<Formula>> predicateFormulas,
 			Map<Predicate, DataCount> dataCounts) {
@@ -412,7 +412,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		for (Predicate p : predicates) {
 			dataCounts.put(p, dataCounts.get(p).copy());
 		}
-		return new WeightedPseudoLogLikelihood(formulas, predicates, 
+		return new CopyOfWeightedPseudoLogLikelihood(formulas, predicates, 
 				predicateFormulas, dataCounts);
 	}
 

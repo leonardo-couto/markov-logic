@@ -1,4 +1,4 @@
-package stat;
+package stat.convergence;
 
 import java.util.ArrayList;
 import java.util.HashMap;

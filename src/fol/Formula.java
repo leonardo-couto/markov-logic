@@ -10,8 +10,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import stat.SequentialConvergenceTester;
+import stat.convergence.DummyTester;
+import stat.convergence.SequentialTester;
 import stat.sampling.DefaultSampler;
+import stat.sampling.Sampler;
 import util.ListPointer;
 import fol.operator.Operator;
 
@@ -208,22 +210,13 @@ public class Formula implements Comparable<Formula> {
 		return null;		
 	}
 
-	private double trueCounts(List<Variable> variables, DefaultSampler<Constant> sampler) {
-		// TODO: override no ATOM?
-
-		if (variables.isEmpty()) {
-			// Formula is grounded
-			double d = this.getValue();
-			if (Double.isNaN(d)) {
-				return 0;
-			} else {
-				return d;
-			}
+	private double trueCounts(List<Variable> variables, Sampler<Constant> sampler, SequentialTester tester, long cardinality) {
+		
+		if (tester.hasConverged()) {
+			return 0;
 		}
-
+		
 		List<Atom> original = this.atoms;
-		SequentialConvergenceTester tester = new SequentialConvergenceTester(.95, .05);
-
 		for (List<Constant> arg : sampler) {
 			this.atoms = replaceAtomVariables(original, variables, arg);
 			double d = this.getValue();
@@ -234,12 +227,18 @@ public class Formula implements Comparable<Formula> {
 			}
 		}
 		this.atoms = original;
-
-		return sampler.getCardinality()*tester.mean();
-
+		
+		double mean = tester.mean();
+		tester.clear();
+		return Double.isNaN(mean) ? 0.0d : cardinality * mean;
 	}
 
 	public double trueCounts() {
+		return this.trueCounts(new DummyTester(-1));
+	}
+	
+	public double trueCounts(SequentialTester tester) {
+		// TODO: override no ATOM?
 		List<Variable> variables = new ArrayList<Variable>(this.getVariables());
 
 		if (variables.isEmpty()) {
@@ -258,12 +257,10 @@ public class Formula implements Comparable<Formula> {
 		}
 
 		DefaultSampler<Constant> sampler = new DefaultSampler<Constant>(constants);
-		//sampler.setMaxSamples(Settings.formulaCountMaxSamples);
-
-		return this.trueCounts(variables, sampler);
-
+				
+		return this.trueCounts(variables, sampler, tester, sampler.getCardinality());
 	}
-
+	
 	/**
 	 * The number of Atoms in a formula
 	 * Does not consider Atoms of Predicate Predicate.equals
@@ -271,7 +268,7 @@ public class Formula implements Comparable<Formula> {
 	public int length() {
 		int i = this.atoms.size();
 		for (Atom a : this.atoms) {
-			if (a.predicate == Predicate.equals) {
+			if (a.predicate == Predicate.empty) {
 				i--;
 			}
 		}

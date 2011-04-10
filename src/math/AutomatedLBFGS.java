@@ -9,7 +9,7 @@ public class AutomatedLBFGS extends LBFGS implements MaxFinder {
 	
 	public final int m;
 	public final int[] iprint;
-	public final double eps;	
+	public double eps;	
 	public static final double xtol = Util.machinePrecision();
 	
 	public AutomatedLBFGS() {
@@ -51,6 +51,11 @@ public class AutomatedLBFGS extends LBFGS implements MaxFinder {
 		}
 
 		return out;
+	}
+	
+	@Override
+	public void setPrecision(double eps) {
+		this.eps = eps;
 	}
 	
 	private double[] changeSign(double[] d) {

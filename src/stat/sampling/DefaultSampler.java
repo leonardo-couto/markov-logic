@@ -13,7 +13,7 @@ public class DefaultSampler<T> extends AbstractSampler<T> {
 	
 	private AbstractSampler<T> sampler;
 	private int crossJoinLimit = 100; // default
-	private int noReplacementLimit = 500;
+	private int noReplacementLimit = 1000;
 	private int treeLimit = 10000;
 	
 	public DefaultSampler(List<? extends Collection<T>> domains) {

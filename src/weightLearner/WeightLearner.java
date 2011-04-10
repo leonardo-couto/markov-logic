@@ -7,6 +7,7 @@ import math.AutomatedLBFGS;
 import math.MaxFinder;
 import math.OptimizationException;
 import util.MyException;
+import weightLearner.wpll.WeightedPseudoLogLikelihood;
 
 public class WeightLearner {
 

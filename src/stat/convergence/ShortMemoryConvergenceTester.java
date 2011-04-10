@@ -1,6 +1,7 @@
-package stat;
+package stat.convergence;
 
 import java.util.Arrays;
+
 
 public class ShortMemoryConvergenceTester extends SequentialConvergenceTester {
 	

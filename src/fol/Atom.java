@@ -35,7 +35,6 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		super();
 		this.predicate = predicate;
 		this.terms = terms.toArray(new Term[0]);
-		checkArguments(predicate, this.terms);
 		this.value = Double.NaN;
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
@@ -45,7 +44,6 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		super();
 		this.predicate = predicate;
 		this.terms = terms;
-		checkArguments(predicate, terms);
 		this.value = Double.NaN;
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
@@ -55,7 +53,6 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		super();
 		this.predicate = predicate;
 		this.terms = terms.toArray(new Term[0]);
-		checkArguments(predicate, this.terms);
 		this.value = value;
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
@@ -65,7 +62,6 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		super();
 		this.predicate = predicate;
 		this.terms = terms;
-		checkArguments(predicate, terms);
 		this.value = value;
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
@@ -80,18 +76,18 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.hash = this.toString.hashCode();
 	}
 
-	private static void checkArguments(Predicate p, Term[] args) {
-		if (args.length != p.getDomains().size()) {
-			throw new IllegalArgumentException("Wrong number of arguments creating an Atom of Predicate \"" + p.toString() + "\" with arguments: " + Util.join(args, ",") + ".");
-		}
-		int i = 0;
-		for (Term t : args) {
-			if (!Domain.in(t, p.getDomains().get(i))) {
-				throw new IllegalArgumentException("Incompatible Domains. Cannot put Term \"" + t.toString() + "\" with Domain(s) {" + Util.join(t.getDomain().toArray(), ",") + "} into Domain \"" + p.getDomains().get(i).toString() + "\" of Predicate \"" + p.toString() + "\".");
-			}
-			i++;
-		}
-	}
+//	private static void checkArguments(Predicate p, Term[] args) {
+//		if (args.length != p.getDomains().size()) {
+//			throw new IllegalArgumentException("Wrong number of arguments creating an Atom of Predicate \"" + p.toString() + "\" with arguments: " + Util.join(args, ",") + ".");
+//		}
+//		int i = 0;
+//		for (Term t : args) {
+//			if (!Domain.in(t, p.getDomains().get(i))) {
+//				throw new IllegalArgumentException("Incompatible Domains. Cannot put Term \"" + t.toString() + "\" with Domain(s) {" + Util.join(t.getDomain().toArray(), ",") + "} into Domain \"" + p.getDomains().get(i).toString() + "\" of Predicate \"" + p.toString() + "\".");
+//			}
+//			i++;
+//		}
+//	}
 	
 	private String _toString() {
 		if (this == Atom.FALSE) return "false";

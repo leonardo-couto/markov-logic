@@ -1,6 +1,5 @@
 package weightLearner;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -44,8 +43,7 @@ public abstract class AbstractScore implements Score {
 	 */
 	@Override
 	public boolean addFormula(Formula f) {
-		if (this.formulas.contains(f)) { return false; }
-		this.formulas.add(0, f);
+		this.formulas.add(f);
 		for (Predicate p : predicates) {
 			this.predicateFormulas.get(p).add(f);
 		}
@@ -67,9 +65,9 @@ public abstract class AbstractScore implements Score {
 	// A way to remove an Object from a list without
 	// using the equals method.
 	protected static boolean remove(List<?> l, Object f) {
-		ListIterator<?> it = l.listIterator();
-		while (it.hasNext()) {
-			Object g = it.next();
+		ListIterator<?> it = l.listIterator(l.size());
+		while (it.hasPrevious()) {
+			Object g = it.previous();
 			if (f == g) {
 				it.remove();
 				return true;
@@ -94,8 +92,9 @@ public abstract class AbstractScore implements Score {
 		return false;
 	}
 	
+	@Override
 	public List<Formula> getFormulas() {
-		return new ArrayList<Formula>(this.formulas);
+		return this.formulas;
 	}
 
 	/* (non-Javadoc)

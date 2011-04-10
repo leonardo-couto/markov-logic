@@ -63,6 +63,11 @@ public class FormulaFactory {
 				continue;
 			}
 			nextAtom: for (Atom a : this.atoms) {
+				for (Atom fa : f.getAtoms()) {
+					if (fa == a) {
+						continue nextAtom;
+					}
+				}
 				for (Term t : a.terms) {
 					if (variables.contains(t)) {
 						newFormulas.addAll(extendsFormula(f, a));
@@ -71,7 +76,7 @@ public class FormulaFactory {
 				}
 			}
 		}
-		newFormulas.addAll(putEquals(newFormulas));
+		newFormulas.addAll(putEquals(clauses));
 		return newFormulas;
 	}
 	
@@ -85,8 +90,13 @@ public class FormulaFactory {
 			Variable[] vars = variables.toArray(new Variable[variables.size()]);
 			for (int i = 0; i < vars.length -1; i++) {
 				for (int j = i+1; j < vars.length; j++) {
-					if (vars[i].getDomain().equals(vars[j].getDomain())) {
-						newFormulas.addAll(extendsFormula(f, new Atom(Predicate.equals, vars[i], vars[j])));
+					if (vars[i].getDomain().equals(vars[j].getDomain())) {						
+						Atom equals = new Atom(Predicate.equals, vars[i], vars[j]);
+						for (Atom atom : f.getAtoms()) {
+							if (!(atom.predicate == Predicate.equals) || !atom.equals(equals)) {
+								newFormulas.addAll(extendsFormula(f, equals));								
+							}
+						}
 					}
 				}
 			}

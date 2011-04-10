@@ -1,6 +1,7 @@
 package util;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,7 @@ public class Util {
 	
 	// joins a array of strings into a single string.
 	public static String join(String[] strings) {
-	    StringBuffer sb = new StringBuffer();
+	    StringBuilder sb = new StringBuilder();
 	    for (int i=0; i < strings.length; i++) {
 	  	    sb.append(strings[i]);
 	  	}
@@ -28,7 +29,7 @@ public class Util {
 	
 	// joins a array of strings into a single string.
 	public static String join(Object[] objects) {
-	    StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 	    for (int i=0; i < objects.length; i++) {
 	  	    sb.append(objects[i].toString());
 	  	}
@@ -38,9 +39,11 @@ public class Util {
 	// joins a array of strings into a single string
 	// with a separator between then.
 	public static String join(String[] strings, String separator) {
-	    StringBuffer sb = new StringBuffer();
-	    for (int i=0; i < strings.length; i++) {
-	        if (i != 0) sb.append(separator);
+		StringBuilder sb = new StringBuilder();
+		if (strings.length == 0) { return sb.toString(); }
+		sb.append(strings[0]);
+	    for (int i=1; i < strings.length; i++) {
+	        sb.append(separator);
 	  	    sb.append(strings[i]);
 	  	}
 	  	return sb.toString();
@@ -49,9 +52,11 @@ public class Util {
 	// joins a array of strings into a single string
 	// with a separator between then.
 	public static String join(Object[] objects, String separator) {
-	    StringBuffer sb = new StringBuffer();
-	    for (int i=0; i < objects.length; i++) {
-	        if (i != 0) sb.append(separator);
+		StringBuilder sb = new StringBuilder();
+		if (objects.length == 0) { return sb.toString(); }
+  	    sb.append(objects[0].toString());
+	    for (int i=1; i < objects.length; i++) {
+	        sb.append(separator);
 	  	    sb.append(objects[i].toString());
 	  	}
 	  	return sb.toString();
@@ -70,14 +75,15 @@ public class Util {
 	public static <T> void reorder(List<T> tList, T element) {
 		int idx = tList.indexOf(element);
 		if(idx > 0) {
-			T aux = tList.get(0);
-			tList.set(0, element);
-			T next;
-			for(int i = 0; i < idx; i++) {
-				next = tList.get(i+1);
-				tList.set(i+1, aux);
-				aux = next;				
-			}
+			Collections.swap(tList, 0, idx);
+//			T aux = tList.get(0);
+//			tList.set(0, element);
+//			T next;
+//			for(int i = 0; i < idx; i++) {
+//				next = tList.get(i+1);
+//				tList.set(i+1, aux);
+//				aux = next;				
+//			}
 		}
 	}
 	

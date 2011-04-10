@@ -21,5 +21,7 @@ public interface MaxFinder {
 	 * @return The parameters that minimize the function.
 	 */
 	public double[] min(double[] x, RnToRFunction function, RnToRnFunction gradient) throws OptimizationException;
+	
+	public void setPrecision(double eps);
 
 }

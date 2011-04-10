@@ -18,7 +18,7 @@ import math.MaxFinder;
 import math.OptimizationException;
 import util.MyException;
 import weightLearner.Score;
-import weightLearner.WeightedPseudoLogLikelihood;
+import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import fol.Atom;
 import fol.Formula;
 import fol.FormulaFactory;
@@ -28,9 +28,15 @@ import fol.FormulaFactory;
  *
  */
 public class ParallelShortestFirst extends AbstractLearner {
+	**
+	// PAREI AQUI!!!!! criar dois WPLLS, um com sampleLimit e convergenceTester ruim, e outro sem limite e sem convergenceTester.
+	//
+	// colocar limite 500 para o formulaCount e 300 para o predicateWpll
+	// antes de adicionar as melhores formulas, calcular os n melhores com o wpll bom.
+	
 	
 	private static final int threads = Runtime.getRuntime().availableProcessors();
-	private static final int fpt = 30; // Functions per thread.
+	private static final int fpt = 5; // Functions per thread.
 	private final FormulaFactory generator;
 	
 	private final int maxVars = 6; // Max number of distinct variables in a clause.
@@ -61,6 +67,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		this.wscore = new WeightedPseudoLogLikelihood(this.predicates);
 		this.wscore.addFormulas(this.clauses);
 		this.maxFinder = new AutomatedLBFGS();
+		this.maxFinder.setPrecision(0.001);
 	}
 	
 	@Override
@@ -80,19 +87,29 @@ public class ParallelShortestFirst extends AbstractLearner {
 			System.out.println("**********" + score);
 			System.out.println(Arrays.toString(weights)); // TODO: REMOVE!! (LOG)
 			
-			List<Formula> formulas = this.findBestClauses(score, weights);
+			List<ClauseScore> formulas = this.findBestClauses(score, weights);
 			
 			if (formulas.isEmpty()) {
 				return new MarkovLogicNetwork(WeightedFormula.toWeightedFormulas(this.clauses, weights));
 			}
-			for (Formula f : formulas) {
+			for (ClauseScore cs : formulas) {
+				Formula f = cs.getFormula();
 				System.out.println(f); // TODO: remove!! (LOG)
 				this.wscore.addFormula(f);
 				this.clauses.add(f);
 				this.lengthClauses.get(f.length()-1).add(f);
 			}
 			try {
+				int length = weights.length;
 				weights = Arrays.copyOf(weights, this.clauses.size());
+				for (ClauseScore cs : formulas) {
+					weights[length] = cs.getWeight();
+					length++;
+				}
+				weights = formulas.get(0).weights;
+				System.out.println("**********");
+				System.out.println(score = this.wscore.getScore(weights));
+				System.out.println(Arrays.toString(weights));
 				weights = this.maxFinder.max(weights, this.wscore, this.wscore);
 			} catch (OptimizationException e) {
 				// TODO (LOG) and do nothing
@@ -103,8 +120,8 @@ public class ParallelShortestFirst extends AbstractLearner {
 		return new MarkovLogicNetwork(WeightedFormula.toWeightedFormulas(this.clauses, weights));
 	}
 	
-	public List<Formula> findBestClauses(double score, double[] weights) {
-		List<Formula> out = new LinkedList<Formula>();
+	public List<ClauseScore> findBestClauses(double score, double[] weights) {
+		List<ClauseScore> out = new LinkedList<ClauseScore>();
 		Vector<ClauseScore> bestClauses = new Vector<ClauseScore>();
 		Vector<ClauseScore> candidates = new Vector<ClauseScore>();
 		double[] newWeights = Arrays.copyOf(weights, weights.length + 1);
@@ -144,7 +161,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			if (!bestClauses.isEmpty()) {
 				Collections.sort(bestClauses);
 				for (int j = 0; j < Math.min(this.k, bestClauses.size()); j++) {
-					out.add(bestClauses.get(j).getFormula());
+					out.add(bestClauses.get(j));
 				}
 				return out;
 			}
@@ -155,12 +172,14 @@ public class ParallelShortestFirst extends AbstractLearner {
 	
 	class ClauseScore extends WeightedFormula implements Comparable<ClauseScore> {
 		
-		public ClauseScore(Formula clause, double score, double weight) {
+		public ClauseScore(Formula clause, double score, double weight, double[] weights) {
 			super(clause, weight);
 			this.score = score;
+			this.weights = weights;
 		}
 		
 		final double score;
+		final double[] weights; // TODO: REMOVER!!!!!!!!!!!!!!!!
 		
 		@Override
 		public int compareTo(ClauseScore o) {
@@ -212,7 +231,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		
 		private Score wpll;
 		private Formula[] formulas;
-		private AutomatedLBFGS lbfgs = new AutomatedLBFGS();
+		private MaxFinder lbfgs = new AutomatedLBFGS();
 		private Vector<ClauseScore> candidates;
 		private Vector<ClauseScore> bestClauses;
 		private FormulaArray fArray;
@@ -233,6 +252,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			this.done = done;
 			this.t = new Thread(this);
 			this.t.start();
+			this.lbfgs.setPrecision(0.05);
 		}
 
 		@Override
@@ -257,17 +277,22 @@ public class ParallelShortestFirst extends AbstractLearner {
 						} catch (ExceptionWithIflag e) {
 							this.wpll.removeFormula(f);
 							continue;
+						} catch (Exception e) {
+							e.printStackTrace();
+							System.out.println(f + "\n" + Arrays.toString(this.weights) + "\n" + this.wpll.getFormulas());
+							System.exit(1);
+							continue;
 						}
 						this.wpll.removeFormula(f);
 
-						if (Double.compare(newScore, this.score) > 0.01 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
+						if (Double.compare(newScore, this.score+0.01) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
 							if (Double.compare(newScore, bestscore) > 0) {  // TODO: Remove
-								System.out.println(Double.toString(this.score - newScore) + " " + f + "\n" + Arrays.toString(nweights));
+								System.out.println(Double.toString(newScore) + " " + f + "\n" + Arrays.toString(nweights));
 								bestscore = newScore;
 							}
-							this.bestClauses.add(new ClauseScore(f, this.score - newScore, learnedWeight));
+							this.bestClauses.add(new ClauseScore(f, this.score - newScore, learnedWeight, nweights));
 						} else {
-							this.candidates.add(new ClauseScore(f, this.score - newScore, learnedWeight));
+							this.candidates.add(new ClauseScore(f, this.score - newScore, learnedWeight, nweights));
 						}
 					}
 					this.fArray.setScore(bestscore);
