@@ -25,9 +25,7 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 	public final Predicate predicate;
 	
 	private int sampleSize;
-	private int sampleSizeFormulaCount;
 	private SequentialTester tester;
-	private boolean defaultTester;
 	
 	public DataCount(Predicate p) {
 		this(p, -1);
@@ -39,11 +37,10 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		this.atoms = new ArrayList<Atom>(p.getGroundings().keySet());
 		Collections.shuffle(this.atoms);
 		this.formulas = new LinkedList<FormulaData>();
-		this.sampleSize = (sampleSize > 0) ? Math.min(sampleSize, this.atoms.size()) : this.atoms.size();
+		sampleSize = (sampleSize > 0) ? Math.min(sampleSize, this.atoms.size()) : this.atoms.size();
+		this.sampleSize = sampleSize;
 		for (int i = 0; i < sampleSize; i++) { this.add(new ArrayList<FormulaCount>()); }
-		this.sampleSizeFormulaCount = sampleSize;
-		this.tester = new DummyTester(sampleSize);
-		this.defaultTester = true;
+		this.tester = new DummyTester(-1);
 	}
 	
 	private DataCount(DataCount old) {
@@ -55,9 +52,7 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		for (List<FormulaCount> fc : old) {
 			this.add(new ArrayList<FormulaCount>(fc));
 		}
-		this.sampleSizeFormulaCount = old.sampleSizeFormulaCount;
 		this.tester = old.tester.copy();
-		this.defaultTester = old.defaultTester;
 	}
 	
 	/**
@@ -70,24 +65,21 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		if (!this.formulas.isEmpty()) {
 			throw new UnsupportedOperationException("Cannot change sample size after a formula has been added.");
 		}
-		if (this.defaultTester) {
-			this.tester = new DummyTester(size);
-		}
 		size = Math.min(size, this.atoms.size());
 		if (size > this.sampleSize) {
 			final int diff = size - this.sampleSize;
 			for (int i = 0; i < diff; i++) {
 				this.add(new ArrayList<FormulaCount>());
 			}
-			this.sampleSize = size;
-		} else if (size != this.sampleSize) {
-			this.removeRange(size, this.sampleSize);
-			this.sampleSize = size;
+		} else if (size != this.sampleSize) { // size < sampleSize
+			for (int i = this.size(); i > size; i--) {
+				this.remove(i-1);
+			}
 		}
+		this.sampleSize = size;
 	}
 	
 	public void setTester(SequentialTester tester) {
-		this.defaultTester = false;
 		this.tester = tester.copy();
 	}
 
@@ -105,13 +97,13 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		return out;
 	}
 	
-	private List<Data> addAtoms(List<Atom> atoms) {
+	private List<Data> addAtoms() {
 		FormulaData fd = this.formulas.getLast();
 		Formula formula = fd.f;
 		
-		List<Data> out = new ArrayList<Data>(atoms.size());
-		int i = 0;
-		for (Atom a : atoms) {
+		List<Data> out = new ArrayList<Data>(this.sampleSize);
+		for (int i = 0; i < this.sampleSize; i++) {
+			Atom a = this.atoms.get(i);
 
 			if (formula instanceof Atom) {
 				Data d = new Data(1.0, 0.0, a.getValue());
@@ -159,14 +151,7 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		}
 		
 		this.formulas.add(new FormulaData(formula, i, lv));
-
-		if (!this.atoms.isEmpty()) {
-			double[] v = new double[this.atoms.size()];
-			List<Data> data = this.addAtoms(this.atoms);
-			for (int j = 0; j < v.length; j++) {
-				v[j] = data.get(j).value;
-			}
-		}
+		this.addAtoms();
 	}
 
 	public boolean removeFormula(Formula f) {

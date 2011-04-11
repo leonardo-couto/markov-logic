@@ -2,8 +2,7 @@ package weightLearner;
 
 import java.util.List;
 
-import math.RnToRFunction;
-import math.RnToRnFunction;
+import math.FunctionAndGradient;
 
 import fol.Formula;
 
@@ -14,7 +13,7 @@ import fol.Formula;
  * @author Leonardo Castilho Couto
  *
  */
-public interface Score extends RnToRFunction, RnToRnFunction {
+public interface Score extends FunctionAndGradient {
 	
 	public boolean addFormula(Formula f);
 	

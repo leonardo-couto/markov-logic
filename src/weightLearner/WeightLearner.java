@@ -4,7 +4,7 @@ import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
 import markovLogic.WeightedFormula.FormulasAndWeights;
 import math.AutomatedLBFGS;
-import math.MaxFinder;
+import math.Optimizer;
 import math.OptimizationException;
 import util.MyException;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
@@ -12,19 +12,19 @@ import weightLearner.wpll.WeightedPseudoLogLikelihood;
 public class WeightLearner {
 
 	private final Score score;
-	private final MaxFinder optmizator;
+	private final Optimizer optmizer;
 
-	public WeightLearner(Score score, MaxFinder maxFinder) {
+	public WeightLearner(Score score, Optimizer optmizer) {
 		this.score = score;
-		this.optmizator = maxFinder;
+		this.optmizer = optmizer;
 	}
 
 	public Score getScore() {
-		return score;
+		return this.score;
 	}
 
 	public double[] learn(double[] initialWeights) throws OptimizationException {
-		return optmizator.max(initialWeights, score, score);
+		return this.optmizer.max(initialWeights, this.score);
 	}
 
 	public static MarkovLogicNetwork updateWeights(MarkovLogicNetwork mln) {
@@ -33,7 +33,7 @@ public class WeightLearner {
 
 		Score score = new WeightedPseudoLogLikelihood(mln.getPredicates());
 		score.addFormulas(fw.formulas);
-		MaxFinder maxFinder = new AutomatedLBFGS();
+		Optimizer maxFinder = new AutomatedLBFGS(0.001);
 		WeightLearner wlearn = new WeightLearner(score, maxFinder);
 		double weights[];
 		try {

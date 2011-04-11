@@ -1,7 +1,9 @@
-package structureLearner;
+package formulaLearner;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import structureLearner.StructureLearner;
 
 import fol.Atom;
 import fol.Predicate;

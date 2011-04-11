@@ -292,7 +292,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	
 	/**
 	 * Set the max number of groundings per predicate that will
-	 * be used to approximate the predicateWpll.
+	 * be used to approximate the predicateWpll.<br><br>
 	 * 
 	 * IMPORTANT! This parameter can only be set BEFORE any
 	 * formulas were added to the wpll. Or else will throw an

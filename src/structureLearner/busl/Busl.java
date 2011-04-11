@@ -11,7 +11,6 @@ import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
 
-import structureLearner.ParallelShortestFirst;
 import structureLearner.StructureLearner;
 
 import weightLearner.WeightLearner;
@@ -22,6 +21,7 @@ import fol.Atom;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
+import formulaLearner.ParallelShortestFirst;
 
 /**
  * Bottom-Up Structure Learner
