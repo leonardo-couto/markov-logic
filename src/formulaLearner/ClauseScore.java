@@ -16,7 +16,7 @@ public class ClauseScore extends WeightedFormula implements Comparable<ClauseSco
 	
 	@Override
 	public int compareTo(ClauseScore o) {
-		return Double.compare(this.score, o.score);
+		return -1 * Double.compare(this.score, o.score);
 	}
 
 	

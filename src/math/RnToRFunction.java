@@ -8,4 +8,6 @@ public interface RnToRFunction {
 
 	public double f(double[] x);
 	
+	public int lengthInput();
+	
 }

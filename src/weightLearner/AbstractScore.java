@@ -108,6 +108,15 @@ public abstract class AbstractScore implements Score {
 	protected Set<Predicate> getPredicates() {
 		return new HashSet<Predicate>(this.predicates);
 	}
+	
+	@Override
+	public int lengthOutput() {
+		return this.formulas.size();
+	}
 
+	@Override
+	public int lengthInput() {
+		return this.formulas.size();
+	}
 
 }

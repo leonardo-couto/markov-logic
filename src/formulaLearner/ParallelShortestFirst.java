@@ -28,11 +28,8 @@ import fol.FormulaFactory;
  * @author Leonardo Castilho Couto
  *
  */
-public class ParallelShortestFirst extends AbstractLearner {
-	// PAREI AQUI!!!!! criar dois WPLLS, um com sampleLimit e convergenceTester ruim, e outro sem limite e sem convergenceTester.
-	//
-	// colocar limite 500 para o formulaCount e 300 para o predicateWpll
-	// antes de adicionar as melhores formulas, calcular os n melhores com o wpll bom.
+public class ParallelShortestFirst extends AbstractStructLearner {
+
 	private final Score exactScore;
 	private final Score fastScore;
 	private final Optimizer fastOptimizer;
@@ -68,7 +65,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 		
 		{	// init scores
 			WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(this.predicates);
-			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates);
+			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(this.predicates);
 			SequentialTester tester = new SequentialConvergenceTester(0.95, 0.05);
 			tester.setSampleLimit(500);
 			fastScore.setSampleLimit(300);
@@ -87,7 +84,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 	
 	@Override
 	public MarkovLogicNetwork learn() {
-		double[] weights = new double[clauses.size()];
+		double[] weights = new double[this.clauses.size()];
 		try {
 			weights = this.preciseOptimizer.max(weights, this.exactScore);
 		} catch (OptimizationException e) {
@@ -158,7 +155,7 @@ public class ParallelShortestFirst extends AbstractLearner {
 			
 			CountDownLatch done = new CountDownLatch(threads);
 			for (int j = 0; j < threads; j++) {
-				new TestFormula(this.fastScore, formulas, candidates, 
+				new OldTestFormula(this.fastScore, formulas, candidates, 
 						bestClauses, newWeights, score, this.fastOptimizer, done);
 			}
 

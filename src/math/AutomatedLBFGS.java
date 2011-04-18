@@ -27,7 +27,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	}
 
 	public double[] min(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
-		int n = x.length;
+		int n = function.lengthInput();
 		double[] out = Arrays.copyOf(x, n);
 		boolean diagco = false;
 		double[] diag = new double[n];
@@ -35,7 +35,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		double f = function.f(out);
 		double[] g = gradient.g(out);
 		
-		super.lbfgs(n, m, out, f, g, diagco, diag, iprint, eps, xtol, iflag);
+		super.lbfgs(n, m, out, f, g, diagco, diag, this.iprint, eps, xtol, iflag);
 		
 		while (iflag[0] == 1) {
 			f = function.f(out);
@@ -54,7 +54,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	}
 	
 	public double[] max(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
-		int n = x.length;
+		int n = function.lengthInput();
 		double[] out = Arrays.copyOf(x, n);
 		boolean diagco = false;
 		double[] diag = new double[n];

@@ -10,18 +10,16 @@ import org.jgrapht.alg.BronKerboschCliqueFinder;
 import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
-
 import structureLearner.StructureLearner;
-
 import weightLearner.WeightLearner;
-
 import GSIMN.GSIMN;
-
 import fol.Atom;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
-import formulaLearner.ParallelShortestFirst;
+import formulaLearner.FormulaLearner;
+import formulaLearner.FormulaLearnerBuilder;
+import formulaLearner.ParallelLearnerBuilder;
 
 /**
  * Bottom-Up Structure Learner
@@ -53,12 +51,20 @@ public class Busl implements StructureLearner {
 		GSIMN<Atom> gsimn = new GSIMN<Atom>(this.tNodes, test);
 		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.run();
 		BronKerboschCliqueFinder<Atom, DefaultEdge> cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(graph);
+		FormulaLearnerBuilder builder;
+		{
+			builder = new ParallelLearnerBuilder().setEpslon(0.5).setMaxAtoms(5).
+			setMaxVariables(6).setNumberOfThreads(Runtime.getRuntime().availableProcessors());
+			
+		}
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
 			System.out.println();
 			System.out.println("CLIQUE: " + clique);
 			System.out.println();
-			ParallelShortestFirst psf = new ParallelShortestFirst(clique);
-			mln.addAll(psf.learn());
+			FormulaLearner formulaLearner = builder.setAtoms(clique).build();
+			formulaLearner.learn();
+			//((ParallelLearner) formulaLearner).
+			//mln.addAll(psf.learn());
 		}
 		mln = WeightLearner.updateWeights(mln);
 		

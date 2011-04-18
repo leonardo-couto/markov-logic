@@ -1,6 +1,7 @@
 package weightLearner.wpll;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -53,19 +54,16 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		List<FormulaData> fdata = new LinkedList<FormulaData>();
 		double wpll = 0;
 		
-		{
-			List<Formula> formulas = this.getFormulas();
-			if (formulas.size() != weights.length) {
-				throw new RuntimeException("Different number of formulas and weights");
-			}
-			int i = 0;
-			for (Formula f : formulas) {
-				fdata.add(new FormulaData(f, weights[i], i));
-				i++;
-			}
+
+		List<Formula> formulas = this.getFormulas();
+		Iterator<Formula> it = formulas.iterator();
+		for (int i = 0; i < formulas.size(); i++) {
+			Formula f = it.next();
+			double d = (i < weights.length) ? weights[i] : 0;
+			fdata.add(new FormulaData(f, d, i));
 		}
 
-		this.grad = new double[weights.length];
+		this.grad = new double[formulas.size()];
 		for (Entry<Predicate, DataCount> e : this.dataCounts.entrySet()) {
 			wpll = wpll + this.predicateWPll(e.getKey(), e.getValue(), fdata);
 		}
@@ -294,7 +292,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	 * Set the max number of groundings per predicate that will
 	 * be used to approximate the predicateWpll.<br><br>
 	 * 
-	 * IMPORTANT! This parameter can only be set BEFORE any
+	 * WARNING! This parameter can only be set BEFORE any
 	 * formulas were added to the wpll. Or else will throw an
 	 * UnsupportedOperationException.
 	 * 
@@ -306,6 +304,5 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			d.setSampleSize(n);
 		}
 	}
-	
 
 }
