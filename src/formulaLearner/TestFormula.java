@@ -62,6 +62,7 @@ public class TestFormula implements Runnable {
 				
 				this.score.removeFormula(f);
 
+				System.out.println(newScore - this.lastScore + " : " + f);
 				if (Double.compare(newScore, this.lastScore) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
 					this.scoredCandidates.offer(new ClauseScore(f, newScore - this.lastScore, learnedWeight, nweights));
 				}

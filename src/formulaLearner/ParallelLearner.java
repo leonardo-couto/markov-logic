@@ -1,6 +1,7 @@
 package formulaLearner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -11,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import markovLogic.WeightedFormula;
 import math.OptimizationException;
 import math.Optimizer;
 import util.MyException;
@@ -32,20 +34,19 @@ public class ParallelLearner implements FormulaLearner {
 	private final Score fastScore;
 	private final Optimizer fastOptimizer;
 	private final Optimizer preciseOptimizer;
-	private final int maxVars; // TODO: USAR O MAXVARS!
 	private final int maxAtoms;
 	private final int threads;
 	private final double epslon;
 	private final double[] initialArgs;
 	private final double initialScore;
 	private final List<List<Formula>> lenghtFormula;
-	private final int k = 1; // TODO: colocar no builder
-	private final int m = 50;
+	private final int m = 50; // TODO: COLOCAR NO BUILDER
 	
 	private Atom target;
 	private boolean hasTarget;
 	
-	private static final ClauseScore END = new ClauseScore(FindCandidates.END, Double.NaN, Double.NaN, new double[0]);
+	private static final ClauseScore END = new ClauseScore(
+			FindCandidates.END, Double.NaN, Double.NaN, new double[0]);
 	
 	public ParallelLearner(ParallelLearnerBuilder builder) {
 		this.atoms = builder.getAtoms();
@@ -57,7 +58,6 @@ public class ParallelLearner implements FormulaLearner {
 		this.fastOptimizer = builder.getFastOptimizer();
 		this.preciseOptimizer = builder.getPreciseOptimizer();
 		this.maxAtoms = builder.getMaxAtoms();
-		this.maxVars = builder.getMaxVariables();
 		this.threads = builder.getNumberOfThreads();
 		this.epslon = builder.getEpslon();
 		this.initialArgs = builder.getInitialArgs();
@@ -72,6 +72,49 @@ public class ParallelLearner implements FormulaLearner {
 	}
 	
 	public double[] changeArgs(Formula f, double[] lastArgs) {return null;}
+	
+	private BlockingQueue<Formula> findCandidates(List<Formula> seeds) {
+		BlockingQueue<Formula> candidates = new LinkedBlockingQueue<Formula>();
+		new Thread(new FindCandidates(this.atoms, seeds, candidates, this.threads)).start();
+		return candidates;
+	}
+	
+	private BlockingQueue<ClauseScore> scoreCandidates(BlockingQueue<Formula> candidates, 
+			double[] initialArgs, double initialScore) {
+		BlockingQueue<ClauseScore> scoredQueue = new LinkedBlockingQueue<ClauseScore>();
+		int testers = Math.max(1, this.threads-1);
+		CountDownLatch done = new CountDownLatch(testers);
+		for (int i = 0; i < testers; i++) {
+			new Thread(new TestFormula(
+					this.fastScore, this.fastOptimizer, initialArgs, 
+					initialScore, done, candidates, scoredQueue, this.epslon)).start();
+		}
+		new Thread(new ProducersWatcher<ClauseScore>(scoredQueue, done, END)).start();
+		return scoredQueue;
+	}
+	
+	private List<ClauseScore> bestCandidates(BlockingQueue<ClauseScore> scoredQueue,
+			List<ClauseScore> scoredCandidates, double[] initialArgs, double initialScore) {
+		final BlockingQueue<Formula> finalCandidates = new LinkedBlockingQueue<Formula>();
+		final Queue<ClauseScore> candidatesQueue = new LinkedList<ClauseScore>();
+		CountDownLatch done = new CountDownLatch(1);
+		new Thread(new TestFormula(this.exactScore, this.preciseOptimizer, initialArgs, 
+				initialScore, done, finalCandidates, candidatesQueue, 1)).start();
+		while (true) {
+			ClauseScore cs;
+			try { cs = scoredQueue.take(); } catch (InterruptedException e) { continue;	}
+			if (cs == END) {
+				finalCandidates.offer(FindCandidates.END);
+				break;	
+			}
+			if (cs.score > 0.05) {
+				finalCandidates.offer(cs.getFormula());
+			}
+			scoredCandidates.add(cs);
+		}
+		try { done.await(); } catch (InterruptedException e) { e.printStackTrace(); }
+		return new ArrayList<ClauseScore>(candidatesQueue);
+	}	
 	
 	public List<Formula> learn(double[] initialArgs, double initialScore) {
 		List<Formula> lastCandidates = this.lenghtFormula.get(0);
@@ -94,57 +137,72 @@ public class ParallelLearner implements FormulaLearner {
 		}
 		
 		// main loop
+		boolean findCandidates = true;
+		BlockingQueue<Formula> reuse = null;
 		do {
 			// finds all candidates
-			final BlockingQueue<Formula> candidates = new LinkedBlockingQueue<Formula>();
-			new Thread(new FindCandidates(this.atoms, lastCandidates, candidates, this.threads)).start();
-
+			BlockingQueue<Formula> candidates;
+			if (findCandidates) {
+				candidates = this.findCandidates(lastCandidates);
+			} else {
+				candidates = reuse;
+				findCandidates = true;
+			}
 			// tests all candidates with fastScore/fastOptimizer
-			final BlockingQueue<ClauseScore> scoredQueue = new LinkedBlockingQueue<ClauseScore>();
-			final List<ClauseScore> scoreCandidates = new LinkedList<ClauseScore>();
-			int testers = Math.max(1, this.threads-1);
-			CountDownLatch done = new CountDownLatch(testers);
-			for (int i = 0; i < testers; i++) {
-				new Thread(new TestFormula(this.fastScore, this.fastOptimizer, argsF, scoreF, done, candidates, scoredQueue, this.epslon)).start();
-			}
-			new Thread(new ProducersWatcher<ClauseScore>(scoredQueue, done, END)).start();
-			
+			BlockingQueue<ClauseScore> scoredQueue = this.scoreCandidates(candidates, argsF, scoreF);
+			List<ClauseScore> scoredCandidates = new LinkedList<ClauseScore>();
 			// All formulas that scored well now will be scored with the exactScore/exactOptimizer
-			final BlockingQueue<Formula> finalCandidates = new LinkedBlockingQueue<Formula>();
-			final Queue<ClauseScore> finalQueue = new LinkedList<ClauseScore>();
-			CountDownLatch finalLatch = new CountDownLatch(1);
-			new Thread(new TestFormula(this.exactScore, this.preciseOptimizer, argsE, scoreE, finalLatch, finalCandidates, finalQueue, 1)).start();
-			while (true) {
-				ClauseScore cs;
-				try { cs = scoredQueue.take(); } catch (InterruptedException e) { continue;	}
-				if (cs == END) {
-					finalCandidates.offer(FindCandidates.END);
-					break;	
-				}
-				finalCandidates.offer(cs.getFormula());
-				scoreCandidates.add(cs);
-			}
-			try { finalLatch.await(); } catch (InterruptedException e) { e.printStackTrace(); }
+			List<ClauseScore> finalCandidates = this.bestCandidates(scoredQueue, scoredCandidates, 
+					argsE, scoreE);
 			
-			if (finalQueue.isEmpty()) { // no clauses improved the score
-				Collections.sort(scoreCandidates);
-				lastCandidates = new LinkedList<Formula>();
-				int i = 0;
-				for (ClauseScore cs : scoreCandidates) {
-					if (i == this.m) {
-						break;
-					}
-					lastCandidates.add(cs.getFormula());
+			// TODO: REMOVER:
+			if (!finalCandidates.isEmpty()) {
+				Collections.sort(finalCandidates);
+				for (ClauseScore sc : finalCandidates) {
+					System.out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
 				}
+				System.out.println("");
+				ClauseScore c = finalCandidates.get(0);
+				this.exactScore.addFormula(c.getFormula());
+				this.lenghtFormula.get(formulaLength+1).add(c.getFormula());
+				argsE = Arrays.copyOf(argsE, argsE.length+1);
+				argsE[argsE.length-1] = c.getWeight();
+				scoreE = scoreE + c.score;
+				this.fastScore.addFormula(c.getFormula());
+				try { this.fastOptimizer.max(argsF, this.fastScore);
+				} catch (Exception e) { e.printStackTrace(); }
+				argsF = this.fastOptimizer.getArgs();
+				scoreF = this.fastOptimizer.getValue();
+				reuse = new LinkedBlockingQueue<Formula>();
+				for (ClauseScore cs : scoredCandidates) {
+					if (cs.getFormula() != c.getFormula()) {
+						reuse.add(cs.getFormula());
+					}
+				}
+				for (int i = 0; i < this.threads; i++) {
+					reuse.add(FindCandidates.END);
+				}
+				findCandidates = false;
+				continue;
+			}
+			
+			// TODO: END REMOVER
+			
+			if (finalCandidates.isEmpty()) { // no clauses improved the score
+				Collections.sort(scoredCandidates);
+				int size = Math.min(scoredCandidates.size(), this.m);
+				lastCandidates = WeightedFormula.toFormulasAndWeights(scoredCandidates).
+					formulas.subList(0, size);
 				formulaLength++;
 				lastCandidates.addAll(this.lenghtFormula.get(formulaLength));
 				
 			} else { // some clause improved the score
-				List<ClauseScore> clauses = new ArrayList<ClauseScore>(finalQueue);
-				Collections.sort(clauses);
-				for (ClauseScore sc : clauses) {
+				Collections.sort(finalCandidates);
+				for (ClauseScore sc : finalCandidates) {
 					System.out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
 				}
+				// TODO: PAREI AQUI, ATUALIZAR OS SCORES E INITIAL ARGS
+				// DAR UM JEITO DE MANTER OS CANDIDATES SEM PASSAR DE NOVO POR ELES
 				break;
 			}
 			
@@ -152,7 +210,7 @@ public class ParallelLearner implements FormulaLearner {
 		
 		
 		
-		return null;
+		return this.exactScore.getFormulas();
 	}
 	
 	/**

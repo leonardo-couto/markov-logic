@@ -16,7 +16,11 @@ import fol.Atom;
 import fol.Formula;
 import fol.Term;
 import fol.Variable;
+import fol.operator.Biconditional;
+import fol.operator.Conjunction;
 import fol.operator.Disjunction;
+import fol.operator.Negation;
+import fol.operator.Operator;
 
 public class FindCandidates implements Runnable {
 	
@@ -27,8 +31,13 @@ public class FindCandidates implements Runnable {
 	private final int threads;
 	
 	public static final Formula END = Atom.FALSE; 
+	private static final Operator DISJUNCTION = Disjunction.operator;
+	private static final Operator CONJUNCTION = Conjunction.operator;
+	private static final Operator BICONDITIONAL = Biconditional.operator;
+	private static final Operator NEGATION = Negation.operator;
 	
-	public FindCandidates(Set<Atom> atoms, List<Formula> seeds, Queue<Formula> candidates, int threads) {
+	public FindCandidates(Set<Atom> atoms, 
+			List<Formula> seeds, Queue<Formula> candidates, int threads) {
 		this.atoms = atoms;
 		this.seeds = new ConcurrentLinkedQueue<Formula>(seeds);
 		this.candidates = candidates;
@@ -78,7 +87,37 @@ public class FindCandidates implements Runnable {
 					continue formula;
 				}
 				candidateAtoms.add(atoms);
+
+				// TODO: REMOVER, IMPLEMENTAR O FLIPPER NO SCORE!
+				List<Operator> op;
+				List<Boolean> stack;
+				Formula f1 = f.copy();
+				Formula f2 = f.copy();
+				Formula f3 = f.copy();
+				Formula f4 = f.copy();
+				op = f1.getOperators();
+				op.set(op.size()-1, CONJUNCTION);
+				op = f2.getOperators();
+				op.set(op.size()-1, BICONDITIONAL);
+				op = f3.getOperators();
+				stack = f3.getStack();
+				op.set(op.size()-1, NEGATION);
+				op.add(DISJUNCTION);
+				stack.add(false);
+				op = f4.getOperators();
+				stack = f4.getStack();
+				op.set(op.size()-1, NEGATION);
+				op.add(DISJUNCTION);
+				stack.set(stack.size()-2, false);
+				stack.set(stack.size()-1, true);
+				stack.add(false);
+				// TODO: END REMOVER
+				
 				this.candidates.offer(f);
+				this.candidates.offer(f1);
+				this.candidates.offer(f2);
+				this.candidates.offer(f3);
+				this.candidates.offer(f4);
 			}
 		}
 		for (int i = 0; i < this.threads; i++) {

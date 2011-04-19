@@ -25,7 +25,6 @@ public class ParallelLearnerBuilder implements FormulaLearnerBuilder {
 	private Score fastScore;
 	private Optimizer fastOptimizer;
 	private Optimizer preciseOptimizer;
-	private int maxVars;
 	private int maxAtoms;
 	private int threads;
 	private double epslon;
@@ -160,15 +159,6 @@ public class ParallelLearnerBuilder implements FormulaLearnerBuilder {
 		return this.formulas;
 	}
 	
-	public ParallelLearnerBuilder setMaxVariables(int maxVars) {
-		this.maxVars = maxVars;
-		return this;
-	}
-	
-	public int getMaxVariables() {
-		return this.maxVars;
-	}
-
 	public ParallelLearnerBuilder setMaxAtoms(int maxAtoms) {
 		this.maxAtoms = maxAtoms;
 		return this;

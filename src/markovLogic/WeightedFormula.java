@@ -31,7 +31,7 @@ public class WeightedFormula {
 		return list;
 	}
 	
-	public static FormulasAndWeights toFormulasAndWeights(List<WeightedFormula> wfs) {
+	public static FormulasAndWeights toFormulasAndWeights(List<? extends WeightedFormula> wfs) {
 		double[] weights = new double[wfs.size()];
 		ArrayList<Formula> formulas = new ArrayList<Formula>(weights.length);
 		int i = 0;

@@ -1,9 +1,12 @@
 package structureLearner.busl;
 
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
+import markovLogic.WeightedFormula;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.BronKerboschCliqueFinder;
@@ -14,6 +17,7 @@ import structureLearner.StructureLearner;
 import weightLearner.WeightLearner;
 import GSIMN.GSIMN;
 import fol.Atom;
+import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
@@ -54,7 +58,7 @@ public class Busl implements StructureLearner {
 		FormulaLearnerBuilder builder;
 		{
 			builder = new ParallelLearnerBuilder().setEpslon(0.5).setMaxAtoms(5).
-			setMaxVariables(6).setNumberOfThreads(Runtime.getRuntime().availableProcessors());
+			setNumberOfThreads(Runtime.getRuntime().availableProcessors());
 			
 		}
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
@@ -62,11 +66,22 @@ public class Busl implements StructureLearner {
 			System.out.println("CLIQUE: " + clique);
 			System.out.println();
 			FormulaLearner formulaLearner = builder.setAtoms(clique).build();
-			formulaLearner.learn();
-			//((ParallelLearner) formulaLearner).
-			//mln.addAll(psf.learn());
+			List<Formula> formulas = formulaLearner.learn();
+			// TODO: ESTA COLOCANDO OS ATOMS QUE APARECEM EM CLIQUES DIFERENTES DUAS VEZES!!!
+			// deixar mais bonito:
+			for (WeightedFormula wf : mln) {
+				Formula f = wf.getFormula();
+				Iterator<Formula> it = formulas.iterator();
+				while (it.hasNext()) {
+					if (f == it.next()) {
+						it.remove();
+					}
+				}
+			}
+			double[] weights = new double[formulas.size()];			
+			mln.addAll(WeightedFormula.toWeightedFormulas(formulas, weights));
+			mln = WeightLearner.updateWeights(mln);
 		}
-		mln = WeightLearner.updateWeights(mln);
 		
 		// TODO NAO TERMINADO
 		return mln;
