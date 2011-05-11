@@ -5,15 +5,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
 import math.LBFGS.ExceptionWithIflag;
-import math.Optimizer;
 import util.MyException;
-import weightLearner.Score;
+import weightLearner.WeightLearner;
 import fol.Formula;
 
 public class TestFormula implements Runnable {
 	
-	private final Score score;
-	private final Optimizer optmizer;
+	private final WeightLearner learner;
 	private final double[] lastWeights;
 	private final double lastScore;
 	private final CountDownLatch done;
@@ -22,11 +20,10 @@ public class TestFormula implements Runnable {
 	private final double epslon; // only accepts formulas with weight > epslon
 
 	
-	public TestFormula(Score score, Optimizer optimizer, double[] lastWeights, 
+	public TestFormula(WeightLearner learner, double[] lastWeights, 
 			double lastScore, CountDownLatch done, BlockingQueue<Formula> candidates, 
 			Queue<ClauseScore> scoredCandidates, double epslon) {
-		this.score = score.copy();
-		this.optmizer = optimizer.copy();
+		this.learner = learner;
 		this.lastWeights = lastWeights;
 		this.lastScore = lastScore;
 		this.done = done;
@@ -44,23 +41,23 @@ public class TestFormula implements Runnable {
 					return;
 				}
 				
-				if (!this.score.addFormula(f)) { continue; }
+				if (!this.learner.addFormula(f)) { continue; }
 				
 				double newScore;
 				double learnedWeight;
 				double[] nweights;
 				try {
-					nweights = this.optmizer.max(this.lastWeights, this.score);
+					nweights = this.learner.learn(this.lastWeights);
 					learnedWeight = nweights[nweights.length -1]; 
-					newScore = this.optmizer.getValue();
+					newScore = this.learner.score();
 				} catch (ExceptionWithIflag e) {
-					this.score.removeFormula(f);
+					this.learner.removeFormula(f);
 					continue;
 				} catch (Exception e) {
 					throw new MyException(e);
 				}
 				
-				this.score.removeFormula(f);
+				this.learner.removeFormula(f);
 
 				System.out.println(newScore - this.lastScore + " : " + f);
 				if (Double.compare(newScore, this.lastScore) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {

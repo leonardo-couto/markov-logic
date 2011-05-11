@@ -1,6 +1,7 @@
 package fol;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -92,7 +93,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	private String _toString() {
 		if (this == Atom.FALSE) return "false";
 		if (this == Atom.TRUE) return "true";
-		return predicate.getName() + "(" + Util.join(terms, ",") + ")";
+		return this.predicate.getName() + "(" + Util.join(this.terms, ",") + ")";
 	}
 
 	@Override
@@ -105,13 +106,13 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public double getValue() {
-		if (predicate == Predicate.equals) {
-			if (terms[0] == terms[1]) {
+		if (this.predicate == Predicate.equals) {
+			if (this.terms[0] == this.terms[1]) {
 				return 1.0d;
 			}
 			return 0.0d;
 		}
-		return value;
+		return this.value;
 	}
 
 	/* (non-Javadoc)
@@ -119,7 +120,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public Set<Predicate> getPredicates() {
-		return Collections.singleton(predicate);
+		return Collections.singleton(this.predicate);
 	}
 
 	/* (non-Javadoc)
@@ -127,18 +128,18 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public boolean hasPredicate(Predicate p) {
-		return predicate.equals(p);
+		return this.predicate.equals(p);
 	}
 
 	@Override
 	public Atom replaceVariables(List<Variable> x, List<Constant> c) {
-		Term[] newTerms = Arrays.copyOf(terms, terms.length);
+		Term[] newTerms = Arrays.copyOf(this.terms, this.terms.length);
 		boolean replaced = false;
 		boolean grounded = true;
 		for (int i = 0; i < this.terms.length; i++) {
-			if (terms[i] instanceof Variable) {
+			if (this.terms[i] instanceof Variable) {
 				for (int j = 0; j < x.size(); j++) {
-					if (terms[i].equals(x.get(j))) {
+					if (this.terms[i].equals(x.get(j))) {
 						replaced = true;
 						newTerms[i] = c.get(j);
 						break;
@@ -151,11 +152,12 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		}
 
 		if (replaced) {
-			Atom a = new Atom(predicate, newTerms);
+			Atom a = new Atom(this.predicate, newTerms);
 			if(grounded) {
 				// Look into the dataset for this grounding.
-				if (predicate.getGroundings().containsKey(a)) {
-					return new Atom(predicate, predicate.getGroundings().get(a), newTerms) ;
+				if (this.predicate.getGroundings().containsKey(a)) {
+					return new Atom(this.predicate, 
+							this.predicate.getGroundings().get(a), newTerms) ;
 				}
 			}
 			return a;
@@ -168,7 +170,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 * @return true if the Atom does not contain any Variables
 	 */
 	public boolean isGround() {
-		for (Term t : terms) {
+		for (Term t : this.terms) {
 			if (!(t instanceof Constant)) {
 				return false;
 			}
@@ -182,7 +184,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	@Override
 	public Set<Variable> getVariables() {
 		Set<Variable> set = new HashSet<Variable>();
-		for (Term t : terms) {
+		for (Term t : this.terms) {
 			if(t instanceof Variable) {
 				set.add((Variable) t);
 			}
@@ -191,7 +193,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	}
 
 	public boolean variablesOnly() {
-		for (Term t : terms) {
+		for (Term t : this.terms) {
 			if(!(t instanceof Variable)) {
 				return false;
 			}
@@ -204,7 +206,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public int length() {
-		if (predicate.equals(Predicate.equals)) {
+		if (this.predicate.equals(Predicate.equals)) {
 			return 0;
 		}
 		return 1;
@@ -245,6 +247,14 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	@Override
 	public Class<? extends Distribution<Atom>> getDistributionClass() {
 		return AtomDistribution.class;
+	}
+	
+	public static Set<Predicate> getPredicates(Collection<Atom> atoms) {
+		Set<Predicate> set = new HashSet<Predicate>();
+		for (Atom a : atoms) {
+			set.add(a.predicate);
+		}
+		return set;
 	}
 
 }

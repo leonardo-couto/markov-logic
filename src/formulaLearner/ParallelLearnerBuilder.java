@@ -5,26 +5,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import math.AutomatedLBFGS;
 import stat.convergence.SequentialConvergenceTester;
 import stat.convergence.SequentialTester;
 import util.MyException;
-import weightLearner.Score;
+import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import fol.Atom;
 import fol.Formula;
 import fol.Predicate;
-import math.AutomatedLBFGS;
-import math.Optimizer;
 
-public class ParallelLearnerBuilder implements FormulaLearnerBuilder {
+public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 	
 	private Set<Atom> atoms;
 	private Atom target;
 	private List<Formula> formulas;
-	private Score exactScore;
-	private Score fastScore;
-	private Optimizer fastOptimizer;
-	private Optimizer preciseOptimizer;
+	private WeightLearner fastLearner;
+	private WeightLearner preciseLearner;
 	private int maxAtoms;
 	private int threads;
 	private double epslon;
@@ -36,6 +33,11 @@ public class ParallelLearnerBuilder implements FormulaLearnerBuilder {
 		this.atoms = null;
 		this.target = null;
 		this.formulas = null;
+		this.fastLearner = null;
+		this.preciseLearner = null;
+		this.maxAtoms = 0;
+		this.threads = 0;
+		this.epslon = 0;
 		this.hasTarget = false;
 		this.initialArgs = null;
 		this.initialScore = Double.NaN;
@@ -58,24 +60,28 @@ public class ParallelLearnerBuilder implements FormulaLearnerBuilder {
 		if (this.atoms == null || this.atoms.isEmpty()) {
 			throw new MyException("Cannot build a FormulaLearner. Atoms not set.");
 		}
-		return new ParallelLearner(this);
+		
+		ParallelLearner pl;
+		if (this.fastLearner == null) {
+			Set<Predicate> predicates = Atom.getPredicates(this.atoms);
+			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates);
+			SequentialTester tester = new SequentialConvergenceTester(0.95, 0.05);
+			tester.setSampleLimit(500);
+			fastScore.setSampleLimit(300);
+			fastScore.setTester(tester);
+			this.fastLearner = new WeightLearner(fastScore, new AutomatedLBFGS(0.02));
+			pl = new ParallelLearner(this);
+			this.fastLearner = null;
+		} else {
+			pl = new ParallelLearner(this);
+		}
+		
+		return pl;
 	}
 	
 	@Override
 	public ParallelLearnerBuilder setAtoms(Collection<Atom> atoms) {
 		this.atoms = new HashSet<Atom>(atoms);
-		Set<Predicate> predicates = new HashSet<Predicate>();
-		for (Atom a : atoms) { predicates.add(a.predicate); }
-		WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates);
-		WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates);
-		SequentialTester tester = new SequentialConvergenceTester(0.95, 0.05);
-		tester.setSampleLimit(500);
-		fastScore.setSampleLimit(300);
-		fastScore.setTester(tester);
-		this.exactScore = exactScore;
-		this.fastScore = fastScore;
-		this.preciseOptimizer = new AutomatedLBFGS(0.001);
-		this.fastOptimizer = new AutomatedLBFGS(0.02);
 		return this;
 	}
 	
@@ -98,56 +104,22 @@ public class ParallelLearnerBuilder implements FormulaLearnerBuilder {
 		return this.hasTarget;
 	}
 	
-	/**
-	 * The score instance must contain no formulas.
-	 * @param exactScore
-	 * @return
-	 */
-	public ParallelLearnerBuilder setExactScore(Score exactScore) {
-		if (!exactScore.getFormulas().isEmpty()) {
-			throw new MyException("Score is not empty");
-		}
-		this.exactScore = exactScore;
+	public ParallelLearnerBuilder setWeightLearner(WeightLearner wLearner) {
+		this.preciseLearner = wLearner;
 		return this;
 	}
 	
-	/**
-	 * The score instance must be empty
-	 * @param exactScore
-	 * @return
-	 */
-	public Score getExactScore() {
-		return this.exactScore;
+	public WeightLearner getWeightLearner() {
+		return this.preciseLearner;
 	}
 	
-	public ParallelLearnerBuilder setFastScore(Score fastScore) {
-		if (!fastScore.getFormulas().isEmpty()) {
-			throw new MyException("Score is not empty");
-		}
-		this.fastScore = fastScore;
-		return this;
-	}
-
-	public Score getFastScore() {
-		return this.fastScore;
-	}
-	
-	public ParallelLearnerBuilder setPreciseOptimizer(Optimizer optimizer) {
-		this.preciseOptimizer = optimizer;
-		return this;
-	}
-
-	public Optimizer getPreciseOptimizer() {
-		return this.preciseOptimizer;
-	}
-	
-	public ParallelLearnerBuilder setFastOptimizer(Optimizer optimizer) {
-		this.fastOptimizer = optimizer;
+	public ParallelLearnerBuilder setFastLearner(WeightLearner fastLearner) {
+		this.fastLearner = fastLearner;
 		return this;
 	}
 	
-	public Optimizer getFastOptimizer() {
-		return this.fastOptimizer;
+	public WeightLearner getFastLearner() {
+		return this.fastLearner;
 	}
 	
 	public ParallelLearnerBuilder setFormulas(List<Formula> formulas) {

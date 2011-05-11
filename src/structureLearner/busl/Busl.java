@@ -1,12 +1,18 @@
 package structureLearner.busl;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
+import markovLogic.WeightedFormula.FormulasAndWeights;
+import math.AutomatedLBFGS;
+import math.OptimizationException;
+import math.Optimizer;
 
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.BronKerboschCliqueFinder;
@@ -14,16 +20,19 @@ import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
 import structureLearner.StructureLearner;
+import util.MyException;
+import weightLearner.Score;
 import weightLearner.WeightLearner;
+import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import GSIMN.GSIMN;
 import fol.Atom;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
-import formulaLearner.FormulaLearner;
-import formulaLearner.FormulaLearnerBuilder;
 import formulaLearner.ParallelLearnerBuilder;
+import formulaLearner.ScoredLearner;
+import formulaLearner.ScoredLearnerBuilder;
 
 /**
  * Bottom-Up Structure Learner
@@ -33,10 +42,16 @@ public class Busl implements StructureLearner {
 	
 	private final Set<Predicate> predicates;
 	private final Set<Atom> tNodes;
+	private final MarkovLogicNetwork mln;
+	private final WeightLearner wl;
 	
 	public Busl(Set<Predicate> predicates) {
 		this.predicates = predicates;
 		this.tNodes = new HashSet<Atom>();
+		this.mln = new MarkovLogicNetwork();
+		this.wl = new WeightLearner(
+				new WeightedPseudoLogLikelihood(this.predicates), 
+				new AutomatedLBFGS(0.001));
 	}
 
 	@Override
@@ -45,52 +60,116 @@ public class Busl implements StructureLearner {
 		
 		// create one TNode for each predicate
 		for (Predicate p : this.predicates) {
-			Atom a = FormulaFactory.generateAtom(p, vars);
-			vars.addAll(a.getVariables());
-			tNodes.add(a);
+			vars.addAll(this.makeTNode(p));
+		}
+		{
+			List<Formula> formulas = new ArrayList<Formula>(this.tNodes);
+		    this.updateMln(formulas, new double[0]);
 		}
 		
-		MarkovLogicNetwork mln = new MarkovLogicNetwork();
 		DefaultTest<Atom> test = new DefaultTest<Atom>(0.05, this.tNodes);
 		GSIMN<Atom> gsimn = new GSIMN<Atom>(this.tNodes, test);
 		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.run();
 		BronKerboschCliqueFinder<Atom, DefaultEdge> cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(graph);
-		FormulaLearnerBuilder builder;
+		ScoredLearnerBuilder builder;
 		{
 			builder = new ParallelLearnerBuilder().setEpslon(0.5).setMaxAtoms(5).
-			setNumberOfThreads(Runtime.getRuntime().availableProcessors());
-			
+			setNumberOfThreads(Runtime.getRuntime().availableProcessors());			
 		}
+		
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
+			Set<Predicate> predicates = Atom.getPredicates(clique);
+			{
+				Score exactScore = new WeightedPseudoLogLikelihood(predicates);
+				Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
+				builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
+			}
+			
 			System.out.println();
 			System.out.println("CLIQUE: " + clique);
 			System.out.println();
-			FormulaLearner formulaLearner = builder.setAtoms(clique).build();
+			
+			ScoredLearner formulaLearner = builder.setAtoms(clique).build();
 			List<Formula> formulas = formulaLearner.learn();
-			// TODO: ESTA COLOCANDO OS ATOMS QUE APARECEM EM CLIQUES DIFERENTES DUAS VEZES!!!
-			// deixar mais bonito:
-			for (WeightedFormula wf : mln) {
-				Formula f = wf.getFormula();
-				Iterator<Formula> it = formulas.iterator();
-				while (it.hasNext()) {
-					if (f == it.next()) {
-						it.remove();
-					}
-				}
-			}
-			double[] weights = new double[formulas.size()];			
-			mln.addAll(WeightedFormula.toWeightedFormulas(formulas, weights));
-			mln = WeightLearner.updateWeights(mln);
+			
+			this.updateMln(formulas, formulaLearner.getWeightLearner().weights());
+		}
+		
+		List<Atom> candidates = new LinkedList<Atom>();
+		for (Predicate p : this.predicates) {
+			Set<Atom> nodes = FormulaFactory.generateAtoms(p, vars);
+			nodes.removeAll(this.tNodes);
+			candidates.addAll(nodes);
+		}
+		
+		double mlnScore = this.wl.score();
+		
+		for (Atom candidate : candidates) {
+			
 		}
 		
 		// TODO NAO TERMINADO
 		return mln;
 	}
 	
-	public void makeTNode(Predicate p) {
-		if (this.tNodes.isEmpty()) {
-			this.tNodes.add(FormulaFactory.generateAtom(p));
+	private Set<Variable> makeTNode(Predicate p) {
+		Atom atom = FormulaFactory.generateAtom(p);
+		this.tNodes.add(atom);
+		return atom.getVariables();
+	}
+	
+	/**
+	 * Add formulas to the mln and updates the MLN weights to 
+	 * values that maximize the network score.
+	 * @param formulas Formulas to be added to the mln
+	 * @param weights added Formulas weights
+	 * @return mln's score
+	 */
+	private double updateMln(List<Formula> formulas, double[] weights) {
+		// remove formulas already in the mln
+		for (WeightedFormula wf : this.mln) {
+			Formula f = wf.getFormula();
+			Iterator<Formula> it = formulas.iterator();
+			int j = 0;
+			while (it.hasNext()) {
+				if (f == it.next()) {
+					it.remove();
+					weights[j] = Double.NaN;
+				}
+				j++;
+			}
 		}
+		
+		// remove the weights of removed formulas
+		double[] nweights = new double[formulas.size()];
+		{
+			int j = 0;
+			for (double d : weights) {
+				if (!Double.isNaN(d)) {
+					nweights[j] = d;
+					j++;
+				}
+			}
+		}
+		
+		// add the formulas to mln and mln's associated weightLearner
+		this.mln.addAll(WeightedFormula.toWeightedFormulas(formulas, nweights));
+		this.wl.addFormulas(formulas);
+		
+		// learn the optimum weights
+		FormulasAndWeights fw = WeightedFormula.toFormulasAndWeights(this.mln);
+		try {
+			weights = this.wl.learn(fw.weights);
+		} catch (OptimizationException e) {
+			throw new MyException(
+					"Fatal error while learning the MLN weights.", e);
+		}
+		
+		// update the MLN with optimum weights
+		mln.clear();
+		mln.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, weights));
+		
+		return this.wl.score();
 	}
 	
 }

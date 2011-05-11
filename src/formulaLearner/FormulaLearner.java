@@ -15,10 +15,6 @@ public interface FormulaLearner {
 	public void setTarget(Atom a);
 	public void putFormulas(List<Formula> formulas);
 	public void putFormula(Formula formula);
-	//public void setMaxVariables(int n);
-	//public void setMaxAtoms(int n);
 	public List<Formula> learn();
-	//public double[] finalArgs();
-	//public double finalScore();
 
 }

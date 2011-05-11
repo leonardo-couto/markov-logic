@@ -234,7 +234,7 @@ public class FormulaFactory {
 			}
 		}
 		
-		// Remove all Lists that do not use at least one passed variable.
+		// Remove all Lists that do not use at least one given variable.
 		Set<Atom> set = new HashSet<Atom>();
 		for (List<Variable> l : out.keySet()) {
 			if (out.get(l).booleanValue()) {

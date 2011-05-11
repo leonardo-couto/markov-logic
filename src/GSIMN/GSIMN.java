@@ -20,28 +20,28 @@ import util.Util;
 
 public class GSIMN<RV extends RandomVariable<RV>> {
 	private final UndirectedGraph<RV, DefaultEdge> graph;
-	private final Set<RV> V;
-	private final IndependenceTest<RV> independence;
+	private final Set<RV> vars;
+	private final IndependenceTest<RV> test;
 
-	public GSIMN(Set<RV> V, IndependenceTest<RV> independence) {
+	public GSIMN(Set<RV> V, IndependenceTest<RV> test) {
 		this.graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
-		this.V = new HashSet<RV>(V);
-		this.independence = independence;
+		this.vars = new HashSet<RV>(V);
+		this.test = test;
 	}
 	
 	public UndirectedGraph<RV, DefaultEdge> run() {
 		
 		// Initialization
-		Set<RV> aux = new HashSet<RV>(V);
+		Set<RV> aux = new HashSet<RV>(this.vars);
 		Map<RV, List<WeightedRV<RV>>> pvalues = new HashMap<RV, List<WeightedRV<RV>>>();
 		Map<RV, Set<RV>> dependent = new HashMap<RV, Set<RV>>();
 		Map<RV, Set<RV>> independent = new HashMap<RV, Set<RV>>();
 		Map<RV, List<RV>> lambda = new HashMap<RV, List<RV>>();
 		List<WeightedRV<RV>> piW = new ArrayList<WeightedRV<RV>>();
 		List<RV> pi;
-		GSIndependenceTest<RV> gsIndependence = new GSIndependenceTest<RV>(independence);
+		GSIndependenceTest<RV> gsIndependence = new GSIndependenceTest<RV>(this.test);
 
-		for (RV X : V) {
+		for (RV X : this.vars) {
 			pvalues.put(X, new ArrayList<WeightedRV<RV>>());
 			dependent.put(X, new HashSet<RV>());
 			independent.put(X, new HashSet<RV>());
@@ -50,14 +50,14 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 		
 		// TODO: PARALELIZAR? PROCURAR FOR PARALELO NO JAVA
 		// TODO: remover prints;
-		int npv = (V.size()*(V.size()-1))/2;
+		int npv = (vars.size()*(vars.size()-1))/2;
 		int blah = 0;
-		for (RV X : V) {
+		for (RV X : vars) {
 			aux.remove(X);
 			for (RV Y : aux) {
 				blah++;
 				long time = System.currentTimeMillis();
-				double d = independence.pvalue(X, Y);
+				double d = test.pvalue(X, Y);
 				gsIndependence.addPValue(X, Y, d);
 				System.out.println(d + " : " + blah + "/" + npv + " t = " + (System.currentTimeMillis()-time) +
 						" X = " + X + " Y = " + Y);
@@ -66,7 +66,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			}
 		}
 		
-		for (RV X : V) {
+		for (RV X : vars) {
 			
 			// Computes pi (variable test ordering)
 			List<WeightedRV<RV>> wrv = pvalues.get(X);
@@ -142,7 +142,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			}
 			
 			// Markov Blanket of X equals S. Actualizes the dependent and independent lists.
-			for (RV Y : V) {
+			for (RV Y : vars) {
 				if (S.contains(Y)) {
 					dependent.get(Y).add(X);
 					dependent.get(X).add(Y);
@@ -154,8 +154,8 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			
 		}
 		
-		aux = new HashSet<RV>(V);
-		for (RV X : V) {
+		aux = new HashSet<RV>(vars);
+		for (RV X : vars) {
 			aux.remove(X);
 			for (RV Y : aux) {
 				if(dependent.get(X).contains(Y)) {

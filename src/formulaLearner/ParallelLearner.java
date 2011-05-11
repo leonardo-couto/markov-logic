@@ -3,7 +3,6 @@ package formulaLearner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -14,26 +13,20 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import markovLogic.WeightedFormula;
 import math.OptimizationException;
-import math.Optimizer;
 import util.MyException;
-import weightLearner.Score;
+import weightLearner.WeightLearner;
 import fol.Atom;
 import fol.Formula;
-import fol.Predicate;
 
 // TODO: doNotReplace flag? (set initial formulas not replaceable)
 // TODO: fazer a parte de targetAtom
-public class ParallelLearner implements FormulaLearner {
+public class ParallelLearner implements ScoredLearner {
 	
-	private final Set<Predicate> predicates;
 	private final Set<Atom> atoms;
-	//private final Map<String, Atom> equals;
 	private final List<Formula> formulas;
 	
-	private final Score exactScore;
-	private final Score fastScore;
-	private final Optimizer fastOptimizer;
-	private final Optimizer preciseOptimizer;
+	private final WeightLearner fastLearner;
+	private final WeightLearner preciseLearner;
 	private final int maxAtoms;
 	private final int threads;
 	private final double epslon;
@@ -50,13 +43,9 @@ public class ParallelLearner implements FormulaLearner {
 	
 	public ParallelLearner(ParallelLearnerBuilder builder) {
 		this.atoms = builder.getAtoms();
-		this.predicates = new HashSet<Predicate>(atoms.size()*2);
-		for (Atom a : atoms) { this.predicates.add(a.predicate); }
 		this.formulas = new ArrayList<Formula>();
-		this.exactScore = builder.getExactScore();
-		this.fastScore = builder.getFastScore();
-		this.fastOptimizer = builder.getFastOptimizer();
-		this.preciseOptimizer = builder.getPreciseOptimizer();
+		this.fastLearner = builder.getFastLearner();
+		this.preciseLearner = builder.getWeightLearner();
 		this.maxAtoms = builder.getMaxAtoms();
 		this.threads = builder.getNumberOfThreads();
 		this.epslon = builder.getEpslon();
@@ -85,8 +74,7 @@ public class ParallelLearner implements FormulaLearner {
 		int testers = Math.max(1, this.threads-1);
 		CountDownLatch done = new CountDownLatch(testers);
 		for (int i = 0; i < testers; i++) {
-			new Thread(new TestFormula(
-					this.fastScore, this.fastOptimizer, initialArgs, 
+			new Thread(new TestFormula(this.fastLearner, initialArgs, 
 					initialScore, done, candidates, scoredQueue, this.epslon)).start();
 		}
 		new Thread(new ProducersWatcher<ClauseScore>(scoredQueue, done, END)).start();
@@ -98,7 +86,7 @@ public class ParallelLearner implements FormulaLearner {
 		final BlockingQueue<Formula> finalCandidates = new LinkedBlockingQueue<Formula>();
 		final Queue<ClauseScore> candidatesQueue = new LinkedList<ClauseScore>();
 		CountDownLatch done = new CountDownLatch(1);
-		new Thread(new TestFormula(this.exactScore, this.preciseOptimizer, initialArgs, 
+		new Thread(new TestFormula(this.preciseLearner, initialArgs, 
 				initialScore, done, finalCandidates, candidatesQueue, 1)).start();
 		while (true) {
 			ClauseScore cs;
@@ -127,10 +115,10 @@ public class ParallelLearner implements FormulaLearner {
 		// put atoms
 		try {
 			if (this.putAtoms()) {
-				argsE = this.preciseOptimizer.max(argsE, this.exactScore);
-				argsF = this.fastOptimizer.max(argsF, this.fastScore);
-				scoreE = this.preciseOptimizer.getValue();
-				scoreF = this.fastOptimizer.getValue();
+				argsE = this.preciseLearner.learn(argsE);
+				argsF = this.fastLearner.learn(argsF);
+				scoreE = this.preciseLearner.score();;
+				scoreF = this.fastLearner.score();
 			}
 		} catch (OptimizationException e) {
 			throw new MyException("Unable to optimize args for initial formulas.", e);
@@ -163,16 +151,16 @@ public class ParallelLearner implements FormulaLearner {
 				}
 				System.out.println("");
 				ClauseScore c = finalCandidates.get(0);
-				this.exactScore.addFormula(c.getFormula());
+				this.preciseLearner.addFormula(c.getFormula());
 				this.lenghtFormula.get(formulaLength+1).add(c.getFormula());
 				argsE = Arrays.copyOf(argsE, argsE.length+1);
 				argsE[argsE.length-1] = c.getWeight();
 				scoreE = scoreE + c.score;
-				this.fastScore.addFormula(c.getFormula());
-				try { this.fastOptimizer.max(argsF, this.fastScore);
+				this.fastLearner.addFormula(c.getFormula());
+				try { this.fastLearner.learn(argsF);
 				} catch (Exception e) { e.printStackTrace(); }
-				argsF = this.fastOptimizer.getArgs();
-				scoreF = this.fastOptimizer.getValue();
+				argsF = this.fastLearner.weights();
+				scoreF = this.fastLearner.score();
 				reuse = new LinkedBlockingQueue<Formula>();
 				for (ClauseScore cs : scoredCandidates) {
 					if (cs.getFormula() != c.getFormula()) {
@@ -203,6 +191,7 @@ public class ParallelLearner implements FormulaLearner {
 				}
 				// TODO: PAREI AQUI, ATUALIZAR OS SCORES E INITIAL ARGS
 				// DAR UM JEITO DE MANTER OS CANDIDATES SEM PASSAR DE NOVO POR ELES
+				// foi feito ali em cima, dar uma melhorada e jogar para ca
 				break;
 			}
 			
@@ -210,7 +199,7 @@ public class ParallelLearner implements FormulaLearner {
 		
 		
 		
-		return this.exactScore.getFormulas();
+		return this.preciseLearner.getFormulas();
 	}
 	
 	/**
@@ -230,10 +219,9 @@ public class ParallelLearner implements FormulaLearner {
 	
 	@Override
 	public List<Formula> learn() {
-		double[] args = (this.initialArgs == null) ? 
-				new double[0] : this.initialArgs;
+		double[] args = (this.initialArgs == null) ? new double[0] : this.initialArgs;
 		double score = Double.isNaN(this.initialScore) ? 
-				this.exactScore.getScore(args) : this.initialScore;
+				this.preciseLearner.getScore().getScore(args) : this.initialScore;
 		return this.learn(args, score);
 	}
 	
@@ -254,8 +242,10 @@ public class ParallelLearner implements FormulaLearner {
 	@Override
 	public void putFormulas(List<Formula> formulas) {
 		this.formulas.addAll(formulas);
-		this.exactScore.addFormulas(formulas);
-		this.fastScore.addFormulas(formulas);
+		for (Formula f : formulas) {
+			checkInsert(f, this.preciseLearner);
+			checkInsert(f, this.fastLearner);
+		}
 		for (Formula f : formulas) {
 			int i = f.length();
 			if (i < this.maxAtoms) {
@@ -267,12 +257,42 @@ public class ParallelLearner implements FormulaLearner {
 	@Override
 	public void putFormula(Formula formula) {
 		this.formulas.add(formula);
-		this.exactScore.addFormula(formula);
-		this.fastScore.addFormula(formula);
+		checkInsert(formula, this.preciseLearner);
+		checkInsert(formula, this.fastLearner);
 		int i = formula.length();
 		if (i < this.maxAtoms) {
 		  this.lenghtFormula.get(i-1).add(formula);
 		}
+	}
+
+	@Override
+	public WeightLearner getWeightLearner() {
+		return this.preciseLearner;
+	}
+
+	@Override
+	public ScoredLearner copy() {
+		ParallelLearnerBuilder builder = new ParallelLearnerBuilder();
+		builder.setAtoms(this.atoms);
+		builder.setEpslon(this.epslon);
+		builder.setFastLearner(this.fastLearner.copy());
+		builder.setFormulas(new ArrayList<Formula>(this.preciseLearner.getFormulas()));
+		builder.setInitialArgs(this.preciseLearner.weights());
+		builder.setInitialScore(this.preciseLearner.score());
+		builder.setMaxAtoms(this.maxAtoms);
+		builder.setNumberOfThreads(this.threads);
+		builder.setTarget(this.target);
+		builder.setWeightLearner(this.preciseLearner.copy());
+		return builder.build();
+	}
+	
+	private static void checkInsert(Formula f, WeightLearner learner) {
+		for (Formula g : learner.getFormulas()) {
+			if (f == g) {
+				return;
+			}
+		}
+		learner.addFormula(f);
 	}
 	
 	
