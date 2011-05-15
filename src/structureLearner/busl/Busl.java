@@ -69,7 +69,7 @@ public class Busl implements StructureLearner {
 		
 		DefaultTest<Atom> test = new DefaultTest<Atom>(0.05, this.tNodes);
 		GSIMN<Atom> gsimn = new GSIMN<Atom>(this.tNodes, test);
-		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.run();
+		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.getGraph();
 		BronKerboschCliqueFinder<Atom, DefaultEdge> cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(graph);
 		ScoredLearnerBuilder builder;
 		{

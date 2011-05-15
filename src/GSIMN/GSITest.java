@@ -11,14 +11,14 @@ import java.util.Set;
 import stat.IndependenceTest;
 import stat.RandomVariable;
 
-public class GSIndependenceTest<RV extends RandomVariable<RV>> {
+public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<RV> {
 	// Maps a tuple of RandomVariable (order independent) into a Map of tests results
 	// (X,Y) -> {(Z0 -> true/false), (Z1 -> true/false), ...}
 	private final Map<Set<RV>, Map<Collection<RV>, Boolean>> knowledgeBase;
 	private final IndependenceTest<RV> itest;
 	private final Map<Set<RV>,Double> pvalueMap;
 	
-	public GSIndependenceTest(IndependenceTest<RV> itest) {
+	public GSITest(IndependenceTest<RV> itest) {
 		this.knowledgeBase = new HashMap<Set<RV>, Map<Collection<RV>,Boolean>>();
 		this.itest = itest;
 		pvalueMap = new HashMap<Set<RV>, Double>();
@@ -168,5 +168,27 @@ public class GSIndependenceTest<RV extends RandomVariable<RV>> {
 			this.knowledgeBase.put(xy, new HashMap<Collection<RV>, Boolean>());
 		}
 		this.knowledgeBase.get(xy).put(new ArrayList<RV>(Z), new Boolean(b));
+	}
+
+	@Override
+	public boolean test(RV x, RV y, Set<RV> z) {
+		return itest.test(x, y, z);
+	}
+
+	@Override
+	public boolean test(double pvalue) {
+		return itest.test(pvalue);
+	}
+
+	@Override
+	public double pvalue(RV x, RV y) {
+		Set<RV> xy = this.getXYSet(x, y);
+		// if pvalue was already evaluated
+		if (this.pvalueMap.containsKey(xy)) {
+			return this.pvalueMap.get(xy);
+		}
+		double d = itest.pvalue(x, y);
+		this.addPValue(x, y, d);
+		return d;
 	}
 }
