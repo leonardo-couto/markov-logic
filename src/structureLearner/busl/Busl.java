@@ -14,6 +14,7 @@ import math.AutomatedLBFGS;
 import math.OptimizationException;
 import math.Optimizer;
 
+import org.jgrapht.Graph;
 import org.jgrapht.UndirectedGraph;
 import org.jgrapht.alg.BronKerboschCliqueFinder;
 import org.jgrapht.graph.DefaultEdge;
@@ -21,10 +22,12 @@ import org.jgrapht.graph.DefaultEdge;
 import stat.DefaultTest;
 import structureLearner.StructureLearner;
 import util.MyException;
+import util.Util;
 import weightLearner.Score;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import GSIMN.GSIMN;
+import GSIMN.GSITest;
 import fol.Atom;
 import fol.Formula;
 import fol.FormulaFactory;
@@ -52,6 +55,8 @@ public class Busl implements StructureLearner {
 		this.wl = new WeightLearner(
 				new WeightedPseudoLogLikelihood(this.predicates), 
 				new AutomatedLBFGS(0.001));
+		GSIMN.out = Util.dummyOutput;
+		GSITest.out = Util.dummyOutput;
 	}
 
 	@Override
@@ -105,9 +110,22 @@ public class Busl implements StructureLearner {
 		double mlnScore = this.wl.score();
 		
 		for (Atom candidate : candidates) {
-			
+			gsimn.addVariable(candidate);
+			System.out.println("***************************************************************************************************************************");
+			System.out.println("***************************************************************************************************************************");
+			Graph<Atom, DefaultEdge> cgraph = gsimn.getGraph();
+			Graph<Atom, DefaultEdge> neighbors = Util.neighborsGraph(cgraph, candidate);
+			cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(neighbors);
+			for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
+				System.out.println(clique);
+			}
+
+			gsimn.removeVariable(candidate);
 		}
-		
+		System.out.println("***************************************************************************************************************************");
+		System.out.println("***************************************************************************************************************************");
+
+
 		// TODO NAO TERMINADO
 		return mln;
 	}

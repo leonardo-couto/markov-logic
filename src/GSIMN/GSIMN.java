@@ -1,5 +1,6 @@
 package GSIMN;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,16 +23,20 @@ import stat.WeightedRV;
 import util.Util;
 
 public class GSIMN<RV extends RandomVariable<RV>> {
+	public static PrintStream out = System.out;
+	
 	private UndirectedGraph<RV, DefaultEdge> graph;
 	private final Set<RV> vars;
 	private final GSITest<RV> test;
 	private final Map<RV, List<WeightedRV<RV>>> pvalues;
+	private final Map<RV, Set<RV>> independent;
 
 	public GSIMN(Set<RV> V, IndependenceTest<RV> test) {
 		this.graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
 		this.vars = new HashSet<RV>(V);
 		this.test = new GSITest<RV>(test);
 		this.pvalues = new HashMap<RV, List<WeightedRV<RV>>>();
+		this.independent = new HashMap<RV, Set<RV>>();
 		this.run(false, null);
 	}
 	
@@ -52,7 +57,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 				blah++;
 				long time = System.currentTimeMillis();
 				double d = this.test.pvalue(X, Y);
-				System.out.println(d + " : " + blah + "/" + npv + " t = " + (System.currentTimeMillis()-time) +
+				out.println(d + " : " + blah + "/" + npv + " t = " + (System.currentTimeMillis()-time) +
 						" X = " + X + " Y = " + Y);
 				this.pvalues.get(X).add(new WeightedRV<RV>(Y, d));
 				this.pvalues.get(Y).add(new WeightedRV<RV>(X, d));
@@ -113,6 +118,10 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 				}
 			}
 		}
+		this.independent.remove(var);
+		for (Entry<RV, Set<RV>> entry : this.independent.entrySet()) {
+			entry.getValue().remove(var);
+		}
 		this.vars.remove(var);
 		return true;
 	}
@@ -120,27 +129,26 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 	private UndirectedGraph<RV, DefaultEdge> run(boolean target, RV targetVar) {
 		
 		Map<RV, Set<RV>> dependent = new HashMap<RV, Set<RV>>();
-		Map<RV, Set<RV>> independent = new HashMap<RV, Set<RV>>();
 		Map<RV, List<RV>> lambda = new HashMap<RV, List<RV>>();
 		List<WeightedRV<RV>> piW = new ArrayList<WeightedRV<RV>>();
 		UndirectedGraph<RV, DefaultEdge> graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
 
 		for (RV x : this.vars) {
 			dependent.put(x, new HashSet<RV>());
-			independent.put(x, new HashSet<RV>());
 			graph.addVertex(x);
 		}
 		
 		if (target) {
 			this.pvalues.put(targetVar, new ArrayList<WeightedRV<RV>>());
+			this.independent.put(targetVar, new HashSet<RV>());
 			dependent.put(targetVar, new HashSet<RV>());
-			independent.put(targetVar, new HashSet<RV>());
 			graph.addVertex(targetVar);
 			this.initPValues(Collections.singleton(targetVar));
 			this.vars.add(targetVar);
 		} else {
 			for (RV x : this.vars) {
 				this.pvalues.put(x, new ArrayList<WeightedRV<RV>>());
+				this.independent.put(x, new HashSet<RV>());
 			}
 			this.initPValues(this.vars);
 		}
@@ -172,9 +180,9 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			
 			// Move the variables know to be (or not) in the Markov blanket of X to the end of lambda
 			lambdaX.removeAll(dependent.get(x));
-			lambdaX.removeAll(independent.get(x));
+			lambdaX.removeAll(this.independent.get(x));
 			lambdaX.addAll(dependent.get(x));
-			lambdaX.addAll(independent.get(x));
+			lambdaX.addAll(this.independent.get(x));
 			
 			// Grown phase
 			List<RV> S = new ArrayList<RV>();
@@ -183,8 +191,8 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 				
 				List<RV> lambdaY = lambda.get(y);
 				
-				if (!this.test(x, y, Collections.<RV>emptySet(), independent.get(x), dependent.get(x))) {
-					if(S.isEmpty() || !this.test(x, y, S, independent.get(x), dependent.get(x))) {
+				if (!this.test(x, y, Collections.<RV>emptySet(), this.independent.get(x), dependent.get(x))) {
+					if(S.isEmpty() || !this.test(x, y, S, this.independent.get(x), dependent.get(x))) {
 						// move X to the beginning of lambdaY
 						lambdaY.remove(x);
 						lambdaY.add(0, x);
@@ -215,7 +223,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 				RV Y = S.get(i);
 				SY = new ArrayList<RV>(S);
 				SY.remove(i);
-				if (this.test(x, Y, SY, independent.get(x), dependent.get(x))) {
+				if (this.test(x, Y, SY, this.independent.get(x), dependent.get(x))) {
 					S = SY;
 				}
 			}
@@ -226,8 +234,8 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 					dependent.get(y).add(x);
 					dependent.get(x).add(y);
 				} else {
-					independent.get(y).add(x);
-					independent.get(x).add(y);
+					this.independent.get(y).add(x);
+					this.independent.get(x).add(y);
 				}
 			}
 			

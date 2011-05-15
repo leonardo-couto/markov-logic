@@ -34,17 +34,8 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 			throw new MyException("RandomVariable Distribution class do " + 
 					"not support empty constructor.", e);
 		}
-		this.distribution.addAll(domain);
 	}
 	
-	public boolean addRandomVariable(RV r) {
-		return this.distribution.add(r);
-	}
-	
-	public boolean removeRandomVariable(RV r) {
-		return this.distribution.remove(r);		
-	}
-
 	/*
 	 * Gets the next <code>n</code> elements from iterator 
 	 * <code>iterator</code> and puts into the <code>holder</code> List.
@@ -63,6 +54,7 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	}
 
 	private RandomVariableData initMarginalData(RV x) {
+		this.distribution.add(x);
 		RandomVariableData data = new RandomVariableData(x);
 		this.marginalData.put(x, data);
 		return data;

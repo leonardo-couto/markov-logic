@@ -1,11 +1,20 @@
 package util;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.jgrapht.Graph;
+import org.jgrapht.graph.Subgraph;
 
 /**
  * @author Leonardo Castilho Couto
@@ -104,6 +113,53 @@ public class Util {
 	}
 	
 	/**
+	 * Gives a List of Strings, each representing a edge in the graph.
+	 * It sorts the vertex so that the same graph are always represented
+	 * in the same way. 
+	 * @param <T> the vertex must implements the Comparable interface
+	 * @param graph
+	 * @return A List<String> representation of this graph edges. 
+	 */
+	public static <T extends Comparable<? super T>> List<String> getEdges(Graph<T, ?> graph) {
+		List<String> out = new LinkedList<String>();
+		List<T> list = new ArrayList<T>(graph.vertexSet());
+		Collections.sort(list);
+		for (int i = 0; i < list.size() -1; i++) {
+			for (int j = i+1; j < list.size(); j++) {
+				T x = list.get(i);
+				T y = list.get(j);
+				if (graph.containsEdge(x, y)) {
+					out.add("(" + x.toString() + " : " + y.toString() + ")");
+				}
+			}
+		}
+		return out;
+	}
+	
+	/**
+	 * Given a <code>graph/code> and a <code>vertex/code>, returns a subset of 
+	 * <code>graph/code> with all neighbors vertex of <code>vertex</code> and
+	 * the <code>vertex</code> itself. All edges between theses nodes are maintained
+	 * in the subgraph.
+	 * @param graph 
+	 * @param vertex
+	 * @return subset of graph that includes <code>vertex/code> and its neighbors.
+	 */
+	public static <V, E> Graph<V, E> neighborsGraph(Graph<V, E> graph, V vertex) {
+		Set<V> neighbors = new HashSet<V>();
+		neighbors.add(vertex);
+		for (E edge : graph.edgesOf(vertex)) {
+			V source = graph.getEdgeSource(edge);
+			if (source == vertex) {
+				neighbors.add(graph.getEdgeTarget(edge));
+			} else {
+				neighbors.add(source);
+			}
+		}
+		return new Subgraph<V, E, Graph<V, E>>(graph, neighbors);
+	}
+	
+	/**
 	 * This method computes the machine precision number as the smallest 
 	 * floating point number such that 1 + number differs from 1.
 	 * 
@@ -199,5 +255,14 @@ public class Util {
 	    
 	    return ddpmeps;
 	}
+	
+	public static PrintStream dummyOutput = new PrintStream(new OutputStream() {
+		
+		@Override
+		public void write(int b) throws IOException {
+			// TODO Auto-generated method stub
+			
+		}
+	});
 
 }

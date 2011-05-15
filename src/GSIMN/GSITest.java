@@ -1,5 +1,6 @@
 package GSIMN;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -12,6 +13,9 @@ import stat.IndependenceTest;
 import stat.RandomVariable;
 
 public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<RV> {
+	
+	public static PrintStream out = System.out;
+	
 	// Maps a tuple of RandomVariable (order independent) into a Map of tests results
 	// (X,Y) -> {(Z0 -> true/false), (Z1 -> true/false), ...}
 	private final Map<Set<RV>, Map<Collection<RV>, Boolean>> knowledgeBase;
@@ -160,7 +164,7 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 	
 	private void imprime(RV X, RV Y, Collection<RV> Z, boolean b, String desc) {
 		// TODO: REMOVER METODO!!
-		System.out.println("I( " + X.toString() + ", " + Y.toString() + "| " + Arrays.deepToString(Z.toArray()) + ") " + b + ". Por: " + desc);
+		out.println("I( " + X.toString() + ", " + Y.toString() + "| " + Arrays.deepToString(Z.toArray()) + ") " + b + ". Por: " + desc);
 	}
 	
 	private void addKB(Set<RV> xy, Collection<RV> Z, boolean b) {
