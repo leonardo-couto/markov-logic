@@ -23,7 +23,7 @@ public class TestFormula implements Runnable {
 	public TestFormula(WeightLearner learner, double[] lastWeights, 
 			double lastScore, CountDownLatch done, BlockingQueue<Formula> candidates, 
 			Queue<ClauseScore> scoredCandidates, double epslon) {
-		this.learner = learner;
+		this.learner = learner.copy();
 		this.lastWeights = lastWeights;
 		this.lastScore = lastScore;
 		this.done = done;

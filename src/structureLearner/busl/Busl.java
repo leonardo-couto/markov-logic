@@ -2,9 +2,9 @@ package structureLearner.busl;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
@@ -64,7 +64,7 @@ public class Busl implements StructureLearner {
 		}
 		{
 			List<Formula> formulas = new ArrayList<Formula>(this.tNodes);
-		    this.updateMln(formulas, new double[0]);
+		    this.updateMln(formulas, new double[formulas.size()]);
 		}
 		
 		DefaultTest<Atom> test = new DefaultTest<Atom>(0.05, this.tNodes);
@@ -126,20 +126,59 @@ public class Busl implements StructureLearner {
 	 * @return mln's score
 	 */
 	private double updateMln(List<Formula> formulas, double[] weights) {
+
+		FormulasAndWeights fw = this.removeDuplicates(formulas, weights);
+		
+		// add the formulas to mln and mln's associated weightLearner
+		this.mln.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, fw.weights));
+		this.wl.addFormulas(fw.formulas);
+		
+		// learn the optimum weights
+		fw = WeightedFormula.toFormulasAndWeights(this.mln);
+		try {
+			weights = this.wl.learn(fw.weights);
+		} catch (OptimizationException e) {
+			throw new MyException(
+					"Fatal error while learning the MLN weights.", e);
+		}
+		
+		// update the MLN with optimum weights
+		this.mln.clear();
+		this.mln.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, weights));
+		
+		return this.wl.score();
+	}
+	
+	/**
+	 * Remove formulas already in the MLN.
+	 * @param formulas Formulas to be added to the mln
+	 * @param weights added Formulas weights
+	 * @return 
+	 */
+	private FormulasAndWeights removeDuplicates(List<Formula> formulas, double[] weights) {
 		// remove formulas already in the mln
 		for (WeightedFormula wf : this.mln) {
 			Formula f = wf.getFormula();
-			Iterator<Formula> it = formulas.iterator();
+			ListIterator<Formula> it = formulas.listIterator();
 			int j = 0;
 			while (it.hasNext()) {
 				if (f == it.next()) {
-					it.remove();
+					it.set(null);
 					weights[j] = Double.NaN;
 				}
 				j++;
 			}
 		}
 		
+		ListIterator<Formula> it = formulas.listIterator();
+		formulas = new ArrayList<Formula>(formulas.size());
+		while (it.hasNext()) {
+			Formula f = it.next();
+			if (f != null) {
+				formulas.add(f);
+			}
+		}
+
 		// remove the weights of removed formulas
 		double[] nweights = new double[formulas.size()];
 		{
@@ -152,24 +191,7 @@ public class Busl implements StructureLearner {
 			}
 		}
 		
-		// add the formulas to mln and mln's associated weightLearner
-		this.mln.addAll(WeightedFormula.toWeightedFormulas(formulas, nweights));
-		this.wl.addFormulas(formulas);
-		
-		// learn the optimum weights
-		FormulasAndWeights fw = WeightedFormula.toFormulasAndWeights(this.mln);
-		try {
-			weights = this.wl.learn(fw.weights);
-		} catch (OptimizationException e) {
-			throw new MyException(
-					"Fatal error while learning the MLN weights.", e);
-		}
-		
-		// update the MLN with optimum weights
-		mln.clear();
-		mln.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, weights));
-		
-		return this.wl.score();
+		return new FormulasAndWeights(formulas, nweights);
 	}
 	
 }
