@@ -95,7 +95,6 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			return false;
 		}
 		this.run(true, var);
-		this.vars.add(var);
 		return true;
 	}
 	
