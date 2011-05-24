@@ -259,10 +259,7 @@ public class Util {
 	public static PrintStream dummyOutput = new PrintStream(new OutputStream() {
 		
 		@Override
-		public void write(int b) throws IOException {
-			// TODO Auto-generated method stub
-			
-		}
+		public void write(int b) throws IOException {}
 	});
 
 }

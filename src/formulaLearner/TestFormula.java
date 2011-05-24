@@ -1,5 +1,6 @@
 package formulaLearner;
 
+import java.io.PrintStream;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +11,8 @@ import weightLearner.WeightLearner;
 import fol.Formula;
 
 public class TestFormula implements Runnable {
+	
+	public static PrintStream out = System.out;
 	
 	private final WeightLearner learner;
 	private final double[] lastWeights;
@@ -59,9 +62,9 @@ public class TestFormula implements Runnable {
 				
 				this.learner.removeFormula(f);
 
-				System.out.println(newScore - this.lastScore + " : " + f);
+				out.println(newScore - this.lastScore + " : " + f);
 				if (Double.compare(newScore, this.lastScore) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
-					this.scoredCandidates.offer(new ClauseScore(f, newScore - this.lastScore, learnedWeight, nweights));
+					this.scoredCandidates.offer(new ClauseScore(f, newScore - this.lastScore, learnedWeight));
 				}
 			}
 		} catch (Exception e) {

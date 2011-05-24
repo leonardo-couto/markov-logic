@@ -1,5 +1,6 @@
 package formulaLearner;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,8 +20,9 @@ import fol.Atom;
 import fol.Formula;
 
 // TODO: doNotReplace flag? (set initial formulas not replaceable)
-// TODO: fazer a parte de targetAtom
 public class ParallelLearner implements ScoredLearner {
+	
+	public static PrintStream out = System.out;
 	
 	private final Set<Atom> atoms;
 	private final List<Formula> formulas;
@@ -39,7 +41,7 @@ public class ParallelLearner implements ScoredLearner {
 	private boolean hasTarget;
 	
 	private static final ClauseScore END = new ClauseScore(
-			FindCandidates.END, Double.NaN, Double.NaN, new double[0]);
+			FindCandidates.END, Double.NaN, Double.NaN);
 	
 	public ParallelLearner(ParallelLearnerBuilder builder) {
 		this.atoms = builder.getAtoms();
@@ -51,6 +53,8 @@ public class ParallelLearner implements ScoredLearner {
 		this.epslon = builder.getEpslon();
 		this.initialArgs = builder.getInitialArgs();
 		this.initialScore = builder.getInitialScore();
+		this.hasTarget = builder.getTarget() != null;
+		this.target = this.hasTarget ? builder.getTarget() : null;
 		this.lenghtFormula = new ArrayList<List<Formula>>(this.maxAtoms);
 		for (int i = 0; i < this.maxAtoms; i++) { 
 			this.lenghtFormula.add(new ArrayList<Formula>());
@@ -59,8 +63,6 @@ public class ParallelLearner implements ScoredLearner {
 			this.putFormulas(builder.getFormulas());
 		}
 	}
-	
-	public double[] changeArgs(Formula f, double[] lastArgs) {return null;}
 	
 	private BlockingQueue<Formula> findCandidates(List<Formula> seeds) {
 		BlockingQueue<Formula> candidates = new LinkedBlockingQueue<Formula>();
@@ -104,7 +106,7 @@ public class ParallelLearner implements ScoredLearner {
 		return new ArrayList<ClauseScore>(candidatesQueue);
 	}	
 	
-	public List<Formula> learn(double[] initialArgs, double initialScore) {
+	private List<Formula> learn(double[] initialArgs, double initialScore) {
 		List<Formula> lastCandidates = this.lenghtFormula.get(0);
 		double[] argsE = initialArgs;
 		double[] argsF = initialArgs;
@@ -147,9 +149,9 @@ public class ParallelLearner implements ScoredLearner {
 			if (!finalCandidates.isEmpty()) {
 				Collections.sort(finalCandidates);
 				for (ClauseScore sc : finalCandidates) {
-					System.out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
+					out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
 				}
-				System.out.println("");
+				out.println("");
 				ClauseScore c = finalCandidates.get(0);
 				this.preciseLearner.addFormula(c.getFormula());
 				this.lenghtFormula.get(formulaLength+1).add(c.getFormula());
@@ -187,7 +189,7 @@ public class ParallelLearner implements ScoredLearner {
 			} else { // some clause improved the score
 				Collections.sort(finalCandidates);
 				for (ClauseScore sc : finalCandidates) {
-					System.out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
+					out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
 				}
 				// TODO: PAREI AQUI, ATUALIZAR OS SCORES E INITIAL ARGS
 				// DAR UM JEITO DE MANTER OS CANDIDATES SEM PASSAR DE NOVO POR ELES
@@ -196,8 +198,6 @@ public class ParallelLearner implements ScoredLearner {
 			}
 			
 		} while (!lastCandidates.isEmpty() && formulaLength < this.maxAtoms);
-		
-		
 		
 		return this.preciseLearner.getFormulas();
 	}
@@ -229,6 +229,7 @@ public class ParallelLearner implements ScoredLearner {
 	public void setTarget(Atom a) {
 		this.target = a;
 		this.hasTarget = true;
+		this.refreshLengthFormula();
 	}
 	
 	protected Atom getTarget() {
@@ -246,12 +247,7 @@ public class ParallelLearner implements ScoredLearner {
 			checkInsert(f, this.preciseLearner);
 			checkInsert(f, this.fastLearner);
 		}
-		for (Formula f : formulas) {
-			int i = f.length();
-			if (i < this.maxAtoms) {
-			  this.lenghtFormula.get(i-1).add(f);
-			}
-		}
+		this.refreshLengthFormula();
 	}
 	
 	@Override
@@ -259,9 +255,31 @@ public class ParallelLearner implements ScoredLearner {
 		this.formulas.add(formula);
 		checkInsert(formula, this.preciseLearner);
 		checkInsert(formula, this.fastLearner);
-		int i = formula.length();
-		if (i < this.maxAtoms) {
-		  this.lenghtFormula.get(i-1).add(formula);
+		if (!this.hasTarget() || formula.getAtoms().contains(this.getTarget())) {
+			int i = formula.length();
+			if (i < this.maxAtoms) {
+				this.lenghtFormula.get(i-1).add(formula);
+			}
+		}
+	}
+	
+	/**
+	 * The lengthFormula List is used has seed to generate new formulas
+	 * if this list contains only formulas with a given Atom, all
+	 * learned formulas will also contain that Atom. Thus we use
+	 * this to achieve the target property.
+	 */
+	private void refreshLengthFormula() {
+		for (List<Formula> length : this.lenghtFormula) { 
+			length.clear();
+		}
+		for (Formula f : this.formulas) {
+			if (!this.hasTarget() || f.getAtoms().contains(this.getTarget())) {
+				int i = f.length();
+				if (i < this.maxAtoms) {
+					this.lenghtFormula.get(i-1).add(f);
+				}
+			}
 		}
 	}
 

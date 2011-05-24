@@ -16,10 +16,7 @@ import util.NameID;
  */
 public class Domain extends HashSet<Constant> implements NameID {
 	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L; // TODO: generate serial id;
+	private static final long serialVersionUID = -6910763430777620405L;
 	private String name;
 	private List<Function> functions;
 	private List<Variable> variables;

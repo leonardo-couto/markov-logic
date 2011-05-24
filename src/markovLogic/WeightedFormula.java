@@ -52,5 +52,10 @@ public class WeightedFormula {
 			this.weights = weights;
 		}
  	}
+	
+	@Override
+	public String toString() {
+		return Double.toString(this.weight) + " : " + this.formula.toString();
+	}
 
 }
