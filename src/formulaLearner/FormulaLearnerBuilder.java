@@ -10,5 +10,6 @@ public interface FormulaLearnerBuilder {
 	public FormulaLearner build();
 	public FormulaLearnerBuilder setAtoms(Collection<Atom> atoms);
 	public Set<Atom> getAtoms();
+	public FormulaLearnerBuilder setTarget(Atom a);
 
 }

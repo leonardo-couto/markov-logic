@@ -90,6 +90,7 @@ public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 		return this.atoms;
 	}
 	
+	@Override
 	public ParallelLearnerBuilder setTarget(Atom a) {
 		this.target = a;
 		this.hasTarget = true;

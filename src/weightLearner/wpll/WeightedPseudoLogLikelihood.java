@@ -65,7 +65,9 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 
 		this.grad = new double[formulas.size()];
 		for (Entry<Predicate, DataCount> e : this.dataCounts.entrySet()) {
-			wpll = wpll + this.predicateWPll(e.getKey(), e.getValue(), fdata);
+			Predicate p = e.getKey();
+			boolean isEmpty = this.predicateFormulas.get(p).isEmpty();
+			wpll += isEmpty ? -.69 : this.predicateWPll(p, e.getValue(), fdata);
 		}
 		return wpll;
 	}

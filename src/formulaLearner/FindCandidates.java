@@ -120,9 +120,7 @@ public class FindCandidates implements Runnable {
 				this.candidates.offer(f4);
 			}
 		}
-		for (int i = 0; i < this.threads; i++) {
-			this.candidates.offer(END);
-		}
+		this.candidates.offer(END);
 	}
 	
 	private class NaiveCandidates implements Runnable {

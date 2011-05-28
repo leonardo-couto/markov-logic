@@ -5,8 +5,7 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
-import math.LBFGS.ExceptionWithIflag;
-import util.MyException;
+import math.OptimizationException;
 import weightLearner.WeightLearner;
 import fol.Formula;
 
@@ -41,6 +40,7 @@ public class TestFormula implements Runnable {
 			while (true) {
 				Formula f = this.candidates.take();
 				if (f == FindCandidates.END) {
+					this.candidates.offer(FindCandidates.END);
 					return;
 				}
 				
@@ -53,11 +53,13 @@ public class TestFormula implements Runnable {
 					nweights = this.learner.learn(this.lastWeights);
 					learnedWeight = nweights[nweights.length -1]; 
 					newScore = this.learner.score();
-				} catch (ExceptionWithIflag e) {
+				} catch (OptimizationException e) {
+					// TODO: logar a excecao
+					// algum outro erro alem de otimizacao
+					// que talvez nao aconteceria para outra formula
+					// que vale a pena estar aqui?
 					this.learner.removeFormula(f);
 					continue;
-				} catch (Exception e) {
-					throw new MyException(e);
 				}
 				
 				this.learner.removeFormula(f);
@@ -67,10 +69,14 @@ public class TestFormula implements Runnable {
 					this.scoredCandidates.offer(new ClauseScore(f, newScore - this.lastScore, learnedWeight));
 				}
 			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		} catch (Exception e) {
-			e.printStackTrace();
+			// TODO: apenas logar a excessao
+			// nao tem porque para o algoritmo, tem?
 		} finally {
 			this.done.countDown();
 		}
 	}
+	
 }

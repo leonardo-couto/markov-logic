@@ -93,8 +93,8 @@ public class Busl implements StructureLearner {
 		}
 		
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
-			Set<Predicate> predicates = Atom.getPredicates(clique);
 			{
+				Set<Predicate> predicates = Atom.getPredicates(clique);
 				Score exactScore = new WeightedPseudoLogLikelihood(predicates);
 				Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
 				builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
@@ -126,6 +126,7 @@ public class Busl implements StructureLearner {
 
 			Queue<TNode> queue = new PriorityQueue<TNode>(candidates.size(), TNode.COMPARATOR);
 			for (Atom node : candidates) {
+				builder.setTarget(node);
 				List<WeightedFormula> list = new ArrayList<WeightedFormula>();
 				List<Formula> learnedFormulas = new LinkedList<Formula>();
 				gsimn.addVariable(node);
@@ -135,8 +136,8 @@ public class Busl implements StructureLearner {
 				Graph<Atom, DefaultEdge> neighbors = Util.neighborsGraph(cgraph, node);
 				cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(neighbors);
 				for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
-
 					{
+						Set<Predicate> predicates = Atom.getPredicates(clique);
 						Score exactScore = new WeightedPseudoLogLikelihood(predicates);
 						Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
 						builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
@@ -146,10 +147,6 @@ public class Busl implements StructureLearner {
 					out.println("CLIQUE: " + clique);
 					out.println();
 
-					// TODO: VER PORQUE O PESO ESTAH VINDO ZERADO,
-					// VER SE ESTAH OCORRENDO EM OUTRAS SITUACOES TAMBEM
-					// TODO: ESTAH USANDO O LIST, QUE TEM TODAS AS FORMULAS DA MLN
-					// COM ISSO ESTAH DUPLICANDO AS FORMULAS NA MLN
 					ScoredLearner formulaLearner = builder.setAtoms(clique).build();
 					List<Formula> formulas = formulaLearner.learn();
 					double[] weights = formulaLearner.getWeightLearner().weights();
@@ -178,21 +175,21 @@ public class Busl implements StructureLearner {
 
 				gsimn.removeVariable(node);
 			}
-			out.println("***************************************************************************************************************************");
-			out.println("melhor score: " + queue.peek().node + " - " + queue.peek().score);
-			out.println("formulas: " + queue.peek().formulas);
-			out.println("***************************************************************************************************************************");
-			this.wl = queue.peek().learner;
-			this.mln.addAll(queue.peek().formulas);
-			gsimn.addVariable(queue.peek().node);
-			this.tNodes.add(queue.peek().node);
 			
 			if (Double.compare(queue.peek().score-mlnScore, 0.002) < 1) {
 				break;
+			} else {
+				out.println("***************************************************************************************************************************");
+				out.println("melhor score: " + queue.peek().node + " - " + queue.peek().score);
+				out.println("formulas: " + queue.peek().formulas);
+				out.println("***************************************************************************************************************************");
+				this.wl = queue.peek().learner;
+				this.mln.addAll(queue.peek().formulas);
+				gsimn.addVariable(queue.peek().node);
+				this.tNodes.add(queue.peek().node);
 			}
 		
 		}
-		// TODO NAO TERMINADO
 		return mln;
 	}
 	

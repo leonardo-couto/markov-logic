@@ -117,10 +117,8 @@ public class ParallelLearner implements ScoredLearner {
 		// put atoms
 		try {
 			if (this.putAtoms()) {
-				argsE = this.preciseLearner.learn(argsE);
 				argsF = this.fastLearner.learn(argsF);
-				scoreE = this.preciseLearner.score();;
-				scoreF = this.fastLearner.score();
+				argsE = this.preciseLearner.learn(argsF);
 			}
 		} catch (OptimizationException e) {
 			throw new MyException("Unable to optimize args for initial formulas.", e);
@@ -130,6 +128,11 @@ public class ParallelLearner implements ScoredLearner {
 		boolean findCandidates = true;
 		BlockingQueue<Formula> reuse = null;
 		do {
+			argsE = this.preciseLearner.weights();
+			argsF = this.fastLearner.weights();
+			scoreE = this.preciseLearner.score();
+			scoreF = this.fastLearner.score();
+			
 			// finds all candidates
 			BlockingQueue<Formula> candidates;
 			if (findCandidates) {
@@ -145,39 +148,6 @@ public class ParallelLearner implements ScoredLearner {
 			List<ClauseScore> finalCandidates = this.bestCandidates(scoredQueue, scoredCandidates, 
 					argsE, scoreE);
 			
-			// TODO: REMOVER:
-			if (!finalCandidates.isEmpty()) {
-				Collections.sort(finalCandidates);
-				for (ClauseScore sc : finalCandidates) {
-					out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
-				}
-				out.println("");
-				ClauseScore c = finalCandidates.get(0);
-				this.preciseLearner.addFormula(c.getFormula());
-				this.lenghtFormula.get(formulaLength+1).add(c.getFormula());
-				argsE = Arrays.copyOf(argsE, argsE.length+1);
-				argsE[argsE.length-1] = c.getWeight();
-				scoreE = scoreE + c.score;
-				this.fastLearner.addFormula(c.getFormula());
-				try { this.fastLearner.learn(argsF);
-				} catch (Exception e) { e.printStackTrace(); }
-				argsF = this.fastLearner.weights();
-				scoreF = this.fastLearner.score();
-				reuse = new LinkedBlockingQueue<Formula>();
-				for (ClauseScore cs : scoredCandidates) {
-					if (cs.getFormula() != c.getFormula()) {
-						reuse.add(cs.getFormula());
-					}
-				}
-				for (int i = 0; i < this.threads; i++) {
-					reuse.add(FindCandidates.END);
-				}
-				findCandidates = false;
-				continue;
-			}
-			
-			// TODO: END REMOVER
-			
 			if (finalCandidates.isEmpty()) { // no clauses improved the score
 				Collections.sort(scoredCandidates);
 				int size = Math.min(scoredCandidates.size(), this.m);
@@ -191,10 +161,18 @@ public class ParallelLearner implements ScoredLearner {
 				for (ClauseScore sc : finalCandidates) {
 					out.println(sc.getFormula() + " : w = " + sc.getWeight() + ", s = " + sc.score);
 				}
-				// TODO: PAREI AQUI, ATUALIZAR OS SCORES E INITIAL ARGS
-				// DAR UM JEITO DE MANTER OS CANDIDATES SEM PASSAR DE NOVO POR ELES
-				// foi feito ali em cima, dar uma melhorada e jogar para ca
-				break;
+				out.println("");
+				ClauseScore c = finalCandidates.get(0);
+				this.lenghtFormula.get(formulaLength+1).add(c.getFormula());
+				this.updateScores(c);
+				reuse = new LinkedBlockingQueue<Formula>();
+				for (ClauseScore cs : scoredCandidates) {
+					if (cs.getFormula() != c.getFormula()) {
+						reuse.add(cs.getFormula());
+					}
+				}
+				reuse.add(FindCandidates.END);
+				findCandidates = false;
 			}
 			
 		} while (!lastCandidates.isEmpty() && formulaLength < this.maxAtoms);
@@ -203,8 +181,30 @@ public class ParallelLearner implements ScoredLearner {
 	}
 	
 	/**
+	 * Update the scores with the learned Formula
+	 * @param c ClauseScore representing the learned Formula
+	 */
+	private void updateScores(ClauseScore c) {
+		this.preciseLearner.addFormula(c.getFormula());
+		this.fastLearner.addFormula(c.getFormula());
+		double[] argsE = this.preciseLearner.weights();
+		double[] argsF = this.fastLearner.weights();
+		argsE = Arrays.copyOf(argsE, argsE.length+1);
+		argsF = Arrays.copyOf(argsF, argsF.length+1);
+		argsE[argsE.length-1] = c.getWeight();
+		argsF[argsF.length-1] = c.getWeight();
+		try { 
+			this.fastLearner.learn(argsF);
+			this.preciseLearner.learn(argsE);
+		} catch (Exception e) { 
+			// TODO: tratar excecao
+			e.printStackTrace(); 
+		}
+	}
+	
+	/**
 	 * Check if there is any atom not present in formulas, and add them.
-	 * @return boolean if any atom is not present in formulas
+	 * @return boolean true if any atom is not present in formulas
 	 */
 	private boolean putAtoms() {
 		boolean b = false;
