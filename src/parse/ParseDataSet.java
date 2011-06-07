@@ -16,6 +16,7 @@ import fol.Atom;
 import fol.Constant;
 import fol.Domain;
 import fol.Predicate;
+import fol.Term;
 
 /**
  * @author Leonardo Castilho Couto
@@ -153,18 +154,16 @@ public class ParseDataSet {
 			
 		}
 		
-		Atom at = new Atom(p, value, constantList);
-		Map<Atom, Double> m = p.getGroundings();
-		
+		Term[] terms = constantList.toArray(new Term[constantList.size()]);
 		// Test whether this Atom is already defined or not.
-		if(!m.containsKey(at)) {
-			groundings.add(at);
-			m.put(at, at.value);
+		if(!p.hasGrounding(terms)) {
+			Atom at = new Atom(p, value, terms);
+			this.groundings.add(at);
+			p.addGrounding(at);
 		} else {
-			// TODO: throws exception or update value and issue a warning??
 			throw new RuntimeException("Error in file " + dbFile.getName() + 
 					" line " + lineNumber + ": " + line + "\nDuplicated entry \"" + 
-					at.toString() + "\".");
+					p.getGrounding(terms).toString() + "\".");
 		}
 	}
 	

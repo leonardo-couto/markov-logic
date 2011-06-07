@@ -17,14 +17,14 @@ public abstract class Term implements NameID {
 	// TODO: id for each term?
 	
 	protected List<Domain> domain;
-	private String name;
+	private final String name;
 
 	/**
 	 * 
 	 */
 	public Term(String name, List<Domain> domain) {
-		setDomain(domain);
-		setName(name);
+		this.name = name;
+		this.setDomain(domain);
 	}
 		
 	
@@ -32,17 +32,16 @@ public abstract class Term implements NameID {
 	 * 
 	 */
 	public Term(String name, Domain domain) {
-		setDomain(Collections.singletonList(domain));
-		setName(name);
+		this(name, Collections.singletonList(domain));		
 	}
 
 	// TODO: maybe return a copy of this list?
 	public List<Domain> getDomain() { 
-		return domain;
+		return this.domain;
 	}
 
 	public String getName() {
-		return name;
+		return this.name;
 	}
 
 	abstract void setDomain(List<Domain> domain);
@@ -53,10 +52,6 @@ public abstract class Term implements NameID {
 //		}
 //	}
 
-	private void setName(String name) {
-		this.name = name;
-	}
-	
 	public String toString() {
 		return this.name;
 	}

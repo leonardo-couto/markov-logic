@@ -64,10 +64,9 @@ public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 		ParallelLearner pl;
 		if (this.fastLearner == null) {
 			Set<Predicate> predicates = Atom.getPredicates(this.atoms);
-			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates);
+			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates, 300);
 			SequentialTester tester = new SequentialConvergenceTester(0.95, 0.05);
 			tester.setSampleLimit(500);
-			fastScore.setSampleLimit(300);
 			fastScore.setTester(tester);
 			this.fastLearner = new WeightLearner(fastScore, new AutomatedLBFGS(0.02));
 			pl = new ParallelLearner(this);

@@ -26,15 +26,25 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	private SequentialTester tester;
 	private int sampleLimit;
 
-	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
+	/**
+	 * 
+	 * @param predicates
+	 * @param sampleLimit the max number of groundings per predicate that will
+	 * be used to approximate the predicateWpll.
+	 */
+	public WeightedPseudoLogLikelihood(Set<Predicate> predicates, int sampleLimit) {
 		super(predicates);
 		int defaultSize = (int) Math.ceil(predicates.size()*1.4);
 		this.dataCounts = new HashMap<Predicate, DataCount>(defaultSize);
 		// populate inversePllWeight with the number of groundings for each predicate. 
 		for (Predicate p : predicates) {
-			this.dataCounts.put(p, new DataCount(p));
+			this.dataCounts.put(p, new DataCount(p, sampleLimit));
 		}
-		this.sampleLimit = -1;
+		this.sampleLimit = sampleLimit;
+	}
+	
+	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
+		this(predicates, -1);
 	}
 	
 	private WeightedPseudoLogLikelihood(List<Formula> formulas,
@@ -290,21 +300,4 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		}
 	}
 	
-	/**
-	 * Set the max number of groundings per predicate that will
-	 * be used to approximate the predicateWpll.<br><br>
-	 * 
-	 * WARNING! This parameter can only be set BEFORE any
-	 * formulas were added to the wpll. Or else will throw an
-	 * UnsupportedOperationException.
-	 * 
-	 * @param n the sample limit
-	 */
-	public void setSampleLimit(int n) {
-		this.sampleLimit = n;
-		for (DataCount d : this.dataCounts.values()) {
-			d.setSampleSize(n);
-		}
-	}
-
 }

@@ -2,13 +2,18 @@ package fol;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import stat.sampling.DefaultSampler;
+import stat.sampling.RandomIterator;
+import stat.sampling.Sampler;
 import util.NameID;
 import util.Util;
 
@@ -22,8 +27,7 @@ public class Predicate implements NameID {
 	private final String name;
 	private final List<Domain> argDomains;
 	private boolean closedWorld;
-	private final Map<Atom, Double> groundings;
-	private Set<Atom> neGroundings;
+	private final Map<CompositeKey, Atom> groundings;
 	
 	private final String toString;
 	private final int hash;
@@ -38,8 +42,7 @@ public class Predicate implements NameID {
 		this.name = name;
 		this.argDomains = domains;
 		this.closedWorld = false;
-		this.groundings = new HashMap<Atom, Double>();
-		this.neGroundings = new HashSet<Atom>();
+		this.groundings = new HashMap<CompositeKey, Atom>();
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
 	}
@@ -48,8 +51,7 @@ public class Predicate implements NameID {
 		this.name = name;
 		this.argDomains = Arrays.asList(domains);
 		this.closedWorld = false;
-		this.groundings = new HashMap<Atom, Double>();
-		this.neGroundings = new HashSet<Atom>();
+		this.groundings = new HashMap<CompositeKey, Atom>();
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
 	}
@@ -101,84 +103,148 @@ public class Predicate implements NameID {
 	 * @param closedWorld the closedWorld to set
 	 */
 	public void setClosedWorld(boolean b) {
-		if (b == true && this.closedWorld == false) { 
-			if (this.neGroundings.isEmpty()) {
-				setGroundings();
-			} else {
-				for (Atom a : this.neGroundings) {
-					this.groundings.put(a, a.value);
-				}
-			}
-		}
-		if (b == false && this.closedWorld == true) {
-			for (Atom a : this.neGroundings) {
-				this.groundings.remove(a);
-			}
-		}
 		this.closedWorld = b;
 	}
+	
+	public void addGrounding(Atom a) {
+		if (a.predicate == this) {
+			CompositeKey ck = new CompositeKey(a.terms);
+			this.groundings.put(ck, a);
+		}
+	}
+	
+	public boolean hasGrounding(Term ... terms ) {
+		return this.groundings.get(new CompositeKey(terms)) != null;
+	}
+	
+	public Atom getGrounding(Term ... terms) {
+		Atom a = this.groundings.get(new CompositeKey(terms));
+		if (a == null) {
+			return this.closedWorld ? new Atom(this, 0.0, terms) : 
+				new Atom(this, Double.NaN, terms);
+		}
+		return a;
+	}
+	
+	public double groundingValue(Term ... terms) {
+		Atom a = this.groundings.get(new CompositeKey(terms));
+		if (a == null) {
+			return this.closedWorld ? 0.0 : Double.NaN;
+		}
+		return a.value;
+	}
+	
+	private Iterator<Atom> cwIterator(final List<? extends Collection<Constant>> domains, int maxElements) {
+		final Sampler<Constant> sampler = new DefaultSampler<Constant>(domains, maxElements);
+		return new Iterator<Atom>() {
+			
+			private final Iterator<List<Constant>> consts = sampler.iterator();
+			private final int arity = domains.size();
 
-	/**
-	 * @param p
-	 * @return A Set of all groundings of p.
-	 * Assumes closedWorld.
-	 */
-	private void setGroundings() {
-		Set<Atom> neGroundings = new HashSet<Atom>();
-		List<List<Constant>> cll = listGroundings();
-		for (List<Constant> cList : cll) {
-			Atom a = new Atom(this, 0.0, cList);
-			if (!this.groundings.containsKey(a)) {
-				neGroundings.add(a);
+			@Override
+			public boolean hasNext() {
+				return this.consts.hasNext();
 			}
-		}
-		this.neGroundings = neGroundings;
-		for (Atom a : neGroundings) {
-			this.groundings.put(a, a.value);
-		}
-	}	
 
-	private List<List<Constant>> listGroundings() {
-		List<List<Constant>> out = new ArrayList<List<Constant>>();
-		List<List<Constant>> prev;
-		boolean firstLoop = true;
-		for (Domain d : argDomains) {
-			prev = out;
-			out = new ArrayList<List<Constant>>();
-			if (firstLoop) {
-				firstLoop = false;
-				for (Constant c : d) {
-					out.add(Collections.singletonList(c));
-				}
-				continue;
+			@Override
+			public Atom next() {
+				Term[] t = this.consts.next().toArray(new Term[this.arity]);
+				return getGrounding(t);
 			}
-			for (Constant c : d) {
-				for (List<Constant> list : prev) {
-					List<Constant> lc = new ArrayList<Constant>(list);
-					lc.add(c);
-					out.add(lc);
-				}
+
+			@Override
+			public void remove() {
+				// do nothing					
 			}
+		};
+	}
+	
+	public Iterator<Atom> groundingIterator(int maxElements) {
+		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
+		if (this.closedWorld) {
+			return this.cwIterator(this.argDomains, maxElements);
 		}
-		return out;
+		return (new RandomIterator<Atom>(this.groundings.values(), maxElements)).iterator();		
+	}
+	
+	public Iterator<Atom> groundingFilter(Term[] terms, int maxElements) {
+		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
+		if (this.closedWorld) {
+			List<Set<Constant>> domains = new ArrayList<Set<Constant>>(this.argDomains.size());
+			for (Term t : terms) {
+				if (t instanceof Constant) {
+					domains.add(Collections.singleton((Constant) t));
+				} else if (t instanceof Variable) {
+					Variable v = (Variable) t;
+					domains.add(v.getConstants());
+				} else {
+					throw new UnsupportedOperationException();
+				}
+			}
+			return this.cwIterator(domains, maxElements);
+		} else {
+			List<Atom> atoms = new LinkedList<Atom>();
+			Map<Integer, Constant> filter = new HashMap<Integer, Constant>();
+			for (int i = 0; i < terms.length; i++) {
+				Term t = terms[i];
+				if (t instanceof Constant) {
+					filter.put(i, (Constant) t);
+				}
+			}
+			nextGrounding: for (Atom a : this.groundings.values()) {
+				for (Integer i : filter.keySet()) {
+					if (a.terms[i] != filter.get(i)) {
+						continue nextGrounding;
+					}
+				}
+				atoms.add(a);
+			}
+			return (new RandomIterator<Atom>(atoms, maxElements)).iterator();	
+		}
 	}
 
 	/**
 	 * @return the groundings
 	 */
-	public Map<Atom, Double> getGroundings() {
-		return groundings;
+	//public Map<Atom, Double> getGroundings() {
+	//	return this.groundings;
+	//}
+	
+	public long groundingsSize() {
+		return this.closedWorld ? this.totalGroundings() : this.groundings.size();
 	}
 
 	/**
 	 * @return The total possible number of groundings.
 	 */
-	public long totalGroundsNumber() {
+	public long totalGroundings() {
 		long i = 1;		
 		for (Domain d : argDomains) {
 			i = i * (long) d.size();
 		}
 		return i;
+	}
+	
+	private static class CompositeKey {
+		private final Term[] terms;
+		
+		public CompositeKey(Term[] terms) {
+			this.terms = terms;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj != null && obj instanceof CompositeKey) {
+				CompositeKey ck1 = (CompositeKey) obj;
+				return Arrays.equals(this.terms, ck1.terms);
+			}
+			return false;
+		}
+		
+		@Override
+		public int hashCode() {
+			return Arrays.hashCode(this.terms);
+		}
 	}
 
 }

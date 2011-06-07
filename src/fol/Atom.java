@@ -35,7 +35,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	public Atom(Predicate predicate, List<? extends Term> terms) {
 		super();
 		this.predicate = predicate;
-		this.terms = terms.toArray(new Term[0]);
+		this.terms = terms.toArray(new Term[terms.size()]);
 		this.value = Double.NaN;
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
@@ -53,7 +53,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	public Atom(Predicate predicate, double value, List<? extends Term> terms) {
 		super();
 		this.predicate = predicate;
-		this.terms = terms.toArray(new Term[0]);
+		this.terms = terms.toArray(new Term[terms.size()]);
 		this.value = value;
 		this.toString = this._toString();
 		this.hash = this.toString.hashCode();
@@ -133,10 +133,10 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 
 	@Override
 	public Atom replaceVariables(List<Variable> x, List<Constant> c) {
-		Term[] newTerms = Arrays.copyOf(this.terms, this.terms.length);
+		int length = this.terms.length;
+		Term[] newTerms = Arrays.copyOf(this.terms, length);
 		boolean replaced = false;
-		boolean grounded = true;
-		for (int i = 0; i < this.terms.length; i++) {
+		for (int i = 0; i < length; i++) {
 			if (this.terms[i] instanceof Variable) {
 				for (int j = 0; j < x.size(); j++) {
 					if (this.terms[i].equals(x.get(j))) {
@@ -145,24 +145,10 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 						break;
 					}
 				}
-				if (grounded && !(newTerms[i] instanceof Constant)) {
-					grounded = false;
-				}
 			}
 		}
 
-		if (replaced) {
-			Atom a = new Atom(this.predicate, newTerms);
-			if(grounded) {
-				// Look into the dataset for this grounding.
-				if (this.predicate.getGroundings().containsKey(a)) {
-					return new Atom(this.predicate, 
-							this.predicate.getGroundings().get(a), newTerms) ;
-				}
-			}
-			return a;
-		}
-		return this;
+		return replaced ? this.predicate.getGrounding(newTerms) : this;
 	}
 
 	/**

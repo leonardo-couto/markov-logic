@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.Graph;
@@ -20,7 +18,6 @@ import org.jgrapht.graph.Subgraph;
 
 import stat.Distribution;
 import stat.sampling.DefaultSampler;
-import stat.sampling.RandomIterator;
 
 public class AtomDistribution implements Distribution<Atom> {
 	
@@ -80,38 +77,47 @@ public class AtomDistribution implements Distribution<Atom> {
 	
 	@Override
 	public Iterator<Double> getDataIterator(Atom x) {
-		Map<Atom, Double> groundings = x.predicate.getGroundings();
+		final Iterator<Atom> iterator;
 		if (!x.variablesOnly()) {
-			groundings = filterGroundings(x, groundings);
+			iterator = x.predicate.groundingFilter(x.terms, -1);
+		} else {
+			iterator = x.predicate.groundingIterator(-1);
 		}
-		return (new RandomIterator<Double>(groundings.values())).iterator();
+		return new Iterator<Double>() {
+			@Override
+			public boolean hasNext() { return iterator.hasNext(); }
+			@Override
+			public Double next() { return iterator.next().value; }
+			@Override
+			public void remove() {}
+		};
 	}
 
-	/**
-	 * Get only groundings that have the same constants as x
-	 * @param x Atom with Constants
-	 * @param groundings grounded Atoms of predicate x.predicate
-	 * @return a subset of groundings that have the same constants as x
-	 */
-	private static Map<Atom, Double> filterGroundings(Atom x, Map<Atom, Double> groundings) {
-		Map<Atom, Double> result = new HashMap<Atom, Double>(groundings.size());
-		Map<Integer, Constant> filter = new HashMap<Integer, Constant>();
-		for (int i = 0; i < x.terms.length; i++) {
-			Term t = x.terms[i];
-			if (t instanceof Constant) {
-				filter.put(i, (Constant) t);
-			}
-		}
-		nextGrounding: for (Atom a : groundings.keySet()) {
-			for (Integer i : filter.keySet()) {
-				if (a.terms[i] != filter.get(i)) {
-					continue nextGrounding;
-				}
-			}
-			result.put(a, groundings.get(a));
-		}
-		return result;
-	}
+//	/**
+//	 * Get only groundings that have the same constants as x
+//	 * @param x Atom with Constants
+//	 * @param groundings grounded Atoms of predicate x.predicate
+//	 * @return a subset of groundings that have the same constants as x
+//	 */
+//	private static Map<Atom, Double> filterGroundings(Atom x, Map<Atom, Double> groundings) {
+//		Map<Atom, Double> result = new HashMap<Atom, Double>(groundings.size());
+//		Map<Integer, Constant> filter = new HashMap<Integer, Constant>();
+//		for (int i = 0; i < x.terms.length; i++) {
+//			Term t = x.terms[i];
+//			if (t instanceof Constant) {
+//				filter.put(i, (Constant) t);
+//			}
+//		}
+//		nextGrounding: for (Atom a : groundings.keySet()) {
+//			for (Integer i : filter.keySet()) {
+//				if (a.terms[i] != filter.get(i)) {
+//					continue nextGrounding;
+//				}
+//			}
+//			result.put(a, groundings.get(a));
+//		}
+//		return result;
+//	}
 	
 	// se eles nao se conectam de maneira alguma, assumir que sao independentes
 	//   - talvez deixar marcado para quando eles se conectarem

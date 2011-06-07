@@ -1,7 +1,7 @@
 package weightLearner.wpll;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -34,10 +34,11 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 	public DataCount(Predicate p, int sampleSize) {
 		super();
 		this.predicate = p;
-		this.atoms = new ArrayList<Atom>(p.getGroundings().keySet());
-		Collections.shuffle(this.atoms);
+		sampleSize = (sampleSize < 0) ? (int) Math.min(p.groundingsSize(), Integer.MAX_VALUE) :
+			(int) Math.min(p.groundingsSize(), sampleSize);
+		this.atoms = new ArrayList<Atom>(sampleSize);
+		for (Iterator<Atom> i = p.groundingIterator(sampleSize); i.hasNext(); this.atoms.add(i.next()));
 		this.formulas = new LinkedList<FormulaData>();
-		sampleSize = (sampleSize > 0) ? Math.min(sampleSize, this.atoms.size()) : this.atoms.size();
 		this.sampleSize = sampleSize;
 		for (int i = 0; i < sampleSize; i++) { this.add(new ArrayList<FormulaCount>()); }
 		this.tester = new DummyTester(-1);
@@ -97,18 +98,15 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		return out;
 	}
 	
-	private List<Data> addAtoms() {
-		FormulaData fd = this.formulas.getLast();
+	private void addAtoms(FormulaData fd) {
 		Formula formula = fd.f;
 		
-		List<Data> out = new ArrayList<Data>(this.sampleSize);
 		for (int i = 0; i < this.sampleSize; i++) {
 			Atom a = this.atoms.get(i);
 
 			if (formula instanceof Atom) {
 				Data d = new Data(1.0, 0.0, a.getValue());
 				this.get(i).add(new FormulaCount(formula, d));
-				out.add(d);
 				i++;
 				continue;
 			}
@@ -128,10 +126,8 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 
 			Data d = new Data(trueCount, falseCount, value);
 			this.get(i).add(new FormulaCount(formula, d));
-			out.add(d);
 			i++;
 		}
-		return out;
 	}
 
 
@@ -150,8 +146,9 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 			lv = vars;
 		}
 		
-		this.formulas.add(new FormulaData(formula, i, lv));
-		this.addAtoms();
+		FormulaData fd = new FormulaData(formula, i, lv);
+		this.formulas.add(fd);
+		this.addAtoms(fd);
 	}
 
 	public boolean removeFormula(Formula f) {
