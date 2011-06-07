@@ -33,8 +33,7 @@ public class ParseDataSet {
 	/**
 	 * 
 	 */
-	public ParseDataSet(File dbFile, Set<Predicate> predicates) {
-		this.dbFile = dbFile;
+	public ParseDataSet(Set<Predicate> predicates) {
 		this.predicateMap = Util.setToMap(predicates);
 		this.constants = getConstants(predicates);
 		this.constantMap = Util.setToMap(constants);		
@@ -55,10 +54,15 @@ public class ParseDataSet {
 		}
 		return cSet;
 	}
+	
+	public void parse(File ... dbFiles) throws FileNotFoundException, IOException {
+		for (File dbFile : dbFiles) {
+			this.parse(dbFile);
+		}
+	}
 
-	// TODO: Maybe this should be called in the constructor?
 	// TODO: Check file/lines format?
-	public void parse() throws IOException, FileNotFoundException {
+	public void parse(File dbFile) throws IOException, FileNotFoundException {
 		int lineNumber = 0;
 		BufferedReader bf = new BufferedReader(new FileReader(dbFile));
 		String line = bf.readLine();

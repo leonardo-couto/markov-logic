@@ -32,8 +32,7 @@ public class ParseDomain {
 	/**
 	 * 
 	 */
-	public ParseDomain(File DomainFile) {
-		this.domainFile = DomainFile;
+	public ParseDomain() {
 		this.predicateSet = new HashSet<Predicate>();
 		this.domainMap = new HashMap<String, Domain>();
 		this.domainSet = new HashSet<Domain>();
@@ -41,16 +40,14 @@ public class ParseDomain {
 
 	// If there is already a Set of Predicates and/or Domains, this make sure
 	// there will be no duplicate Predicates/Domains.
-	public ParseDomain(File DomainFile, Set<Predicate> predicates, Set<Domain> domains) {
-		this.domainFile = DomainFile;
+	public ParseDomain(Set<Predicate> predicates, Set<Domain> domains) {
 		this.predicateSet = predicates;
 		this.domainSet = domains;
 		this.domainMap = Util.setToMap(domains);
 	}
 
-	// TODO: Maybe this should be called in the constructor?
 	// TODO: Check file/lines format?
-	public void parse() throws IOException, FileNotFoundException {
+	public void parse(File DomainFile) throws IOException, FileNotFoundException {
 		BufferedReader bf = new BufferedReader(new FileReader(domainFile));
 		String line = bf.readLine();
 		while(line != null) {
@@ -100,9 +97,9 @@ public class ParseDomain {
 	public static void main(String[] args) {
 		// TODO: Remove
 		File f = new File("/home/leonardo/opt/alchemy/exdata/univ-empty.mln");
-		ParseDomain pd = new ParseDomain(f);
+		ParseDomain pd = new ParseDomain();
 		try {
-			pd.parse();
+			pd.parse(f);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

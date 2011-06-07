@@ -85,7 +85,7 @@ public class Predicate implements NameID {
 		if ( !(o instanceof Predicate) ) return false;
 
 		Predicate p = (Predicate) o;
-		return this.toString.equals(p.toString);
+		return this.hash == p.hash;
 	}
 
 	public int hashCode() {

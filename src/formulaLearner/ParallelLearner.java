@@ -55,8 +55,8 @@ public class ParallelLearner implements ScoredLearner {
 		this.initialScore = builder.getInitialScore();
 		this.hasTarget = builder.getTarget() != null;
 		this.target = this.hasTarget ? builder.getTarget() : null;
-		this.lenghtFormula = new ArrayList<List<Formula>>(this.maxAtoms);
-		for (int i = 0; i < this.maxAtoms; i++) { 
+		this.lenghtFormula = new ArrayList<List<Formula>>(this.maxAtoms+1);
+		for (int i = 0; i < this.maxAtoms+1; i++) { 
 			this.lenghtFormula.add(new ArrayList<Formula>());
 		}
 		if (builder.getFormulas() != null) {

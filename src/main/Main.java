@@ -20,12 +20,12 @@ public class Main {
 	public Main(Settings settings) {
 		super();
 		this.settings = settings;
-		this.domain = new ParseDomain(settings.mln);
+		this.domain = new ParseDomain();
 	}
 	
 	public void run() {
 		System.out.println("parsing...");
-		parse();
+		parse(settings.mln);
 		System.out.println("setting Closed World...");
 		setCW();
 //		System.out.println("generating tnodes...");
@@ -39,13 +39,10 @@ public class Main {
 		System.out.println(busl.learn());
 	}
 	
-	private void parse() {
+	private void parse(File f) {
 		try {
-			domain.parse();
-			for (File db : settings.db) {
-				dataSet = new ParseDataSet(db, domain.getPredicates());
-				dataSet.parse();
-			}
+			dataSet = new ParseDataSet(domain.getPredicates());
+			dataSet.parse(this.settings.db.toArray(new File[this.settings.db.size()]));
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException(e);
 		} catch (IOException e) {

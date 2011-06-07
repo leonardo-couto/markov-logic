@@ -166,9 +166,9 @@ public class Test {
 		File mln = new File(
 				"/home/leonardo/opt/alchemy/datasets/imdb/empty.mln");
 		File db = new File("/home/leonardo/opt/alchemy/datasets/imdb/imdb.2.db");
-		ParseDomain pmln = new ParseDomain(mln);
+		ParseDomain pmln = new ParseDomain();
 		try {
-			pmln.parse();
+			pmln.parse(mln);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -182,9 +182,9 @@ public class Test {
 		// }
 		System.out
 				.println("************* NOW TESTING DB FILE ****************");
-		ParseDataSet pdb = new ParseDataSet(db, pmln.getPredicates());
+		ParseDataSet pdb = new ParseDataSet(pmln.getPredicates());
 		try {
-			pdb.parse();
+			pdb.parse(db);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

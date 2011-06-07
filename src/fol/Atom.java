@@ -192,7 +192,7 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public int length() {
-		if (this.predicate.equals(Predicate.equals)) {
+		if (this.predicate == Predicate.empty) {
 			return 0;
 		}
 		return 1;
@@ -204,7 +204,13 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	@Override
 	public boolean equals(Object obj) {
 		// Ignore Value
-		return (obj.toString().equals(this.toString));
+		if (obj != null && obj instanceof Atom) {
+			Atom o = (Atom) obj;
+			if (this.predicate.equals(o.predicate)) {
+				return this.hash == o.hash;
+			}
+		}
+		return false;
 	}
 
 	/* (non-Javadoc)

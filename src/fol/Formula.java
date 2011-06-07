@@ -262,8 +262,9 @@ public class Formula implements Comparable<Formula> {
 	}
 	
 	/**
-	 * The number of Atoms in a formula
-	 * Does not consider Atoms of Predicate Predicate.equals
+	 * Returns the number of Atoms in this formula.
+	 * 
+	 * @return the number of Atoms in this formula
 	 */
 	public int length() {
 		int i = this.atoms.size();
