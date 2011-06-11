@@ -24,10 +24,10 @@ import org.jgrapht.alg.BronKerboschCliqueFinder;
 import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
+import stat.convergence.SequentialConvergenceTester;
 import structureLearner.StructureLearner;
 import util.MyException;
 import util.Util;
-import weightLearner.Score;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import GSIMN.GSIMN;
@@ -60,9 +60,9 @@ public class Busl implements StructureLearner {
 		this.predicates = predicates;
 		this.tNodes = new HashSet<Atom>();
 		this.mln = new MarkovLogicNetwork();
-		this.wl = new WeightLearner(
-				new WeightedPseudoLogLikelihood(this.predicates), 
-				new AutomatedLBFGS(0.001));
+		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(predicates, 50000);
+		score.setTester(new SequentialConvergenceTester(0.99, 0.01));
+		this.wl = new WeightLearner(score, new AutomatedLBFGS(0.001));
 		GSIMN.out = Util.dummyOutput;
 		GSITest.out = Util.dummyOutput;
 		ParallelLearner.out = Util.dummyOutput;
@@ -95,7 +95,8 @@ public class Busl implements StructureLearner {
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
 			{
 				Set<Predicate> predicates = Atom.getPredicates(clique);
-				Score exactScore = new WeightedPseudoLogLikelihood(predicates);
+				WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates, 50000);
+				exactScore.setTester(new SequentialConvergenceTester(0.99, 0.01));
 				Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
 				builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
 			}
@@ -138,7 +139,8 @@ public class Busl implements StructureLearner {
 				for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
 					{
 						Set<Predicate> predicates = Atom.getPredicates(clique);
-						Score exactScore = new WeightedPseudoLogLikelihood(predicates);
+						WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates, 50000);
+						exactScore.setTester(new SequentialConvergenceTester(0.99, 0.01));
 						Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
 						builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
 					}
@@ -176,7 +178,7 @@ public class Busl implements StructureLearner {
 				gsimn.removeVariable(node);
 			}
 			
-			if (Double.compare(queue.peek().score-mlnScore, 0.002) < 1) {
+			if (queue.isEmpty() || Double.compare(queue.peek().score-mlnScore, 0.002) < 1) {
 				break;
 			} else {
 				out.println("***************************************************************************************************************************");

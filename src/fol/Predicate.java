@@ -159,6 +159,11 @@ public class Predicate implements NameID {
 		};
 	}
 	
+	/**
+	 * Return an iterator for this Predicate known groundings.
+	 * @param maxElements
+	 * @return
+	 */
 	public Iterator<Atom> groundingIterator(int maxElements) {
 		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
 		if (this.closedWorld) {
@@ -167,6 +172,13 @@ public class Predicate implements NameID {
 		return (new RandomIterator<Atom>(this.groundings.values(), maxElements)).iterator();		
 	}
 	
+	/**
+	 * Return an iterator for this Predicate known groundigs, with
+	 * constraints defined in terms.
+	 * @param terms
+	 * @param maxElements
+	 * @return
+	 */
 	public Iterator<Atom> groundingFilter(Term[] terms, int maxElements) {
 		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
 		if (this.closedWorld) {

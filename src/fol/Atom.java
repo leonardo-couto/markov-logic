@@ -22,8 +22,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	public final Term[] terms;
 	public final double value;
 	
-	private final String toString;
-	private final int hash;
+	private String toString;
+	private int hash;
 
 	public static final Atom TRUE = new Atom(Predicate.empty, 1, Collections.<Term>emptyList());
 	public static final Atom FALSE = new Atom(Predicate.empty, 0, Collections.<Term>emptyList());	
@@ -37,8 +37,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.predicate = predicate;
 		this.terms = terms.toArray(new Term[terms.size()]);
 		this.value = Double.NaN;
-		this.toString = this._toString();
-		this.hash = this.toString.hashCode();
+		this.toString = null;
+		this.hash = -1;
 	}
 
 	public Atom(Predicate predicate, Term ... terms) {
@@ -46,8 +46,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.predicate = predicate;
 		this.terms = terms;
 		this.value = Double.NaN;
-		this.toString = this._toString();
-		this.hash = this.toString.hashCode();
+		this.toString = null;
+		this.hash = -1;
 	}
 
 	public Atom(Predicate predicate, double value, List<? extends Term> terms) {
@@ -55,8 +55,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.predicate = predicate;
 		this.terms = terms.toArray(new Term[terms.size()]);
 		this.value = value;
-		this.toString = this._toString();
-		this.hash = this.toString.hashCode();
+		this.toString = null;
+		this.hash = -1;
 	}
 
 	public Atom(Predicate predicate, double value, Term ... terms) {
@@ -64,8 +64,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.predicate = predicate;
 		this.terms = terms;
 		this.value = value;
-		this.toString = this._toString();
-		this.hash = this.toString.hashCode();
+		this.toString = null;
+		this.hash = -1;
 	}
 
 	public Atom(Atom a, double value) {
@@ -73,8 +73,8 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		this.predicate = a.predicate;
 		this.terms = Arrays.copyOf(a.terms, a.terms.length);
 		this.value = value;
-		this.toString = this._toString();
-		this.hash = this.toString.hashCode();
+		this.toString = null;
+		this.hash = -1;
 	}
 
 //	private static void checkArguments(Predicate p, Term[] args) {
@@ -98,6 +98,9 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 
 	@Override
 	public String toString() {
+		if (this.toString == null) {
+			this.toString = _toString();
+		}
 		return this.toString;
 	}
 
@@ -218,7 +221,20 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 	 */
 	@Override
 	public int hashCode() {
+		if (this.hash == -1) {
+			this.hash = _hashCode();
+		}
 		return this.hash;
+	}
+	
+	private int _hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = predicate.hashCode();
+		for (int i = 0; i < terms.length; i++) {
+			result = prime * result + terms[i].hashCode();
+		}
+		return result;
 	}
 
 	@Override
