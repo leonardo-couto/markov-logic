@@ -3,22 +3,21 @@ package inference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import markovLogic.GroundedMarkovNetwork;
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
+import stat.sampling.CrossJoinSampler;
 import stat.sampling.Sampler;
-import stat.sampling.TreeSampler;
 import fol.Atom;
 import fol.Constant;
 import fol.Domain;
 import fol.Formula;
 import fol.Predicate;
 import fol.Variable;
-import fol.operator.Biconditional;
+import fol.operator.Conjunction;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
 
@@ -114,7 +113,7 @@ public class ExactInference implements Inference {
 		for (int i = 0; i < dimensions; i++) {
 			domain.add(truefalse);
 		}
-		return new TreeSampler<Atom>(domain);
+		return new CrossJoinSampler<Atom>(domain);
 	}
 	
 	public static void main (String[] args) {
@@ -138,7 +137,7 @@ public class ExactInference implements Inference {
 
 		Predicate p = new Predicate("p", da);
 		Predicate q = new Predicate("q", da, db);
-		Predicate r = new Predicate("r", da, dc);
+		Predicate r = new Predicate("r", db, dc);
 		Predicate s = new Predicate("s", dc);
 		
 		Variable x = da.newVariable();
@@ -146,36 +145,33 @@ public class ExactInference implements Inference {
 		Variable z = dc.newVariable();
 		Atom f1 = new Atom(p, x);
 		Atom f2 = new Atom(q, x, y);
-		Atom f3 = new Atom(r, x, z);
-		Formula f4 = Disjunction.operator.getFormula(f1, Negation.operator.getFormula(f2));
-		Formula f5 = Disjunction.operator.getFormula(f1, f3);
-		Formula f6 = new Atom(s, z);
-		Formula f7 = Biconditional.operator.getFormula(f3, f6);
+		Atom f3 = new Atom(r, y, z);
+		Atom f4 = new Atom(s, z);
+		Formula f5 = Conjunction.operator.getFormula(Disjunction.operator.getFormula(f2, f3), Negation.operator.getFormula(f1));
+		Formula f6 = Disjunction.operator.getFormula(f3, f4);
 		
 		MarkovLogicNetwork mln = new MarkovLogicNetwork();
-		mln.add(new WeightedFormula(f1, 1.0));
-		mln.add(new WeightedFormula(f2, 0.5));
-		mln.add(new WeightedFormula(f3, 1.5));
-		mln.add(new WeightedFormula(f4, 3.0));
-		mln.add(new WeightedFormula(f5, 2.2));
-		mln.add(new WeightedFormula(f6, 10.0));
-		mln.add(new WeightedFormula(f7, 0.1));
+		mln.add(new WeightedFormula(f1, 0));
+		mln.add(new WeightedFormula(f2, 0));
+		mln.add(new WeightedFormula(f3, 0));
+		mln.add(new WeightedFormula(f4, 0));
+		mln.add(new WeightedFormula(f5, 0.6931));
+		mln.add(new WeightedFormula(f6, 2.3026));
 		
 		Inference infer = new ExactInference(mln);
 		Constant c0 = new Constant("c0", da);
 		Constant c1 = new Constant("c1", db);
 		Constant c2 = new Constant("c2", dc);
-		//Constant c01 = new Constant("c01", da);
-		//Constant c11 = new Constant("c11", db);
-		//Constant c21 = new Constant("c21", dc);
-		Atom e0 = new Atom(r, 0.0, c0, c2);
-		//Atom e1 = new Atom(q, 0.0, c0, c1);
-		Set<Atom> evidence = new HashSet<Atom>();
-		evidence.add(e0);
-		//evidence.add(e1);
-		System.out.println("p(c0): " + infer.pr(new Atom(p, c0), evidence));
-		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1), evidence));
-		System.out.println("r(c0,c2): " + infer.pr(new Atom(r, c0, c2)));
+
+//		Atom e0 = new Atom(r, 0.0, c0, c2);
+//		//Atom e1 = new Atom(q, 0.0, c0, c1);
+//		Set<Atom> evidence = new HashSet<Atom>();
+//		evidence.add(e0);
+//		//evidence.add(e1);
+//		System.out.println("p(c0): " + infer.pr(new Atom(p, c0), evidence));
+//		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1), evidence));
+		double pr = infer.pr(new Atom(s, c2));
+		System.out.println("s(c2): " + pr);
 		
 //		Domain d0 = new Domain("d0");
 //		Domain d1 = new Domain("d1");

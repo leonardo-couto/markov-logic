@@ -15,6 +15,11 @@ import java.util.Random;
  * This is efficient for larger values of n, as long as the 
  * number of sampled elements is much smaller then n
  * sampled << n.
+ * 
+ * 
+ * 
+ * TODO: ESTA COM PROBLEMA, NAO FUNCIONA!!! FAZER TESTES E CORRIGIR
+ * 
  */
 public class TreeSampler<T> extends AbstractSampler<T> {
 	

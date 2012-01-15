@@ -41,7 +41,7 @@ public class DefaultSampler<T> extends AbstractSampler<T> {
 					this.sampler = new CrossJoinSampler<T>(this.domains);
 				}
 			} else {
-				this.sampler = new TreeSampler<T>(this.domains, n); 
+				this.sampler = new TreeSampler<T>(this.domains, n);
 			}
 		} else if (n > this.noReplacementLimit) {
 			if ( (n > this.treeLimit) || (Double.compare((n/card), 0.3) > 1)) {
