@@ -1,255 +1,50 @@
 package fol;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import stat.Distribution;
 import stat.RandomVariable;
-import util.NameID;
-import util.Util;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
-public final class Atom extends Formula implements NameID, RandomVariable<Atom> {
+import fol.operator.Operator;
 
+public final class Atom implements Formula, FormulaComponent, RandomVariable<Atom> {
+
+	private final boolean grounded;
 	public final Predicate predicate;
 	public final Term[] terms;
-	public final double value;
 	
-	private String toString;
-	private int hash;
-
-	public static final Atom TRUE = new Atom(Predicate.empty, 1, Collections.<Term>emptyList());
-	public static final Atom FALSE = new Atom(Predicate.empty, 0, Collections.<Term>emptyList());	
-
-	/**
-	 * @param formulas
-	 * @param operators
-	 */
-	public Atom(Predicate predicate, List<? extends Term> terms) {
-		super();
-		this.predicate = predicate;
-		this.terms = terms.toArray(new Term[terms.size()]);
-		this.value = Double.NaN;
-		this.toString = null;
-		this.hash = -1;
-	}
-
+	private static final Character COMMA = ',';
+	
 	public Atom(Predicate predicate, Term ... terms) {
-		super();
 		this.predicate = predicate;
 		this.terms = terms;
-		this.value = Double.NaN;
-		this.toString = null;
-		this.hash = -1;
-	}
-
-	public Atom(Predicate predicate, double value, List<? extends Term> terms) {
-		super();
-		this.predicate = predicate;
-		this.terms = terms.toArray(new Term[terms.size()]);
-		this.value = value;
-		this.toString = null;
-		this.hash = -1;
-	}
-
-	public Atom(Predicate predicate, double value, Term ... terms) {
-		super();
-		this.predicate = predicate;
-		this.terms = terms;
-		this.value = value;
-		this.toString = null;
-		this.hash = -1;
-	}
-
-	public Atom(Atom a, double value) {
-		super();
-		this.predicate = a.predicate;
-		this.terms = Arrays.copyOf(a.terms, a.terms.length);
-		this.value = value;
-		this.toString = null;
-		this.hash = -1;
-	}
-
-//	private static void checkArguments(Predicate p, Term[] args) {
-//		if (args.length != p.getDomains().size()) {
-//			throw new IllegalArgumentException("Wrong number of arguments creating an Atom of Predicate \"" + p.toString() + "\" with arguments: " + Util.join(args, ",") + ".");
-//		}
-//		int i = 0;
-//		for (Term t : args) {
-//			if (!Domain.in(t, p.getDomains().get(i))) {
-//				throw new IllegalArgumentException("Incompatible Domains. Cannot put Term \"" + t.toString() + "\" with Domain(s) {" + Util.join(t.getDomain().toArray(), ",") + "} into Domain \"" + p.getDomains().get(i).toString() + "\" of Predicate \"" + p.toString() + "\".");
-//			}
-//			i++;
-//		}
-//	}
-	
-	private String _toString() {
-		if (this == Atom.FALSE) return "false";
-		if (this == Atom.TRUE) return "true";
-		return this.predicate.getName() + "(" + Util.join(this.terms, ",") + ")";
-	}
-
-	@Override
-	public String toString() {
-		if (this.toString == null) {
-			this.toString = _toString();
-		}
-		return this.toString;
-	}
-
-	/**
-	 * @return the value
-	 */
-	@Override
-	public double getValue() {
-		if (this.predicate == Predicate.equals) {
-			if (this.terms[0] == this.terms[1]) {
-				return 1.0d;
-			}
-			return 0.0d;
-		}
-		return this.value;
-	}
-
-	/* (non-Javadoc)
-	 * @see fol.Formula#getPredicates()
-	 */
-	@Override
-	public Set<Predicate> getPredicates() {
-		return Collections.singleton(this.predicate);
-	}
-
-	/* (non-Javadoc)
-	 * @see fol.Formula#hasPredicate(fol.Predicate)
-	 */
-	@Override
-	public boolean hasPredicate(Predicate p) {
-		return this.predicate.equals(p);
-	}
-
-	@Override
-	public Atom replaceVariables(List<Variable> x, List<Constant> c) {
-		int length = this.terms.length;
-		Term[] newTerms = Arrays.copyOf(this.terms, length);
-		boolean replaced = false;
-		for (int i = 0; i < length; i++) {
-			if (this.terms[i] instanceof Variable) {
-				for (int j = 0; j < x.size(); j++) {
-					if (this.terms[i].equals(x.get(j))) {
-						replaced = true;
-						newTerms[i] = c.get(j);
-						break;
-					}
-				}
-			}
-		}
-
-		return replaced ? this.predicate.getGrounding(newTerms) : this;
-	}
-
-	/**
-	 * Check whether this Atom is grounded (all terms are Constants)
-	 * @return true if the Atom does not contain any Variables
-	 */
-	public boolean isGround() {
-		for (Term t : this.terms) {
+		for (Term t : terms) {
 			if (!(t instanceof Constant)) {
-				return false;
+				this.grounded = false;
+				return;
 			}
 		}
-		return true;
-	}
-
-	/* (non-Javadoc)
-	 * @see fol.Formula#getVariables()
-	 */
-	@Override
-	public Set<Variable> getVariables() {
-		Set<Variable> set = new HashSet<Variable>();
-		for (Term t : this.terms) {
-			if(t instanceof Variable) {
-				set.add((Variable) t);
-			}
-		}
-		return set;
-	}
-
-	public boolean variablesOnly() {
-		for (Term t : this.terms) {
-			if(!(t instanceof Variable)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/* (non-Javadoc)
-	 * @see fol.Formula#length()
-	 */
-	@Override
-	public int length() {
-		if (this.predicate == Predicate.empty) {
-			return 0;
-		}
-		return 1;
-	}
-
-	/* (non-Javadoc)
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
-	@Override
-	public boolean equals(Object obj) {
-		// Ignore Value
-		if (obj != null && obj instanceof Atom) {
-			Atom o = (Atom) obj;
-			if (this.predicate.equals(o.predicate)) {
-				return this.hash == o.hash;
-			}
-		}
-		return false;
-	}
-
-	/* (non-Javadoc)
-	 * @see java.lang.Object#hashCode()
-	 */
-	@Override
-	public int hashCode() {
-		if (this.hash == -1) {
-			this.hash = _hashCode();
-		}
-		return this.hash;
-	}
-	
-	private int _hashCode() {
-		final int prime = 31;
-		int result = super.hashCode();
-		result = predicate.hashCode();
-		for (int i = 0; i < terms.length; i++) {
-			result = prime * result + terms[i].hashCode();
-		}
-		return result;
-	}
-
-	@Override
-	public Atom copy() {
-		return new Atom(this.predicate, this.value, Arrays.copyOf(this.terms,this.terms.length));
+		this.grounded = true;
 	}
 	
 	@Override
-	public String getName() {
-		return toString();
+	public void evaluate(Deque<Boolean> stack, Database db) {
+		stack.push(this.getValue(db));
 	}
-	
+
 	@Override
 	public List<Atom> getAtoms() {
 		return Collections.singletonList(this);
+	}
+	
+	@Override
+	public List<FormulaComponent> getComponents() {
+		return Collections.<FormulaComponent>singletonList(this);
 	}
 	
 	@Override
@@ -257,12 +52,93 @@ public final class Atom extends Formula implements NameID, RandomVariable<Atom> 
 		return AtomDistribution.class;
 	}
 	
-	public static Set<Predicate> getPredicates(Collection<Atom> atoms) {
-		Set<Predicate> set = new HashSet<Predicate>();
-		for (Atom a : atoms) {
-			set.add(a.predicate);
+	@Override
+	public String getName() {
+		return this.toString();
+	}
+
+	@Override
+	public Set<Predicate> getPredicates() {
+		return Collections.singleton(this.predicate);
+	}
+	
+	@Override
+	public boolean getValue(Database db) {
+		if (!this.grounded) {
+			throw new RuntimeException("getValue of non-grounded Atom " + this.toString());
 		}
-		return set;
+		return db.valueOf(this);
+	}
+
+	@Override
+	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+		Atom a = this.ground(groundings);
+		return a.getValue(db);
+	}
+
+	@Override
+	public Set<Variable> getVariables() {
+		Set<Variable> v = new HashSet<Variable>();
+		for (Term t : this.terms) {
+			if (t instanceof Variable) {
+				v.add((Variable) t);
+			}
+		}
+		return v;
+	}
+
+	@Override
+	public boolean hasPredicate(Predicate p) {
+		return this.predicate == p;
+	}
+
+	@Override
+	public boolean isGrounded() {
+		return this.grounded;
+	}
+
+	@Override
+	public int length() {
+		return 1;
+	}
+	
+	@Override
+	public void print(Deque<StringBuilder> stack) {
+		StringBuilder b = new StringBuilder();
+		b.append(this.predicate.getName()).append(Operator.LEFTP);
+		for (Term t : terms) {
+			b.append(t.toString());
+			b.append(COMMA);
+		}
+		b.setCharAt(b.length()-1, Operator.RIGHTP);
+		stack.push(b);
+	}
+
+	@Override
+	public Atom ground(Map<Variable, Constant> groundings) {
+		if (this.grounded) return this;
+		int length = this.terms.length;
+		boolean modified = false;
+		
+		Term[] groundedTerms = new Term[length];
+		for (int i = 0; i < length; i++) {
+			Term t = this.terms[i];
+			Constant candidate = groundings.get(t);
+			boolean grounded = (candidate != null);
+			groundedTerms[i] = grounded ? candidate : t;
+			modified = modified || grounded;
+		}
+		
+		return modified ? new Atom(this.predicate, groundedTerms) : this;
+	}
+	
+	@Override
+	public List<ConjunctiveNormalForm> toCNF() {
+		ConjunctiveNormalForm formula = new ConjunctiveNormalForm(
+				new Atom[] {this}, 
+				new boolean[] {false}
+				);
+		return Collections.singletonList(formula);
 	}
 
 }

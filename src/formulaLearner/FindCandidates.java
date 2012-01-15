@@ -31,10 +31,10 @@ public class FindCandidates implements Runnable {
 	private final int threads;
 	
 	public static final Formula END = Atom.FALSE; 
-	private static final Operator DISJUNCTION = Disjunction.operator;
-	private static final Operator CONJUNCTION = Conjunction.operator;
-	private static final Operator BICONDITIONAL = Biconditional.operator;
-	private static final Operator NEGATION = Negation.operator;
+	private static final Disjunction DISJUNCTION = Disjunction.OPERATOR;
+	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
+	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;
+	private static final Negation NEGATION = Negation.OPERATOR;
 	
 	public FindCandidates(Set<Atom> atoms, 
 			List<Formula> seeds, Queue<Formula> candidates, int threads) {
@@ -167,7 +167,7 @@ public class FindCandidates implements Runnable {
 			// generate formulas
 			it = possibleAtoms.listIterator();
 			while (it.hasNext()) {
-				formulas.add(Disjunction.operator.getFormula(f, it.next()));
+				formulas.add(DISJUNCTION.apply(f, it.next()));
 			}
 			return formulas;
 		}

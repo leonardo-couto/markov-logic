@@ -1,50 +1,57 @@
 package fol.operator;
 
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+
+import fol.Database;
 import fol.Formula;
+import fol.FormulaComponent;
+import fol.GeneralFormula;
 
-
-/**
- * @author Leonardo Castilho Couto
- *
- */
-public final class Biconditional extends Operator {
+public final class Biconditional implements Operator {
 	
-	private static final String biconditionalOP = "<->";
-	private static final int biconditionalArity = 2;
-	public static final Operator operator = new Biconditional();
+	private static final String BICONDITIONAL_OP = "<->";
+	private static final String BICONDITIONAL_CONNECTOR = " <-> ";
+	public static final Biconditional OPERATOR = new Biconditional();
 
-	/**
-	 * @param formulas
-	 */
 	private Biconditional() {
-		super(biconditionalArity, biconditionalOP);
+		super();
 	}
 	
-	@Override
-	protected double _value(double ... values) {
-		return bic(values[0], values[1]);
+	public GeneralFormula apply(Formula f0, Formula f1) {
+		List<FormulaComponent> l0 = f0.getComponents();
+		List<FormulaComponent> l1 = f1.getComponents();
+		List<FormulaComponent> formula = new ArrayList<FormulaComponent>(l0.size()+l1.size()+1);
+		formula.addAll(l0);
+		formula.addAll(l1);
+		formula.add(this);
+		return new GeneralFormula(formula);
 	}
 
 	@Override
-	protected Formula _getFormula(Formula... formulas) {
-		return Formula.twoArityOp(this, formulas[0], formulas[1]);
+	public void evaluate(Deque<Boolean> stack, Database db) {
+		boolean b1 = stack.pop().booleanValue();
+		boolean b2 = stack.pop().booleanValue();
+		stack.push(Boolean.valueOf((b1 && b2) || (!b1 && !b2)));		
 	}
 
 	@Override
-	public String toString(String ... formulas) {
-		return "( " + formulas[0] + " ) " + biconditionalOP + " ( " + formulas[1] + " )";
+	public void print(Deque<StringBuilder> stack) {
+		StringBuilder s1 = stack.pop();
+		StringBuilder s2 = stack.pop();
+		StringBuilder out = new StringBuilder(s1.length()+s2.length()+8);
+		stack.push(out.append(Operator.LEFTP)
+				.append(s1)
+				.append(BICONDITIONAL_CONNECTOR)
+				.append(s2)
+				.append(Operator.RIGHTP)
+				);
 	}
 
 	@Override
-	public String toString() {
-		return biconditionalOP;
+	public String getSymbol() {
+		return BICONDITIONAL_OP;
 	}
-
-	public static double bic(double d1, double d2) {
-		return Disjunction.or(
-				Conjunction.and(d1, d2), 
-				Conjunction.and(1.0-d1,1.0-d2)
-			   );
-	}
-
+	
 }

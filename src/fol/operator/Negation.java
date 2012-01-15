@@ -1,61 +1,48 @@
 package fol.operator;
 
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
-import fol.Atom;
+import fol.Database;
 import fol.Formula;
+import fol.FormulaComponent;
+import fol.GeneralFormula;
 
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
-public final class Negation extends Operator {
+public final class Negation implements Operator {
 	
-	private static final String negationOP = "!";
-	private static final int negationArity = 1;
-	public static final Operator operator = new Negation();
+	private static final Character NEGATION_OP = '!';
+	public static final Negation OPERATOR = new Negation();
 	
-	/**
-	 * @param formula
-	 */
 	private Negation() {
-		super(negationArity, negationOP);
+		super();
 	}
 	
-	@Override
-	protected double _value(double ... values) {
-		return not(values[0]);
-	}
-
-	@Override
-	protected Formula _getFormula(Formula... formulas) {
-		List<Operator> operators = formulas[0].getOperators();
-		if (operators != null && operators.get(operators.size()-1).equals(this)) {
-			// Double negation
-			operators = new ArrayList<Operator>(operators);
-			operators.remove(operators.size()-1);
-			List<Boolean> stack = new ArrayList<Boolean>(formulas[0].getStack());
-			stack.remove(stack.size()-1);
-			return new Formula(new ArrayList<Atom>(formulas[0].getAtoms()), 
-					operators, stack);
+	public GeneralFormula apply(Formula f0) {
+		List<FormulaComponent> l0 = f0.getComponents();
+		List<FormulaComponent> formula = new ArrayList<FormulaComponent>(l0.size()+1);
+		if (l0.get(l0.size()-1) == this) {
+			return new GeneralFormula(l0.subList(0, l0.size()-1));
 		}
-		return Formula.oneArityOp(this, formulas[0]);
+		formula.addAll(l0);
+		formula.add(this);
+		return new GeneralFormula(formula);
 	}
 
 	@Override
-	public String toString(String ... formulas) {
-		return negationOP + "( " + formulas[0] + " )";
+	public void evaluate(Deque<Boolean> stack, Database db) {
+		stack.push(Boolean.valueOf(!stack.pop().booleanValue()));		
 	}
 
 	@Override
-	public String toString() {
-		return negationOP;
+	public String getSymbol() {
+		return NEGATION_OP.toString();
 	}
 	
-	public static double not(double d1) {
-		return 1.0d - d1;
+	@Override
+	public void print(Deque<StringBuilder> stack) {
+		stack.peek().insert(0, NEGATION_OP);	
 	}
-
+	
 }

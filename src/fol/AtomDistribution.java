@@ -76,18 +76,18 @@ public class AtomDistribution implements Distribution<Atom> {
 	}
 	
 	@Override
-	public Iterator<Double> getDataIterator(Atom x) {
+	public Iterator<Boolean> getDataIterator(Atom x) {
 		final Iterator<Atom> iterator;
 		if (!x.variablesOnly()) {
 			iterator = x.predicate.groundingFilter(x.terms, -1);
 		} else {
 			iterator = x.predicate.groundingIterator(-1);
 		}
-		return new Iterator<Double>() {
+		return new Iterator<Boolean>() {
 			@Override
 			public boolean hasNext() { return iterator.hasNext(); }
 			@Override
-			public Double next() { return iterator.next().value; }
+			public Boolean next() { return iterator.next().value; }
 			@Override
 			public void remove() {}
 		};
@@ -124,13 +124,13 @@ public class AtomDistribution implements Distribution<Atom> {
 	// se eles estiverem conectados, mas nao diretamente, assumir que sao dependentes
 	// se eles estiverem conectados diretamente, retornar os dados
 	@Override
-	public Iterator<double[]> getDataIterator(Atom x, Atom y) {
+	public Iterator<boolean[]> getDataIterator(Atom x, Atom y) {
 		if (isConnected(x, y)) {
 			return getIterator(Arrays.asList(new Atom[] {x, y}));
 		} else if (DijkstraShortestPath.findPathBetween(this.graph, x, y) == null) {
 			return null;
 		}
-		return Collections.<double[]>emptyList().iterator();
+		return Collections.<boolean[]>emptyList().iterator();
 	}
 
 	/**
@@ -140,7 +140,7 @@ public class AtomDistribution implements Distribution<Atom> {
 	 * @return This variable marginal data.
 	 */
 	@Override
-	public Iterator<double[]> getDataIterator(Atom x, Atom y, List<Atom> z) {
+	public Iterator<boolean[]> getDataIterator(Atom x, Atom y, List<Atom> z) {
 		if (z.isEmpty()) {
 			return this.getDataIterator(x, y);
 		}
@@ -154,7 +154,7 @@ public class AtomDistribution implements Distribution<Atom> {
 		// se nao tiver conexao direta entre x e y ou conexao indireta atravez de z
 		// devolve um iterador vazio
 		if (DijkstraShortestPath.findPathBetween(subgraph, x, y) == null) {
-			return Collections.<double[]>emptyList().iterator();
+			return Collections.<boolean[]>emptyList().iterator();
 		}
 
 		List<Atom> nodesList = new ArrayList<Atom>(z.size()+2);
@@ -164,7 +164,7 @@ public class AtomDistribution implements Distribution<Atom> {
 			if (DijkstraShortestPath.findPathBetween(subgraph, x, node) != null) {
 				nodesList.add(node);
 			} else {
-				Atom empty = new Atom(Predicate.empty, -1.0, new Term[0]);
+				Atom empty = new Atom(Predicate.empty, false, new Term[0]);
 				nodesList.add(empty);
 			}
 		}
@@ -173,7 +173,7 @@ public class AtomDistribution implements Distribution<Atom> {
 		return getIterator(nodesList);
 	}
 	
-	private static Iterator<double[]> getIterator(List<Atom> nodes) {
+	private static Iterator<boolean[]> getIterator(List<Atom> nodes) {
 		final List<Variable> variables = new ArrayList<Variable>();
 		final List<Atom> atoms = new ArrayList<Atom>(nodes);
 		{
@@ -193,25 +193,20 @@ public class AtomDistribution implements Distribution<Atom> {
 		final DefaultSampler<Constant> sampler = new DefaultSampler<Constant>(constants);
 		final Iterator<List<Constant>> iterator = sampler.iterator();
 		
-		return new Iterator<double[]>() {
+		return new Iterator<boolean[]>() {
 
-			private double[] next = this.makeNext();
+			private boolean[] next = this.makeNext();
 			
-			private double[] makeNext() {
-				double[] out = new double[atoms.size()];
+			private boolean[] makeNext() {
+				boolean[] out = new boolean[atoms.size()];
 				next:
 					while (iterator.hasNext()) {
 						List<Constant> grounds = iterator.next();
 						int outIndex = 0;
 						for (Atom a : atoms) {
 							a = a.replaceVariables(variables, grounds);
-							double d = a.getValue();
-							if (Double.isNaN(d)) {
-								continue next; // try to find another set of grounds
-							} else {
-								out[outIndex] = d;
-								outIndex++;
-							}
+							out[outIndex] = a.getValue();
+							outIndex++;
 						}
 						return out;
 					}
@@ -224,8 +219,8 @@ public class AtomDistribution implements Distribution<Atom> {
 			}
 
 			@Override
-			public double[] next() {
-				double[] out = this.next;
+			public boolean[] next() {
+				boolean[] out = this.next;
 				this.next = this.makeNext();
 				return out;
 			}

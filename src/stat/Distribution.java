@@ -19,9 +19,9 @@ public interface Distribution<RV extends RandomVariable<?>> {
 	/**
 	 * @return This variable marginal data.
 	 */
-	public Iterator<Double> getDataIterator(RV x);
-	public Iterator<double[]> getDataIterator(RV x, RV y);
-	public Iterator<double[]> getDataIterator(RV x, RV y, List<RV> z);
+	public Iterator<Boolean> getDataIterator(RV x);
+	public Iterator<boolean[]> getDataIterator(RV x, RV y);
+	public Iterator<boolean[]> getDataIterator(RV x, RV y, List<RV> z);
 	
 	public Set<RV> getRandomVariables();
 }

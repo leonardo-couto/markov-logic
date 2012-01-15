@@ -13,7 +13,6 @@ import fol.operator.Biconditional;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
-import fol.operator.Operator;
 
 /**
  * @author Leonardo Castilho Couto
@@ -23,10 +22,10 @@ public class FormulaFactory {
 	
 	protected final Set<Atom> atoms;
 
-	private static final Operator DISJUNCTION = Disjunction.operator;
-	private static final Operator CONJUNCTION = Conjunction.operator;
-	private static final Operator BICONDITIONAL = Biconditional.operator;
-	private static final Operator NEGATION = Negation.operator;
+	private static final Disjunction DISJUNCTION = Disjunction.OPERATOR;
+	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
+	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;
+	private static final Negation NEGATION = Negation.OPERATOR;
 	
 	public FormulaFactory(Collection<Atom> atoms) {
 		this.atoms = new HashSet<Atom>(atoms);
@@ -35,17 +34,17 @@ public class FormulaFactory {
 	public static List<Formula> extendsFormula(Formula f0, Formula f1) {
 		List<Formula> out = new ArrayList<Formula>(5);
 		
-		if(!(f0.compareTo(f1) == 0)) {
+		if(f0 != f1) {
 			// Disjunction
-			out.add(DISJUNCTION.getFormula(f0,f1));
+			out.add(DISJUNCTION.apply(f0,f1));
 			// Implication
-			out.add(DISJUNCTION.getFormula(NEGATION.getFormula(f0),f1));
+			out.add(DISJUNCTION.apply(NEGATION.apply(f0),f1));
 			// Inverse Implication
-			out.add(DISJUNCTION.getFormula(f0,NEGATION.getFormula(f1)));
+			out.add(DISJUNCTION.apply(f0,NEGATION.apply(f1)));
 			// Conjunction
-			out.add(CONJUNCTION.getFormula(f0,f1));
+			out.add(CONJUNCTION.apply(f0,f1));
 			// Biconditional
-			out.add(BICONDITIONAL.getFormula(f0,f1));			
+			out.add(BICONDITIONAL.apply(f0,f1));			
 		}
 		
 		return out;
@@ -153,7 +152,7 @@ public class FormulaFactory {
 		
 		Set<Atom> out = new HashSet<Atom>();
 		for (List<Variable> lvar : terms) {
-			out.add(new Atom(p, lvar));
+			out.add(new Atom(p, lvar.toArray(new Term[lvar.size()])));
 		}
 		
 		return out;
@@ -238,7 +237,7 @@ public class FormulaFactory {
 		Set<Atom> set = new HashSet<Atom>();
 		for (List<Variable> l : out.keySet()) {
 			if (out.get(l).booleanValue()) {
-				set.add(new Atom(p, l));
+				set.add(new Atom(p, l.toArray(new Term[l.size()])));
 			}
 		}
 		return set;
@@ -258,7 +257,7 @@ public class FormulaFactory {
 			}
 			vars.add(newVariableNotIn(d, vars));
 		}
-		return new Atom(p, vars);
+		return new Atom(p, vars.toArray(new Term[vars.size()]));
 	}
 
 	
@@ -269,7 +268,7 @@ public class FormulaFactory {
 		for (Domain d : p.getDomains()) {
 			var.add(newVariableNotIn(d, var));
 		}
-		return new Atom(p, var);
+		return new Atom(p, var.toArray(new Term[var.size()]));
 	}
 	
 	// Generates one Atom (not grounded) for each Predicate p.
