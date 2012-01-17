@@ -59,7 +59,7 @@ public class ExactInference implements Inference {
 	public double pr(Formula f, Set<Atom> given) {
 		if (f instanceof Atom) {
 			Atom a = (Atom) f;
-			if (a.isGround()) {
+			if (a.isGrounded()) {
 				return this.prAtom(a, given);
 			}
 		}
@@ -147,8 +147,8 @@ public class ExactInference implements Inference {
 		Atom f2 = new Atom(q, x, y);
 		Atom f3 = new Atom(r, y, z);
 		Atom f4 = new Atom(s, z);
-		Formula f5 = Conjunction.operator.getFormula(Disjunction.operator.getFormula(f2, f3), Negation.operator.getFormula(f1));
-		Formula f6 = Disjunction.operator.getFormula(f3, f4);
+		Formula f5 = Conjunction.OPERATOR.apply(Disjunction.OPERATOR.apply(f2, f3), Negation.OPERATOR.apply(f1));
+		Formula f6 = Disjunction.OPERATOR.apply(f3, f4);
 		
 		MarkovLogicNetwork mln = new MarkovLogicNetwork();
 		mln.add(new WeightedFormula(f1, 0));

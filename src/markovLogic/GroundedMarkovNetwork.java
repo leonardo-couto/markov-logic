@@ -140,7 +140,7 @@ public class GroundedMarkovNetwork {
 	}
 	
 	/**
-	 * Replace the variables in formula for the constants in a
+	 * Replace the variables in formula for the constants in Atom a
 	 * @return a copy of formula with some variables replaced
 	 */
 	private static Formula replaceVars(Atom a, Formula formula) {

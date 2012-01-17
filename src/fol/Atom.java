@@ -1,5 +1,6 @@
 package fol;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
@@ -9,10 +10,9 @@ import java.util.Set;
 
 import stat.Distribution;
 import stat.RandomVariable;
-
 import fol.operator.Operator;
 
-public final class Atom implements Formula, FormulaComponent, RandomVariable<Atom> {
+public final class Atom implements Formula, FormulaComponent, RandomVariable<Atom>, Comparable<Atom> {
 
 	private final boolean grounded;
 	public final Predicate predicate;
@@ -30,6 +30,23 @@ public final class Atom implements Formula, FormulaComponent, RandomVariable<Ato
 			}
 		}
 		this.grounded = true;
+	}
+	
+	@Override
+	public int compareTo(Atom o) {
+		if (this.predicate == o.predicate) {
+			Term t1;
+			Term t2;
+			for (int i = 0; i < this.terms.length; i++) {
+				t1 = this.terms[i];
+				t2 = o.terms[i];
+				if (t1 != t2) {
+					return t1.getName().compareTo(t2.getName());
+				}
+			}
+			return 0;
+		}
+		return this.predicate.getName().compareTo(o.predicate.getName());
 	}
 	
 	@Override
@@ -60,6 +77,14 @@ public final class Atom implements Formula, FormulaComponent, RandomVariable<Ato
 	@Override
 	public Set<Predicate> getPredicates() {
 		return Collections.singleton(this.predicate);
+	}
+	
+	public static Set<Predicate> getPredicates(Collection<Atom> atoms) {
+		Set<Predicate> set = new HashSet<Predicate>();
+		for (Atom a : atoms) {
+			set.add(a.predicate);
+		}
+		return set;
 	}
 	
 	@Override

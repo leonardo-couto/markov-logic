@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.Graph;
@@ -76,7 +78,7 @@ public class AtomDistribution implements Distribution<Atom> {
 	}
 	
 	@Override
-	public Iterator<Boolean> getDataIterator(Atom x) {
+	public Iterator<Boolean> getDataIterator(Atom x, Database db) {
 		final Iterator<Atom> iterator;
 		if (!x.variablesOnly()) {
 			iterator = x.predicate.groundingFilter(x.terms, -1);
@@ -140,7 +142,7 @@ public class AtomDistribution implements Distribution<Atom> {
 	 * @return This variable marginal data.
 	 */
 	@Override
-	public Iterator<boolean[]> getDataIterator(Atom x, Atom y, List<Atom> z) {
+	public Iterator<boolean[]> getDataIterator(Atom x, Atom y, List<Atom> z, Database db) {
 		if (z.isEmpty()) {
 			return this.getDataIterator(x, y);
 		}
@@ -164,16 +166,16 @@ public class AtomDistribution implements Distribution<Atom> {
 			if (DijkstraShortestPath.findPathBetween(subgraph, x, node) != null) {
 				nodesList.add(node);
 			} else {
-				Atom empty = new Atom(Predicate.empty, false, new Term[0]);
+				Atom empty = new Atom(Predicate.empty, new Term[0]);
 				nodesList.add(empty);
 			}
 		}
 		nodesList.add(x);
 		nodesList.add(y);
-		return getIterator(nodesList);
+		return getIterator(nodesList, db);
 	}
 	
-	private static Iterator<boolean[]> getIterator(List<Atom> nodes) {
+	private static Iterator<boolean[]> getIterator(List<Atom> nodes, Database db) {
 		final List<Variable> variables = new ArrayList<Variable>();
 		final List<Atom> atoms = new ArrayList<Atom>(nodes);
 		{
@@ -185,7 +187,9 @@ public class AtomDistribution implements Distribution<Atom> {
 		}
 
 		List<Set<Constant>> constants = new ArrayList<Set<Constant>>(variables.size());
+		final Map<Variable, Constant> groundings = new HashMap<Variable, Constant>();
 		for (Variable v : variables) {
+			groundings.put(v, null);
 			Set<Constant> set = v.getConstants();
 			constants.add(set);
 		}
@@ -202,10 +206,12 @@ public class AtomDistribution implements Distribution<Atom> {
 				next:
 					while (iterator.hasNext()) {
 						List<Constant> grounds = iterator.next();
+						for (int i = 0; i < variables.size(); i++) {
+							groundings.put(variables.get(i), grounds.get(i));
+						}
 						int outIndex = 0;
 						for (Atom a : atoms) {
-							a = a.replaceVariables(variables, grounds);
-							out[outIndex] = a.getValue();
+							out[outIndex] = a.getValue(db, groundings);
 							outIndex++;
 						}
 						return out;

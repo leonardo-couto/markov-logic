@@ -14,13 +14,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import fol.Atom;
 import fol.Formula;
+import fol.Predicate;
 import fol.Term;
 import fol.Variable;
-import fol.operator.Biconditional;
-import fol.operator.Conjunction;
 import fol.operator.Disjunction;
-import fol.operator.Negation;
-import fol.operator.Operator;
 
 public class FindCandidates implements Runnable {
 	
@@ -30,11 +27,11 @@ public class FindCandidates implements Runnable {
 	private final BlockingQueue<Formula> naiveCandidates;
 	private final int threads;
 	
-	public static final Formula END = Atom.FALSE; 
+	public static final Formula END = new Atom(Predicate.empty, new Term[0]); 
 	private static final Disjunction DISJUNCTION = Disjunction.OPERATOR;
-	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
-	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;
-	private static final Negation NEGATION = Negation.OPERATOR;
+//	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
+//	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;
+//	private static final Negation NEGATION = Negation.OPERATOR;
 	
 	public FindCandidates(Set<Atom> atoms, 
 			List<Formula> seeds, Queue<Formula> candidates, int threads) {
@@ -87,37 +84,7 @@ public class FindCandidates implements Runnable {
 					continue formula;
 				}
 				candidateAtoms.add(atoms);
-
-				// TODO: REMOVER, IMPLEMENTAR O FLIPPER NO SCORE!
-				List<Operator> op;
-				List<Boolean> stack;
-				Formula f1 = f.copy();
-				Formula f2 = f.copy();
-				Formula f3 = f.copy();
-				Formula f4 = f.copy();
-				op = f1.getOperators();
-				op.set(op.size()-1, CONJUNCTION);
-				op = f2.getOperators();
-				op.set(op.size()-1, BICONDITIONAL);
-				op = f3.getOperators();
-				stack = f3.getStack();
-				op.set(op.size()-1, NEGATION);
-				op.add(DISJUNCTION);
-				stack.add(false);
-				op = f4.getOperators();
-				stack = f4.getStack();
-				op.set(op.size()-1, NEGATION);
-				op.add(DISJUNCTION);
-				stack.set(stack.size()-2, false);
-				stack.set(stack.size()-1, true);
-				stack.add(false);
-				// TODO: END REMOVER
-				
 				this.candidates.offer(f);
-				this.candidates.offer(f1);
-				this.candidates.offer(f2);
-				this.candidates.offer(f3);
-				this.candidates.offer(f4);
 			}
 		}
 		this.candidates.offer(END);

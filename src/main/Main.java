@@ -9,7 +9,6 @@ import java.util.List;
 import parse.ParseDataSet;
 import parse.ParseDomain;
 import structureLearner.busl.Busl;
-import fol.Predicate;
 
 public class Main {
 	
@@ -26,8 +25,6 @@ public class Main {
 	public void run() {
 		System.out.println("parsing...");
 		parse(settings.mln);
-		System.out.println("setting Closed World...");
-		setCW();
 //		System.out.println("generating tnodes...");
 //		Set<Atom> atoms = new HashSet<Atom>(FormulaGenerator.unitClauses(domain.getPredicates()));
 //		System.out.println("running GSIMN...");
@@ -51,14 +48,6 @@ public class Main {
 
 	}
 	
-	private void setCW() {
-		// TODO: Fazer baseado no settings closed world
-		for (Predicate p : domain.getPredicates()) {
-			p.setClosedWorld(true);
-		}
-	}
-	
-
 	/**
 	 * @param args
 	 */

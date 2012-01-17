@@ -4,23 +4,19 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import util.NameID;
-
 /**
  * Represents the domain for <code>Terms</code>. eg. the constants Ana and Bob
  * may belong to a domain named person. The variable x may represent a movie
  * in a domain named movie.
- * 
- * @author Leonardo Castilho Couto
  *
  */
-public class Domain extends HashSet<Constant> implements NameID {
+public class Domain extends HashSet<Constant> {
 	
 	private static final long serialVersionUID = -6910763430777620405L;
-	private String name;
+	private final String name;
 	private List<Function> functions;
 	private List<Variable> variables;
-	private Domain parent;
+	private final Domain parent;
 	private int varcount;
 	
 	public static final Domain universe = new Domain("universe", null);
@@ -45,78 +41,62 @@ public class Domain extends HashSet<Constant> implements NameID {
 	}
 	
 	public Variable newVariable() {
-		varcount++;
-		return new Variable("v" + this.getName() + varcount, this);
+		this.varcount++;
+		return new Variable("v" + this.name + this.varcount, this);
 	}
 	
 	public Constant newConstant() {
 		varcount++;
-		return new Constant("c" + this.getName() + this.size(), this);
-	}
-
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
+		return new Constant("c" + this.name + this.size(), this);
 	}
 
 	/**
 	 * @return the functions
 	 */
 	public List<Function> getFunctions() {
-		return functions;
+		return this.functions;
 	}
 
 	/**
 	 * @return the variables
 	 */
 	public List<Variable> getVariables() {
-		return variables;
+		return this.variables;
 	}
 
 	/**
 	 * @return the parent
 	 */
 	public Domain getParent() {
-		return parent;
+		return this.parent;
 	}
 	
 	public boolean add(Function f) {
-		return functions.add(f);
+		return this.functions.add(f);
 	}
 	
 	public boolean add(Variable v) {
-		return variables.add(v);
+		return this.variables.add(v);
 	}
 	
 	public boolean remove(Function f) {
-		return functions.remove(f);
+		return this.functions.remove(f);
 	}
 	
 	public boolean remove(Variable v) {
-		return functions.remove(v);
+		return this.functions.remove(v);
 	}
 	
 	public String toString() {
-		return name;
+		return this.name;
 	}
 	
-	public boolean equals(Object o) {
-		// TODO: Check domain, predicates, and formulas equals for case sensitive
-		//       compare with .mln specification rules.
-		if (this == o) return true;
-	    if ( !(o instanceof Domain) ) return false;
-	    
-	    Domain d = (Domain) o;
-	    return name.equals(d.getName());
-	}
-	
-	public int hashCode() {
-		return name.hashCode();
-	}
-	
-	// Returns true if Term t is in Domain d
+	/**
+	 * Checks if the Term t are in Domain d
+	 * @param t Term
+	 * @param d Domain
+	 * @return returns true if Term t is in Domain d
+	 */
 	public static boolean in(Term t, Domain d) {
 		for(Domain td: t.getDomain()) {
 			if(contains(td, d)) {
@@ -126,14 +106,14 @@ public class Domain extends HashSet<Constant> implements NameID {
 		return false;
 	}
 	
-	// Return true if d0 is a subset of d1 or d0 equals d1.
+	/**
+	 * Checks if d1 contains/equals d0
+	 * @param d0
+	 * @param d1
+	 * @return true if d0 is a subset of d1 or d0 equals d1.
+	 */
 	public static boolean contains(Domain d0, Domain d1) {
-		if(d0.equals(d1)) {
-			return true;
-		} else if (d0.parent != null) {
-			return Domain.contains(d0.parent, d1);
-		}
-		return false;
+		return d0 == d1 || (d0 != null && Domain.contains(d0.parent, d1));
 	}
 	
 
