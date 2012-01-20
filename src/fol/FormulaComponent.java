@@ -2,6 +2,8 @@ package fol;
 
 import java.util.Deque;
 
+import fol.database.Database;
+
 /**
  * Represent the components of {@link GeneralFormula} 
  * ({@link Atom}s and {@link Operator}s).

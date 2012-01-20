@@ -16,24 +16,16 @@ import util.Util;
  * Uses Pearson Chi-Squared test only when conditions are met
  * Otherwise applies Fisher Exact test.
  */
-public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceTest<RV> {
+public class DefaultTest<T> implements IndependenceTest<T> {
 
-	private final Map<RV, RandomVariableData> marginalData;
 	private static int maxPartitions = 10;
 	public final double alpha;
 	private final FisherExact fe = new FisherExact(1000);
-	private final Distribution<RV> distribution;
+	private final Distribution<T> distribution;
 
-	public DefaultTest(double alpha, Set<RV> domain) {
+	public DefaultTest(double alpha, Distribution<T> distribution) {
 		this.alpha = alpha;
-		this.marginalData = new HashMap<RV, RandomVariableData>();
-		try {
-			this.distribution = domain.isEmpty() ? null : 
-				domain.iterator().next().getDistributionClass().newInstance();
-		} catch (Exception e) {
-			throw new MyException("RandomVariable Distribution class do " + 
-					"not support empty constructor.", e);
-		}
+		this.distribution = distribution;
 	}
 	
 	/*
@@ -41,8 +33,8 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	 * <code>iterator</code> and puts into the <code>holder</code> List.
 	 * If the Iterator has less than n elements, return false. Otherwise true.
 	 */
-	private static <T> boolean getNextNElements(List<T> holder, 
-			Iterator<? extends T> iterator, int n) {
+	private static <U> boolean getNextNElements(List<U> holder, 
+			Iterator<? extends U> iterator, int n) {
 		for (int i = 0; i < n; i++) {
 			if (iterator.hasNext()) {
 				holder.add(iterator.next());
@@ -53,39 +45,28 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		return true;
 	}
 
-	private RandomVariableData initMarginalData(RV x) {
-		this.distribution.add(x);
-		RandomVariableData data = new RandomVariableData(x);
-		this.marginalData.put(x, data);
-		return data;
-	}
-
-	private double getPvalue(RV x, RV y, List<RV> z) {
+	private double getPvalue(T x, T y, List<T> z) {
 		// initialize the marginal data
-		List<RV> nodes = new ArrayList<RV>(z.size()+2);
+		List<T> nodes = new ArrayList<T>(z.size()+2);
 		nodes.addAll(z);
 		nodes.add(x);
 		nodes.add(y);
-		int cells = 1;
-		for (RV r : nodes) {
-			if (!this.marginalData.containsKey(r)) { this.initMarginalData(r); }
-			cells = cells * this.marginalData.get(r).maxBins;
-		}
+		int cells = 1 << nodes.size();
 
 		int increment = 100*cells;
 		int sampledElements = increment;
 
-		Iterator<double[]> dataIterator = this.distribution.getDataIterator(x, y, z);
+		Iterator<boolean[]> dataIterator = this.distribution.getDataIterator(x, y, z);
 		if (dataIterator == null) {
 			return 0.99; // not connected, independent
 		}
-		List<double[]> data = new ArrayList<double[]>(sampledElements+1);
+		List<boolean[]> data = new ArrayList<boolean[]>(sampledElements+1);
 		if (!dataIterator.hasNext()) {
-			// If X and Y share no variables, return a low pvalue, meaning
+			// If X and Y share no variables, return a low pValue, meaning
 			// they are probably dependent.
 			return 0.01;
 		} else {
-			double[] d = dataIterator.next();
+			boolean[] d = dataIterator.next();
 			data.add(d);
 			boolean removed = false;
 			for (int i = z.size(); i > 0; i--) {
@@ -104,9 +85,9 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 		int[] nbins = new int[nodes.size()];
 		for (int i = 0; i < nodes.size(); i++) {
-			nbins[i] = this.marginalData.get(nodes.get(i)).maxBins;
+			nbins[i] = 2;
 		}
-		int nMatrices = cells / (nbins[nbins.length-1] * nbins[nbins.length-2]);
+		int nMatrices = cells / 4;
 
 		MultiDimensionalHistogram histogram = new MultiDimensionalHistogram(nodes.size());
 		histogram.addAll(data);
@@ -170,8 +151,8 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	}
 
 	@Override
-	public double pvalue(RV x, RV y) {
-		return this.getPvalue(x, y, Collections.<RV>emptyList());
+	public double pvalue(T x, T y) {
+		return this.getPvalue(x, y, Collections.<T>emptyList());
 	}
 
 
@@ -208,29 +189,29 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 	}	
 	
 	
-	private List<List<RV>> getPermutations(List<RV> variables) {
-		List<List<RV>> permutations = new ArrayList<List<RV>>();
-		for (RV var : variables) {
+	private List<List<T>> getPermutations(List<T> variables) {
+		List<List<T>> permutations = new ArrayList<List<T>>();
+		for (T var : variables) {
 			permutations.add(Collections.singletonList(var));
 		}
-		List<RV> rvList = new ArrayList<RV>(3);
-		rvList.add(null);
-		rvList.add(null);
+		List<T> TList = new ArrayList<T>(3);
+		TList.add(null);
+		TList.add(null);
 		for (int i = 0; i < variables.size(); i++) {
-			rvList.set(0, variables.get(i));
+			TList.set(0, variables.get(i));
 			for (int j = i+1; j < variables.size(); j++) {
-				rvList.set(1, variables.get(j));
-				permutations.add(new ArrayList<RV>(rvList));				
+				TList.set(1, variables.get(j));
+				permutations.add(new ArrayList<T>(TList));				
 			}
 		}
-		rvList.add(null);
+		TList.add(null);
 		for (int i = 0; i < variables.size(); i++) {
-			rvList.set(0, variables.get(i));
+			TList.set(0, variables.get(i));
 			for (int j = i+1; j < variables.size(); j++) {
-				rvList.set(1, variables.get(j));
+				TList.set(1, variables.get(j));
 				for (int k = j+1; k < variables.size(); k++) {
-					rvList.set(2, variables.get(k));
-					permutations.add(new ArrayList<RV>(rvList));
+					TList.set(2, variables.get(k));
+					permutations.add(new ArrayList<T>(TList));
 				}
 			}
 		}
@@ -239,14 +220,14 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 
 
 	@Override
-	public boolean test(RV x, RV y,	Set<RV> z) {
-		ArrayList<RV> zList = new ArrayList<RV>(z);
-		for (List<RV> p : this.getPermutations(zList)) {
+	public boolean test(T x, T y,	Set<T> z) {
+		ArrayList<T> zList = new ArrayList<T>(z);
+		for (List<T> p : this.getPermutations(zList)) {
 			if (Double.compare(this.getPvalue(x, y, p), this.alpha) > 0) {
 				return true;
 			}
 		}
-		boolean independent = Double.compare(this.getPvalue(x, y, new ArrayList<RV>(z)), this.alpha) > 0;
+		boolean independent = Double.compare(this.getPvalue(x, y, new ArrayList<T>(z)), this.alpha) > 0;
 		return independent;
 	}
 	
@@ -280,88 +261,6 @@ public class DefaultTest<RV extends RandomVariable<RV>> implements IndependenceT
 		//		Histogram hist = new Histogram(dimension, min, max, data);
 		//		int[][][] out = to2dMatrices(hist.getHistogram(nbins), dimension);
 		//		System.out.println(Arrays.deepToString(out));
-
-	}
-
-	private class RandomVariableData {
-
-		public final List<Double> data;
-		public final Histogram histogram;
-		private final Map<Integer, int[]> binsHistogram;
-		private final Map<Integer, Double> binsGeometricMean;
-		private final Map<Integer, double[]> binsProportion;
-		public final int maxBins;
-
-		/**
-		 * Gets the marginal data and generate a histogram
-		 * with intervals such that all cells have counts
-		 * higher than ten, or it has only two intervals.
-		 * @param x the RandomVariable to get the marginal data. 
-		 */
-		public RandomVariableData(RV var) {
-			
-			this.data = new ArrayList<Double>();
-			for (Iterator<Double> it = distribution.getDataIterator(var); it.hasNext(); this.data.add(it.next()));
-			
-			this.histogram = new Histogram();
-			this.histogram.addAll(this.data);
-			this.binsHistogram = new HashMap<Integer, int[]>();
-			this.binsGeometricMean = new HashMap<Integer, Double>();
-			this.binsProportion = new HashMap<Integer, double[]>();
-			
-			int total = this.data.size();
-			boolean stop = false;
-			int n = DefaultTest.maxPartitions;
-			int[] pdata = null;
-			while (!stop && (n >= 2)) {
-				pdata = this.histogram.getHistogram(n);
-				stop = true;
-				for (int count : pdata) {
-					if ((count < 10) || Double.compare((count/total), 0.01) < 0) {
-						// Each cell has at least 10 counts.
-						stop = false;
-						break;
-					}
-				}
-				n = (int) Math.ceil(n/2.0);
-			}
-			this.maxBins = pdata.length;
-			this.binsHistogram.put(this.maxBins, pdata);
-			this.init(pdata);
-		}
-
-		private void init(int bins) {
-			if (this.binsHistogram.get(bins) == null) {
-				int[] pdata = this.histogram.getHistogram(bins);
-				this.binsHistogram.put(bins, pdata);
-				this.init(pdata);
-			}
-		}
-
-		private void init(int[] pdata) {
-			double[] proportion = new double[pdata.length];
-			int sum = 0;
-			for (int e : pdata) {
-				sum = sum + e;
-			}
-			for (int i = 0; i < pdata.length; i++) {
-				proportion[i] = ((double) pdata[i])/sum;
-			}
-			this.binsProportion.put(pdata.length, proportion);
-			this.binsGeometricMean.put(pdata.length, Util.geometricMean(pdata));
-		}		
-
-		@SuppressWarnings("unused")
-		public int[] getHistogram(int n) {
-			if (this.binsHistogram.containsKey(n)) {
-				return this.binsHistogram.get(n);
-			}
-			if (n > maxBins) {
-				throw new IllegalArgumentException("");
-			}
-			this.init(n);
-			return this.binsHistogram.get(n);
-		}
 
 	}
 

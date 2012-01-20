@@ -10,18 +10,18 @@ import java.util.Set;
  * Each class that implements RandomVariable should have an
  * class that implements this interface.
  */
-public interface Distribution<RV extends RandomVariable<?>> {
+public interface Distribution<T> {
 	
-	public boolean add(RV e);
-	public boolean addAll(Collection<? extends RV> c);
-	public boolean remove(RV e);
+	public boolean add(T e);
+	public boolean addAll(Collection<? extends T> c);
+	public boolean remove(T e);
 
 	/**
 	 * @return This variable marginal data.
 	 */
-	public Iterator<Boolean> getDataIterator(RV x);
-	public Iterator<boolean[]> getDataIterator(RV x, RV y);
-	public Iterator<boolean[]> getDataIterator(RV x, RV y, List<RV> z);
+	public Iterator<Boolean> getDataIterator(T x);
+	public Iterator<boolean[]> getDataIterator(T x, T y);
+	public Iterator<boolean[]> getDataIterator(T x, T y, List<T> z);
 	
-	public Set<RV> getRandomVariables();
+	public Set<T> getRandomVariables();
 }

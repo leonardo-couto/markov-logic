@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import fol.database.Database;
+
 public interface Formula {
 	
 	public List<Atom> getAtoms();
@@ -17,5 +19,6 @@ public interface Formula {
 	public boolean isGrounded();
 	public int length();
 	public List<ConjunctiveNormalForm> toCNF();
+	public double trueCount(Database db);
 
 }

@@ -214,59 +214,49 @@ public class Test {
 		Predicate sameGender = null;
 		Predicate samePerson = null;
 		for (Domain d : pmln.getDomains()) {
-			if (d.getName().equals("film")) {
+			if (d.toString().equals("film")) {
 				film = d;
 			}
-			if (d.getName().equals("person")) {
+			if (d.toString().equals("person")) {
 				person = d;
 			}
-			if (d.getName().equals("dgender")) {
+			if (d.toString().equals("dgender")) {
 				dgender = d;
 			}
-			if (d.getName().equals("dgenre")) {
+			if (d.toString().equals("dgenre")) {
 				dgenre = d;
 			}
 		}
 		for (Predicate p : pmln.getPredicates()) {
-			if (p.getName().equals("actor")) {
+			if (p.toString().equals("actor")) {
 				actor = p;
-				actor.setClosedWorld(true);
 			}
-			if (p.getName().equals("director")) {
+			if (p.toString().equals("director")) {
 				director = p;
-				director.setClosedWorld(true);
 			}
-			if (p.getName().equals("movie")) {
+			if (p.toString().equals("movie")) {
 				movie = p;
-				movie.setClosedWorld(true);
 			}
-			if (p.getName().equals("gender")) {
+			if (p.toString().equals("gender")) {
 				gender = p;
-				gender.setClosedWorld(true);
 			}
-			if (p.getName().equals("genre")) {
+			if (p.toString().equals("genre")) {
 				genre = p;
-				genre.setClosedWorld(true);
 			}
-			if (p.getName().equals("workedUnder")) {
+			if (p.toString().equals("workedUnder")) {
 				workedUnder = p;
-				workedUnder.setClosedWorld(true);
 			}
-			if (p.getName().equals("sameMovie")) {
+			if (p.toString().equals("sameMovie")) {
 				sameMovie = p;
-				sameMovie.setClosedWorld(true);
 			}
-			if (p.getName().equals("sameGenre")) {
+			if (p.toString().equals("sameGenre")) {
 				sameGenre = p;
-				sameGenre.setClosedWorld(true);
 			}
-			if (p.getName().equals("sameGender")) {
+			if (p.toString().equals("sameGender")) {
 				sameGender = p;
-				sameGender.setClosedWorld(true);
 			}
-			if (p.getName().equals("samePerson")) {
+			if (p.toString().equals("samePerson")) {
 				samePerson = p;
-				samePerson.setClosedWorld(true);
 			}
 		}
 		// Variable X = new Variable("X", film);

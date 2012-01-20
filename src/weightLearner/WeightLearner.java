@@ -20,7 +20,7 @@ public class WeightLearner {
 		return this.score.addFormula(f);
 	}
 
-	public boolean addFormulas(List<Formula> formulas) {
+	public boolean addFormulas(List<? extends Formula> formulas) {
 		return this.score.addFormulas(formulas);
 	}
 

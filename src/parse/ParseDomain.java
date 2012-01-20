@@ -43,7 +43,7 @@ public class ParseDomain {
 	public ParseDomain(Set<Predicate> predicates, Set<Domain> domains) {
 		this.predicateSet = predicates;
 		this.domainSet = domains;
-		this.domainMap = Util.setToMap(domains);
+		this.domainMap = Util.toMap(domains);
 	}
 
 	// TODO: Check file/lines format?
@@ -74,7 +74,7 @@ public class ParseDomain {
 				domainSet.add(d);
 			}
 		}
-		predicateSet.add(new Predicate(predicateName, domainList));
+		predicateSet.add(new Predicate(predicateName, domainList.toArray(new Domain[domainList.size()])));
 	}
 	
 	/**

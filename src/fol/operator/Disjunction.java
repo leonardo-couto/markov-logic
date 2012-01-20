@@ -5,10 +5,10 @@ import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 
-import fol.Database;
 import fol.Formula;
 import fol.FormulaComponent;
 import fol.GeneralFormula;
+import fol.database.Database;
 
 public final class Disjunction implements Operator {
 	

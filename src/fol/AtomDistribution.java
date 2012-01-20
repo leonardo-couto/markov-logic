@@ -18,6 +18,8 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.Subgraph;
 
+import fol.database.Database;
+
 import stat.Distribution;
 import stat.sampling.DefaultSampler;
 

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
@@ -143,21 +144,22 @@ public class GroundedMarkovNetwork {
 	 * Replace the variables in formula for the constants in Atom a
 	 * @return a copy of formula with some variables replaced
 	 */
-	private static Formula replaceVars(Atom a, Formula formula) {
-		Formula f = formula.copy();
-		ListPointer<Atom> p = f.getAtomPointer(a.predicate);
+	private static Formula replaceVars(Atom grounded, Formula formula) {
+		Atom formulaAtom = null;
+		for (Atom a : formula.getAtoms()) {
+			if (a.predicate == grounded.predicate) {
+				formulaAtom = a;
+				break;
+			}
+		}
 		
-		List<Variable> vars = new ArrayList<Variable>();
-		for (Term t : p.get().terms) {
-			vars.add((Variable) t);
+		int terms = grounded.terms.length;
+		Map<Variable, Constant> groundings = new HashMap<Variable, Constant>(terms*2);
+		for (int i = 0; i < terms; i++) {
+			groundings.put((Variable) formulaAtom.terms[i], (Constant) grounded.terms[i]);
 		}
-		List<Constant> cons = new ArrayList<Constant>();
-		for (Term t : a.terms) {
-			cons.add((Constant) t);
-		}
-		p.set(a);
-		f = f.replaceVariables(vars, cons);
-		return f;
+		
+		return formula.ground(groundings);
 	}
 	
 	/**
@@ -178,7 +180,7 @@ public class GroundedMarkovNetwork {
 			List<Constant> constants = new LinkedList<Constant>(v.getConstants());
 			for (Formula aux : formulas) {
 				for (Constant c : constants) {
-					newFormulas.add(aux.replaceVariables(Collections.singletonList(v), Collections.singletonList(c)));
+					newFormulas.add(aux.ground(Collections.singletonMap(v, c)));
 				}
 			}
 			formulas = newFormulas;

@@ -17,7 +17,7 @@ public interface Score extends FunctionAndGradient {
 	
 	public boolean addFormula(Formula f);
 	
-	public boolean addFormulas(List<Formula> formulas);
+	public boolean addFormulas(List<? extends Formula> formulas);
 	
 	public boolean removeFormula(Formula f);
 	

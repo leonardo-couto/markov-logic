@@ -8,11 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import stat.Distribution;
-import stat.RandomVariable;
+import fol.database.Database;
 import fol.operator.Operator;
 
-public final class Atom implements Formula, FormulaComponent, RandomVariable<Atom>, Comparable<Atom> {
+public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 
 	private final boolean grounded;
 	public final Predicate predicate;
@@ -41,12 +40,12 @@ public final class Atom implements Formula, FormulaComponent, RandomVariable<Ato
 				t1 = this.terms[i];
 				t2 = o.terms[i];
 				if (t1 != t2) {
-					return t1.getName().compareTo(t2.getName());
+					return t1.toString().compareTo(t2.toString());
 				}
 			}
 			return 0;
 		}
-		return this.predicate.getName().compareTo(o.predicate.getName());
+		return this.predicate.toString().compareTo(o.predicate.toString());
 	}
 	
 	@Override
@@ -64,16 +63,6 @@ public final class Atom implements Formula, FormulaComponent, RandomVariable<Ato
 		return Collections.<FormulaComponent>singletonList(this);
 	}
 	
-	@Override
-	public Class<? extends Distribution<Atom>> getDistributionClass() {
-		return AtomDistribution.class;
-	}
-	
-	@Override
-	public String getName() {
-		return this.toString();
-	}
-
 	@Override
 	public Set<Predicate> getPredicates() {
 		return Collections.singleton(this.predicate);
@@ -130,7 +119,7 @@ public final class Atom implements Formula, FormulaComponent, RandomVariable<Ato
 	@Override
 	public void print(Deque<StringBuilder> stack) {
 		StringBuilder b = new StringBuilder();
-		b.append(this.predicate.getName()).append(Operator.LEFTP);
+		b.append(this.predicate.toString()).append(Operator.LEFTP);
 		for (Term t : terms) {
 			b.append(t.toString());
 			b.append(COMMA);
@@ -164,6 +153,12 @@ public final class Atom implements Formula, FormulaComponent, RandomVariable<Ato
 				new boolean[] {false}
 				);
 		return Collections.singletonList(formula);
+	}
+	
+	public static void main(String[] args) {
+		for (int i = 0; i < 11; i++) {
+			System.out.println(1 << i);
+		}
 	}
 
 }

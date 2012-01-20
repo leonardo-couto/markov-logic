@@ -11,12 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import util.Util;
 import fol.Atom;
 import fol.Constant;
 import fol.Domain;
 import fol.Predicate;
 import fol.Term;
+import fol.database.Database;
+import fol.database.Database.SimpleDB;
+
+import util.Util;
 
 /**
  * @author Leonardo Castilho Couto
@@ -24,20 +27,21 @@ import fol.Term;
  */
 public class ParseDataSet {
 	
-	private Map<String, Predicate> predicateMap;
-	private Map<String, Constant> constantMap;
-	private Set<Atom> groundings;
-	private Set<Constant> constants;
+	private final Map<String, Predicate> predicateMap;
+	private final Map<String, Constant> constantMap;
+	private final Set<Atom> groundings;
+	private final Set<Constant> constants;
+	private final Database db;
 	private File dbFile;
+	
+	private static final Double THRESHOLD = 0.5;
 
-	/**
-	 * 
-	 */
 	public ParseDataSet(Set<Predicate> predicates) {
-		this.predicateMap = Util.setToMap(predicates);
+		this.predicateMap = Util.toMap(predicates);
 		this.constants = getConstants(predicates);
-		this.constantMap = Util.setToMap(constants);		
+		this.constantMap = Util.toMap(constants);		
 		this.groundings = new HashSet<Atom>();
+		this.db = new SimpleDB();
 	}
 	
 	// Get all constants already defined in the domain, if any.
@@ -159,16 +163,8 @@ public class ParseDataSet {
 		}
 		
 		Term[] terms = constantList.toArray(new Term[constantList.size()]);
-		// Test whether this Atom is already defined or not.
-		if(!p.hasGrounding(terms)) {
-			Atom at = new Atom(p, value, terms);
-			this.groundings.add(at);
-			p.addGrounding(at);
-		} else {
-			throw new RuntimeException("Error in file " + dbFile.getName() + 
-					" line " + lineNumber + ": " + line + "\nDuplicated entry \"" + 
-					p.getGrounding(terms).toString() + "\".");
-		}
+		Atom at = new Atom(p, terms);
+		this.db.set(at, THRESHOLD.compareTo(value) < 0);
 	}
 	
 	/**
@@ -184,5 +180,5 @@ public class ParseDataSet {
 	public Set<Constant> getConstants() {
 		return constants;
 	}
-
+	
 }

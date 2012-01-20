@@ -23,7 +23,7 @@ public class WeightedFormula {
 		return this.weight;
 	}
 	
-	public static List<WeightedFormula> toWeightedFormulas(List<Formula> formulas, double[] weights) {
+	public static List<WeightedFormula> toWeightedFormulas(List<? extends Formula> formulas, double[] weights) {
 		ArrayList<WeightedFormula> list = new ArrayList<WeightedFormula>(weights.length);
 		for (int i = 0; i < weights.length; i++) {
 			list.add(new WeightedFormula(formulas.get(i), weights[i]));

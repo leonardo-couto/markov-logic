@@ -3,16 +3,12 @@ package fol;
 import java.util.Arrays;
 import java.util.List;
 
-import util.Util;
-
 public class Predicate {
 	
 	private final String name;
 	private final List<Domain> argDomains;
 	private boolean closedWorld;
 	
-	private final String toString;
-
 	public static final Predicate equals = new Predicate("equals", Domain.universe, Domain.universe);
 	public static final Predicate empty = new Predicate("empty");
 
@@ -20,14 +16,6 @@ public class Predicate {
 		this.name = name;
 		this.argDomains = Arrays.asList(domains);
 		this.closedWorld = true;
-		this.toString = this._toString();
-	}
-
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return this.name;
 	}
 
 	/**
@@ -37,13 +25,13 @@ public class Predicate {
 		return this.argDomains;
 	}
 
-	private String _toString() {
-		return this.name + "(" + Util.join(this.argDomains.toArray(), ",") + ")";
-	}
+//	private String _toString() {
+//		return this.name + "(" + Util.join(this.argDomains.toArray(), ",") + ")";
+//	}
 	
 	@Override
 	public String toString() {
-		return this.toString;
+		return this.name;
 	}
 
 	/**

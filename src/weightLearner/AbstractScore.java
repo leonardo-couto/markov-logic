@@ -54,7 +54,7 @@ public abstract class AbstractScore implements Score {
 	 * @see weightLearner.Score#addFormulas(java.util.List)
 	 */
 	@Override
-	public boolean addFormulas(List<Formula> formulas) {
+	public boolean addFormulas(List<? extends Formula> formulas) {
 		boolean b = true;
 		for (Formula f : formulas) {
 			b = b && this.addFormula(f);

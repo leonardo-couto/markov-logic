@@ -14,6 +14,7 @@ import weightLearner.AbstractScore;
 import weightLearner.Score;
 import fol.Formula;
 import fol.Predicate;
+import fol.database.Database;
 
 /**
  * @author Leonardo Castilho Couto
@@ -25,6 +26,8 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	private double[] grad = new double[0];
 	private SequentialTester tester;
 	private int sampleLimit;
+	
+	private final Database db;
 
 	/**
 	 * 
@@ -34,13 +37,13 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	 */
 	public WeightedPseudoLogLikelihood(Set<Predicate> predicates, int sampleLimit) {
 		super(predicates);
-		int defaultSize = (int) Math.ceil(predicates.size()*1.4);
-		this.dataCounts = new HashMap<Predicate, DataCount>(defaultSize);
+		this.dataCounts = new HashMap<Predicate, DataCount>();
 		// populate inversePllWeight with the number of groundings for each predicate. 
 		for (Predicate p : predicates) {
 			this.dataCounts.put(p, new DataCount(p, sampleLimit));
 		}
 		this.sampleLimit = sampleLimit;
+		this.db = null;
 	}
 	
 	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
@@ -54,6 +57,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		super(formulas, predicates, predicateFormulas);
 		this.dataCounts = dataCounts;
 		this.sampleLimit = -1;
+		this.db = null;
 	}
 
 	/* (non-Javadoc)

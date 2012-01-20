@@ -9,6 +9,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import fol.database.Database;
 import fol.operator.Biconditional;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;

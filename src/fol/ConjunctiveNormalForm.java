@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import fol.database.Database;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
 

@@ -272,7 +272,7 @@ public class FormulaFactory {
 	}
 	
 	// Generates one Atom (not grounded) for each Predicate p.
-	public static List<Atom> unitClauses(Collection<Predicate> predicates) {
+	public static List<Atom> getUnitClauses(Collection<Predicate> predicates) {
 		List<Atom> atoms = new ArrayList<Atom>();
 		for (Predicate p : predicates) {
 			atoms.add(generateAtom(p));

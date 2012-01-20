@@ -87,6 +87,7 @@ public class Domain extends HashSet<Constant> {
 		return this.functions.remove(v);
 	}
 	
+	@Override
 	public String toString() {
 		return this.name;
 	}

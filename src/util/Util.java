@@ -71,15 +71,6 @@ public class Util {
 	  	return sb.toString();
 	}
 	
-	// Converts a Set<T extends NameID> into a Map of <String, T>
-	public static <T extends NameID> Map<String, T> setToMap(Set<T> tSet) {
-		Map<String, T> m = new HashMap<String, T>();
-		for(T t : tSet) {
-			m.put(t.getName(), t);
-		}
-		return m;
-	}
-	
 	// put Element T in the List's first position without deleting and adding elements.
 	public static <T> void reorder(List<T> tList, T element) {
 		int idx = tList.indexOf(element);
@@ -261,5 +252,13 @@ public class Util {
 		@Override
 		public void write(int b) throws IOException {}
 	});
+	
+	public static <T> Map<String, T> toMap(Collection<T> c) {
+		Map<String, T> map = new HashMap<String, T>(c.size()*2);
+		for (T t : c) {
+			map.put(t.toString(), t);
+		}
+		return map;
+	}
 
 }

@@ -1,10 +1,12 @@
 package weightLearner.wpll;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import stat.convergence.DummyTester;
 import stat.convergence.SequentialTester;
@@ -13,31 +15,44 @@ import util.MyException;
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
+import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Term;
 import fol.Variable;
+import fol.database.Database;
 
+/**
+ * This is an auxiliary class that stores a list of grounding atoms 
+ * for a specific Predicate. For each grounding, it stores a list of
+ * true counts for Formulas (given the grounding's Markov Blanket).
+ * 
+ * The information stored here is latter used to compute the Predicate
+ * Pseudo-log-likelihood. 
+ */
 public class DataCount extends ArrayList<List<FormulaCount>> {
 
 	private static final long serialVersionUID = 8714785841871940035L;
 	private final LinkedList<FormulaData> formulas;
 	private final List<Atom> atoms;
+	private final Database db;
 	public final Predicate predicate;
 	
 	private int sampleSize;
 	private SequentialTester tester;
 	
-	public DataCount(Predicate p) {
-		this(p, -1);
-	}
-	
-	public DataCount(Predicate p, int sampleSize) {
+	public DataCount(Predicate p, Database db, int sampleSize) {
 		super();
 		this.predicate = p;
-		sampleSize = (sampleSize < 0) ? (int) Math.min(p.groundingsSize(), Integer.MAX_VALUE) :
-			(int) Math.min(p.groundingsSize(), sampleSize);
+		this.db = db;
+		
+		if (sampleSize < 1) { throw new IllegalArgumentException("Sample size must be greater than 0"); }
+		sampleSize = (int) Math.min(p.totalGroundings(), sampleSize);
 		this.atoms = new ArrayList<Atom>(sampleSize);
-		for (Iterator<Atom> i = p.groundingIterator(sampleSize); i.hasNext(); this.atoms.add(i.next()));
+		
+		// pega uma lista aleatoria de grounds do predicado p
+		Iterator<Atom> it = this.db.groundingIterator(FormulaFactory.generateAtom(p));
+		for (int i = 0; i < sampleSize; i++) { this.atoms.add(it.next()); }
+		
 		this.formulas = new LinkedList<FormulaData>();
 		this.sampleSize = sampleSize;
 		for (int i = 0; i < sampleSize; i++) { this.add(new ArrayList<FormulaCount>()); }
@@ -50,34 +65,11 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		this.atoms = old.atoms;
 		this.predicate = old.predicate;
 		this.sampleSize = old.sampleSize;
+		this.db = old.db;
 		for (List<FormulaCount> fc : old) {
 			this.add(new ArrayList<FormulaCount>(fc));
 		}
 		this.tester = old.tester.copy();
-	}
-	
-	/**
-	 * Sample size can only be set before adding any formula.
-	 * Trying to change the sample size after a formula has been added
-	 * will throw an UnsupportedOperationException.
-	 * @param size the size of the sample
-	 */
-	public void setSampleSize(int size) {
-		if (!this.formulas.isEmpty()) {
-			throw new UnsupportedOperationException("Cannot change sample size after a formula has been added.");
-		}
-		size = Math.min(size, this.atoms.size());
-		if (size > this.sampleSize) {
-			final int diff = size - this.sampleSize;
-			for (int i = 0; i < diff; i++) {
-				this.add(new ArrayList<FormulaCount>());
-			}
-		} else if (size != this.sampleSize) { // size < sampleSize
-			for (int i = this.size(); i > size; i--) {
-				this.remove(i-1);
-			}
-		}
-		this.sampleSize = size;
 	}
 	
 	public void setTester(SequentialTester tester) {
@@ -88,43 +80,46 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		return this.sampleSize;
 	}
 
-	private ListPointer<Atom> getPointer(Formula f) {
-		ListPointer<Atom> out = f.getAtomPointer(this.predicate);
-		if (out == null) {
-			throw new MyException("Formula \"" + f.toString() + 
-					"\" contains no Predicate \"" + this.predicate.toString() + 
-			"\" with Variables only.");
-		}
-		return out;
-	}
+//	private ListPointer<Atom> getPointer(Formula f) {
+//		ListPointer<Atom> out = f.getAtomPointer(this.predicate);
+//		if (out == null) {
+//			throw new MyException("Formula \"" + f.toString() + 
+//					"\" contains no Predicate \"" + this.predicate.toString() + 
+//			"\" with Variables only.");
+//		}
+//		return out;
+//	}
 	
 	private void addAtoms(FormulaData fd) {
 		Formula formula = fd.f;
+		Database localDB = this.db.getLocalCopy();
 		
 		for (int i = 0; i < this.sampleSize; i++) {
 			Atom a = this.atoms.get(i);
+			boolean value = db.valueOf(a);
 
 			if (formula instanceof Atom) {
-				Data d = new Data(1.0, 0.0, a.getValue());
+				Data d = new Data(1.0, 0.0, value ? 1.0 : 0.0);
 				this.get(i).add(new FormulaCount(formula, d));
 				i++;
 				continue;
 			}
 			
-			int idx = fd.i;
 			List<Variable> vars = fd.v;
-			List<Constant> cons = new ArrayList<Constant>(vars.size());
-			for (Term t : a.terms) { cons.add((Constant) t); }
-			Formula grounded = formula.replaceVariables(vars, cons);
-			List<Atom> fAtom = grounded.getAtoms();
+			Map<Variable, Constant> groundings = new HashMap<Variable, Constant>();
+			for (int j = 0; j < a.terms.length; j++) {
+				groundings.put(vars.get(j), (Constant) a.terms[j]);
+			}
 
-			fAtom.set(idx, Atom.TRUE);
-			double trueCount = grounded.trueCounts();
-			fAtom.set(idx, Atom.FALSE);
-			double falseCount = grounded.trueCounts();
-			double value = a.value*trueCount + (1.0-a.value)*falseCount;
+			Formula grounded = formula.ground(groundings);
+			localDB.flip(a);
+			double trueCount = grounded.trueCount(value ? this.db : localDB);
+			double falseCount = grounded.trueCount(value ? localDB : this.db);
+			localDB.flip(a);
+			double count = value ? trueCount : falseCount;
+			//double value = a.value*trueCount + (1.0-a.value)*falseCount;
 
-			Data d = new Data(trueCount, falseCount, value);
+			Data d = new Data(trueCount, falseCount, count);
 			this.get(i).add(new FormulaCount(formula, d));
 			i++;
 		}
@@ -194,5 +189,5 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 			return false;
 		}
 	}
-
+	
 }
