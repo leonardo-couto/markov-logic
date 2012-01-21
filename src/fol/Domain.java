@@ -13,9 +13,10 @@ import java.util.List;
 public class Domain extends HashSet<Constant> {
 	
 	private static final long serialVersionUID = -6910763430777620405L;
+	
 	private final String name;
-	private List<Function> functions;
-	private List<Variable> variables;
+	private final List<Function> functions;
+	private final List<Variable> variables;
 	private final Domain parent;
 	private int varcount;
 	
@@ -46,7 +47,6 @@ public class Domain extends HashSet<Constant> {
 	}
 	
 	public Constant newConstant() {
-		varcount++;
 		return new Constant("c" + this.name + this.size(), this);
 	}
 
@@ -99,12 +99,8 @@ public class Domain extends HashSet<Constant> {
 	 * @return returns true if Term t is in Domain d
 	 */
 	public static boolean in(Term t, Domain d) {
-		for(Domain td: t.getDomain()) {
-			if(contains(td, d)) {
-				return true;
-			}
-		}
-		return false;
+		Domain td = t.getDomain();
+		return contains(td, d);
 	}
 	
 	/**

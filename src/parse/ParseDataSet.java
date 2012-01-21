@@ -17,7 +17,7 @@ import fol.Domain;
 import fol.Predicate;
 import fol.Term;
 import fol.database.Database;
-import fol.database.Database.SimpleDB;
+import fol.database.SimpleDB;
 
 import util.Util;
 
@@ -149,7 +149,9 @@ public class ParseDataSet {
 				constantList.add(c);
 				if (!Domain.in(c, domains.get(i-1))) {
 					// TODO: Warning, two domains for the same constant.
-					c.getDomain().add(domains.get(i-1));
+					throw new RuntimeException(String.format(
+							"Constants cannot belong to more than one domain. %s are in %s and %s.", 
+							c, c.getDomain(), domains.get(i-1)));
 				}
 				
 			// else create new constant

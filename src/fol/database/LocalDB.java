@@ -24,7 +24,7 @@ public class LocalDB extends SimpleDB {
 	
 	@Override
 	public boolean flip(Atom a) {
-		CompositeKey key = new CompositeKey(a.predicate, a.terms);
+		CompositeKey key = new CompositeKey(a.predicate, a.terms, false);
 		if (this.local.containsKey(key)) {
 			boolean value = !this.local.get(key).booleanValue();
 			this.local.remove(key);
@@ -37,7 +37,7 @@ public class LocalDB extends SimpleDB {
 	
 	@Override
 	public void set(Atom a, boolean value) {
-		CompositeKey key = new CompositeKey(a.predicate, a.terms);
+		CompositeKey key = new CompositeKey(a.predicate, a.terms, false);
 		if (this.local.containsKey(key)) {
 			boolean current = this.local.get(key).booleanValue();
 			if (value != current) {

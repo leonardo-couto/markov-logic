@@ -1,83 +1,65 @@
 package fol;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
-public class Variable extends Term implements Comparable<Variable>{
-
-	/**
-	 * @param arg0
-	 * @param arg1
-	 */
-	public Variable(String arg0, List<Domain> arg1) {
-		super(arg0, arg1);
-		// TODO Auto-generated constructor stub
-	}
-
+public class Variable extends Term implements Comparable<Variable> {
+	
+	private List<Constant> constants;
+	private final Random r;
+	private int size;
+	
 	/**
 	 * @param name
 	 * @param domain
 	 */
 	public Variable(String name, Domain domain) {
 		super(name, domain);
-		// TODO Auto-generated constructor stub
+		this.r = new Random();
+		this.size = -1;
+	}
+	
+	/**
+	 * Keeps the Constants list updated
+	 */
+	private void refreshConstants() {
+		this.constants = new ArrayList<Constant>(this.domain);
+		this.size = this.constants.size();
 	}
 
 	/* (non-Javadoc)
 	 * @see fol.Term#setDomain(java.util.List)
 	 */
 	@Override
-	void setDomain(List<Domain> domain) {
-		for(Domain d: domain) {
-			d.add(this);
-		}
-		this.domain = domain;
+	void setDomain(Domain domain) {
+		domain.add(this);
 	}
 	
 	/**
 	 * Check if the Constant c belongs to this Variable Domain.
 	 */
 	public boolean inDomain(Constant c) {
-		for (Domain d : this.getDomain()) {
-			if (Domain.in(c, d)) {
-				return true;
-			}
-		}
-		return false;
+		return Domain.in(c, this.domain);
 	}
 	
 	/**
-	 * Return a set with all Constants belonging to the Domain of this Variable.
+	 * Return a List with all Constants belonging to the domain of this Variable.
 	 */
-	public Set<Constant> getConstants() {
-		if (this.getDomain().size() == 1) {
-			return this.getDomain().get(0);
-		} else {
-			Set<Constant> set = new HashSet<Constant>();
-			for (Domain d : this.getDomain()) {
-				set.addAll(d);
-			}
-			return set;
+	public List<Constant> getConstants() {
+		if (this.size != this.domain.size()) {
+			this.refreshConstants();
 		}
+		return this.constants;
 	}
 	
-	public Constant newConstant() {
-		int size = this.domain.size();
-		if (size == 1) {
-			return this.domain.get(0).newConstant();
-		} else {
-			Random r = new Random();
-			return this.domain.get(r.nextInt(size)).newConstant();
+	public Constant getRandomConstant() {
+		if (this.size != this.domain.size()) {
+			this.refreshConstants();
 		}
+		return this.constants.get(r.nextInt(size));
 	}
 	
-
 	@Override
 	public int compareTo(Variable o) {
 		return this.toString().compareTo(o.toString());
