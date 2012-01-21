@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import stat.convergence.SequentialTester;
 import util.MyException;
 import weightLearner.AbstractScore;
 import weightLearner.Score;
@@ -24,30 +23,20 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	
 	private final Map<Predicate, DataCount> dataCounts;
 	private double[] grad = new double[0];
-	private SequentialTester tester;
-	private int sampleLimit;
 	
-	private final Database db;
-
 	/**
 	 * 
 	 * @param predicates
 	 * @param sampleLimit the max number of groundings per predicate that will
 	 * be used to approximate the predicateWpll.
 	 */
-	public WeightedPseudoLogLikelihood(Set<Predicate> predicates, int sampleLimit) {
+	public WeightedPseudoLogLikelihood(Set<Predicate> predicates, Database db, int sampleLimit) {
 		super(predicates);
 		this.dataCounts = new HashMap<Predicate, DataCount>();
 		// populate inversePllWeight with the number of groundings for each predicate. 
 		for (Predicate p : predicates) {
-			this.dataCounts.put(p, new DataCount(p, sampleLimit));
+			this.dataCounts.put(p, new DataCount(p, db, sampleLimit));
 		}
-		this.sampleLimit = sampleLimit;
-		this.db = null;
-	}
-	
-	public WeightedPseudoLogLikelihood(Set<Predicate> predicates) {
-		this(predicates, -1);
 	}
 	
 	private WeightedPseudoLogLikelihood(List<Formula> formulas,
@@ -56,8 +45,6 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			Map<Predicate, DataCount> dataCounts) {
 		super(formulas, predicates, predicateFormulas);
 		this.dataCounts = dataCounts;
-		this.sampleLimit = -1;
-		this.db = null;
 	}
 
 	/* (non-Javadoc)
@@ -187,7 +174,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 	 * @see weightLearner.AbstractScore#addFormulas(java.util.List)
 	 */
 	@Override
-	public boolean addFormulas(List<Formula> formulas) {
+	public boolean addFormulas(List<? extends Formula> formulas) {
 		return super.addFormulas(formulas);
 	}
 
@@ -264,8 +251,6 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 		}
 		WeightedPseudoLogLikelihood wpll = new WeightedPseudoLogLikelihood(
 				formulas, predicates, predicateFormulas, dataCounts);
-		wpll.sampleLimit = this.sampleLimit;
-		wpll.tester = this.tester;
 		return wpll;
 	}
 	
@@ -290,18 +275,6 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			throw new MyException("List l does not contains f");
 		}
 		
-	}
-	
-	/**
-	 * Set the SequentialTester that will be used to compute
-	 * the convergence of formulaCounts for each formula. 
-	 * It will limit the number of samples used to get the formulaCount.
-	 */
-	public void setTester(SequentialTester tester) {
-		this.tester = tester;
-		for (DataCount d : this.dataCounts.values()) {
-			d.setTester(tester);
-		}
 	}
 	
 }

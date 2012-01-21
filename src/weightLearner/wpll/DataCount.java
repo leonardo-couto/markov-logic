@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import stat.convergence.DummyTester;
-import stat.convergence.SequentialTester;
-import util.ListPointer;
-import util.MyException;
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
@@ -32,13 +28,12 @@ import fol.database.Database;
 public class DataCount extends ArrayList<List<FormulaCount>> {
 
 	private static final long serialVersionUID = 8714785841871940035L;
+	
 	private final LinkedList<FormulaData> formulas;
 	private final List<Atom> atoms;
 	private final Database db;
 	public final Predicate predicate;
-	
-	private int sampleSize;
-	private SequentialTester tester;
+	private final int sampleSize;
 	
 	public DataCount(Predicate p, Database db, int sampleSize) {
 		super();
@@ -56,7 +51,6 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		this.formulas = new LinkedList<FormulaData>();
 		this.sampleSize = sampleSize;
 		for (int i = 0; i < sampleSize; i++) { this.add(new ArrayList<FormulaCount>()); }
-		this.tester = new DummyTester(-1);
 	}
 	
 	private DataCount(DataCount old) {
@@ -69,26 +63,11 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		for (List<FormulaCount> fc : old) {
 			this.add(new ArrayList<FormulaCount>(fc));
 		}
-		this.tester = old.tester.copy();
 	}
 	
-	public void setTester(SequentialTester tester) {
-		this.tester = tester.copy();
-	}
-
 	public int sampledAtoms() {
 		return this.sampleSize;
 	}
-
-//	private ListPointer<Atom> getPointer(Formula f) {
-//		ListPointer<Atom> out = f.getAtomPointer(this.predicate);
-//		if (out == null) {
-//			throw new MyException("Formula \"" + f.toString() + 
-//					"\" contains no Predicate \"" + this.predicate.toString() + 
-//			"\" with Variables only.");
-//		}
-//		return out;
-//	}
 	
 	private void addAtoms(FormulaData fd) {
 		Formula formula = fd.f;
@@ -127,21 +106,29 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 
 
 	public void addFormula(Formula formula) {
-		int i = -1;
-		List<Variable> lv = null;
+		List<Variable> lv = new ArrayList<Variable>();
 		
 		if (!(formula instanceof Atom)) { // init atomPosition and atomVariables
-			ListPointer<Atom> p = this.getPointer(formula);
-			i =  p.i;
-			Term[] terms = p.get().terms;
-			List<Variable> vars = new ArrayList<Variable>(terms.length);
-			for (Term t : terms) {
-				vars.add((Variable) t);
+			List<Atom> atoms = formula.getAtoms();
+			outer: for (int j = 0; j < atoms.size(); j++) {
+				Atom a = atoms.get(j);
+				if (a.predicate == this.predicate) {
+					for (Term t : a.terms) {
+						if (t instanceof Variable) {
+							lv.add((Variable) t);
+						} else {
+							lv.clear();
+							continue outer;
+						}
+					}
+					break outer;
+				}
 			}
-			lv = vars;
+			if (lv.isEmpty()) throw new RuntimeException("Formula doesn't have a variable " + 
+					"only Atom of Predicate " + this.predicate.toString());					
 		}
 		
-		FormulaData fd = new FormulaData(formula, i, lv);
+		FormulaData fd = new FormulaData(formula, lv);
 		this.formulas.add(fd);
 		this.addAtoms(fd);
 	}
@@ -164,12 +151,10 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 	
 	private static final class FormulaData {
 		public final Formula f;
-		public final int i;
 		public final List<Variable> v;
 		
-		public FormulaData(Formula f, int i, List<Variable> v) {
+		public FormulaData(Formula f, List<Variable> v) {
 			this.f = f;
-			this.i = i;
 			this.v = v;
 		}
 		

@@ -6,6 +6,7 @@ import fol.Atom;
 
 public interface Database {
 	
+	public void close();
 	public boolean valueOf(Atom a);
 //	public boolean isVariable(Atom a);
 	public boolean flip(Atom a);
