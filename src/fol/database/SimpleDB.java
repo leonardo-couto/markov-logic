@@ -15,22 +15,9 @@ import fol.Variable;
 public class SimpleDB implements Database {
 	
 	private final HashMap<CompositeKey, Boolean> db;
-//	private final HashMap<Predicate, List<List<CompositeKey>>> indexedValues;
-//	private boolean readOnly;
 	
 	public SimpleDB() {
 		this.db = new HashMap<CompositeKey, Boolean>();
-//		this.indexedValues = new HashMap<Predicate, List<List<CompositeKey>>>();
-//		this.readOnly = false;
-//		for (Predicate p : predicates) {
-//			int domains = p.getDomains().size();
-//			List<List<CompositeKey>> indexes = new ArrayList<List<CompositeKey>>(domains);
-//			indexedValues.put(p, indexes);
-//			for (int i = 0; i < domains; i++) {
-//				PriorityQueue<CompositeKey> pqueue = new PriorityQueue<CompositeKey>();
-//				//indexes.add()
-//			}
-//		}
 	}
 
 	@Override
