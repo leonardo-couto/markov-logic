@@ -60,5 +60,23 @@ public class WriteOnlyDB {
 			}
 		}
 	}
+	
+	public ReadOnlyDB getReadDatabase() {
+		Map<Predicate, CompositeKey[][]> indexedValues = new HashMap<Predicate, CompositeKey[][]>();
+		for (Predicate p : this.indexedValues.keySet()) {
+			List<PriorityQueue<CompositeKey>> list = this.indexedValues.get(p);
+			CompositeKey[][] keys = new CompositeKey[list.size()][];
+			for (int i = 0; i < list.size(); i++) {
+				PriorityQueue<CompositeKey> queue = list.get(i);
+				keys[i] = new CompositeKey[queue.size()];
+				for (int j = 0; j < queue.size(); j++) {
+					keys[i][j] = queue.poll();
+				}
+			}
+			indexedValues.put(p, keys);
+		}
+		return new ReadOnlyDB(new HashSet<CompositeKey>(this.db), indexedValues);
+	}
+
 
 }

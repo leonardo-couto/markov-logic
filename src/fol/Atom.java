@@ -118,6 +118,10 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	@Override
 	public void print(Deque<StringBuilder> stack) {
+		stack.push(this.print());
+	}
+	
+	private StringBuilder print() {
 		StringBuilder b = new StringBuilder();
 		b.append(this.predicate.toString()).append(Operator.LEFTP);
 		for (Term t : terms) {
@@ -125,7 +129,7 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 			b.append(COMMA);
 		}
 		b.setCharAt(b.length()-1, Operator.RIGHTP);
-		stack.push(b);
+		return b;
 	}
 
 	@Override
@@ -159,6 +163,11 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 		for (int i = 0; i < 11; i++) {
 			System.out.println(1 << i);
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return this.print().toString();
 	}
 
 }

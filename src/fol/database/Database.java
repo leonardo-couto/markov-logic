@@ -6,7 +6,7 @@ import fol.Atom;
 
 public interface Database {
 	
-	public void close();
+//	public void close();
 	public boolean valueOf(Atom a);
 //	public boolean isVariable(Atom a);
 	public boolean flip(Atom a);
@@ -20,6 +20,6 @@ public interface Database {
 	 * local and original copy will generate inconsistencies.
 	 */
 	public Database getLocalCopy();
-	public Iterator<Atom> groundingIterator(final Atom a);
+	public Iterator<Atom> groundingIterator(Atom filter);
 	
 }

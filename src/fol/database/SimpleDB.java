@@ -1,11 +1,7 @@
 package fol.database;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 import fol.Atom;
 import fol.Constant;
@@ -88,55 +84,45 @@ public class SimpleDB implements Database {
 	
 	/**
 	 * Return an iterator for groundings of Atom a
-	 * @param maxElements
 	 * @return
 	 */
-	public Iterator<Atom> groundingIterator(final Atom a) {
-	
-		if (a.isGrounded()) {
-			return Collections.singleton(a).iterator();
-		}
-		
-		final Map<Variable, Constant> groundings = new HashMap<Variable, Constant>();
-		final Map<Variable, List<Constant>> constants = new HashMap<Variable, List<Constant>>();
-		for (Term t : a.terms) {
+	@Override
+	public Iterator<Atom> groundingIterator(Atom filter) {
+		final Atom seed = filter;
+		final HashMap<Variable, Constant> groundings = new HashMap<Variable, Constant>();
+		long lSize = 1;
+		for (Term t : filter.terms) {
 			if (t instanceof Variable) {
-				Variable v = (Variable) t;
-				groundings.put(v, null);
-				constants.put(v, v.getConstants());
+				lSize = lSize * t.getDomain().size();
+				groundings.put((Variable) t, null);
 			}
 		}
-		final Random r = new Random();
-		
+		final int size = (int) Math.min(lSize, Integer.MAX_VALUE);
 		return new Iterator<Atom>() {
+			
+			int i = 0;
 
 			@Override
 			public boolean hasNext() {
-				return true;
+				return i < size;
 			}
 
 			@Override
 			public Atom next() {
+				i++;
 				for (Variable v : groundings.keySet()) {
-					List<Constant> constantList = constants.get(v);
-					groundings.put(v, constantList.get(r.nextInt(constantList.size())));
+					groundings.put(v, v.getRandomConstant());
 				}
-				return a.ground(groundings);
+				return seed.ground(groundings);
 			}
 
 			@Override
 			public void remove() {
-				throw new UnsupportedOperationException("Can not remove element.");
+				// do nothing
 			}
 		};
-		
 	}
 
-	@Override
-	public void close() {
-		// do nothing		
-	}
-	
 //	public Iterator<Atom> groundingIterator(Atom a, int maxElements, boolean value) {
 //		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
 //		if (this.closedWorld) {
