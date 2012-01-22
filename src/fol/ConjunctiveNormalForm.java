@@ -136,6 +136,12 @@ public class ConjunctiveNormalForm implements Formula {
 	public List<ConjunctiveNormalForm> toCNF() {
 		return Collections.singletonList(this);
 	}
+
+	@Override
+	public double trueCount(Database db) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 	
 
 }

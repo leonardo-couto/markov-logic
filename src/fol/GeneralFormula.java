@@ -2,6 +2,7 @@ package fol;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -264,6 +265,31 @@ public class GeneralFormula implements Formula {
 			current = iterator.next().intValue();
 			iterator.set(Integer.valueOf(current-value));
 		}
+	}
+
+	@Override
+	public double trueCount(Database db) {
+		Set<Variable> vars = this.getVariables();
+		Map<Variable, Constant> groundings = new HashMap<Variable, Constant>();
+		long total = 1;
+		for (Variable v : vars) {
+			total = total * v.getConstants().size();
+		}
+		int sample = total < 250 ? 2*((int) total) : 500; // 500 for a error of at most 5%
+		// TODO tirar o 2* daqui e do SimpleDB, fazer as amostras serem exatas para < 100
+		
+		int count = 0;
+		for (int i = 0; i < sample; i++) {
+			for (Variable v : vars) {
+				groundings.put(v, v.getRandomConstant());
+			}
+			if (this.ground(groundings).getValue(db)) {
+				count++;
+			}
+		}
+		
+		double ratio = ((double) count) / sample;
+		return ratio * total;
 	}
 	
 }
