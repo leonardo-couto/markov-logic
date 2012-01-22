@@ -170,4 +170,9 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 		return this.print().toString();
 	}
 
+	@Override
+	public double trueCount(Database db) {
+		return (double) db.groundingCount(this, true);
+	}
+
 }
