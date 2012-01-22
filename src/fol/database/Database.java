@@ -21,5 +21,8 @@ public interface Database {
 	 */
 	public Database getLocalCopy();
 	public Iterator<Atom> groundingIterator(Atom filter);
+	public Iterator<Atom> groundingIterator(Atom filter, boolean value);
+	public int groundingCount(Atom filter);
+	public int groundingCount(Atom filter, boolean value);
 	
 }

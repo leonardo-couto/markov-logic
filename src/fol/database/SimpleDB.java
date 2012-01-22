@@ -57,31 +57,6 @@ public class SimpleDB implements Database {
 		return new LocalDB(this);
 	}
 	
-//	private Iterator<Atom> cwIterator(final List<? extends Collection<Constant>> domains, int maxElements) {
-//		final Sampler<Constant> sampler = new DefaultSampler<Constant>(domains, maxElements);
-//		return new Iterator<Atom>() {
-//			
-//			private final Iterator<List<Constant>> consts = sampler.iterator();
-//			private final int arity = domains.size();
-//
-//			@Override
-//			public boolean hasNext() {
-//				return this.consts.hasNext();
-//			}
-//
-//			@Override
-//			public Atom next() {
-//				Term[] t = this.consts.next().toArray(new Term[this.arity]);
-//				return getGrounding(t);
-//			}
-//
-//			@Override
-//			public void remove() {
-//				// do nothing					
-//			}
-//		};
-//	}
-	
 	/**
 	 * Return an iterator for groundings of Atom a
 	 * @return
@@ -122,56 +97,67 @@ public class SimpleDB implements Database {
 			}
 		};
 	}
+	
+	/**
+	 * Return an iterator for groundings of Atom a
+	 * @return
+	 */
+	@Override
+	public Iterator<Atom> groundingIterator(Atom filter, boolean value) {
+		final Iterator<Atom> iterator = this.groundingIterator(filter);
+		final int max = this.groundingCount(filter);
+		final boolean b = value;
+		return new Iterator<Atom>() {
 
-//	public Iterator<Atom> groundingIterator(Atom a, int maxElements, boolean value) {
-//		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
-//		if (this.closedWorld) {
-//			return this.cwIterator(this.argDomains, maxElements);
-//		}
-//		return (new RandomIterator<Atom>(this.groundings.values(), maxElements)).iterator();		
-//	}
-//	
-//	/**
-//	 * Return an iterator for this Predicate known groundigs, with
-//	 * constraints defined in terms.
-//	 * @param terms
-//	 * @param maxElements
-//	 * @return
-//	 */
-//	public Iterator<Atom> groundingFilter(Term[] terms, int maxElements) {
-//		if (maxElements < 0) { maxElements = Integer.MAX_VALUE;	}
-//		if (this.closedWorld) {
-//			List<Set<Constant>> domains = new ArrayList<Set<Constant>>(this.argDomains.size());
-//			for (Term t : terms) {
-//				if (t instanceof Constant) {
-//					domains.add(Collections.singleton((Constant) t));
-//				} else if (t instanceof Variable) {
-//					Variable v = (Variable) t;
-//					domains.add(v.getConstants());
-//				} else {
-//					throw new UnsupportedOperationException();
-//				}
-//			}
-//			return this.cwIterator(domains, maxElements);
-//		} else {
-//			List<Atom> atoms = new LinkedList<Atom>();
-//			Map<Integer, Constant> filter = new HashMap<Integer, Constant>();
-//			for (int i = 0; i < terms.length; i++) {
-//				Term t = terms[i];
-//				if (t instanceof Constant) {
-//					filter.put(i, (Constant) t);
-//				}
-//			}
-//			nextGrounding: for (Atom a : this.groundings.values()) {
-//				for (Integer i : filter.keySet()) {
-//					if (a.terms[i] != filter.get(i)) {
-//						continue nextGrounding;
-//					}
-//				}
-//				atoms.add(a);
-//			}
-//			return (new RandomIterator<Atom>(atoms, maxElements)).iterator();	
-//		}
-//	}
+			@Override
+			public boolean hasNext() {
+				return iterator.hasNext();
+			}
+
+			@Override
+			public Atom next() {
+				for (int i = 0; i < max; i++) {
+					Atom a = iterator.next();
+					if (valueOf(a) == b) {
+						return a;
+					}
+				}
+				// return an atom even if it doesn't satisfies the value condition
+				return iterator.next(); 
+			}
+
+			@Override
+			public void remove() {
+				// do nothing
+			}
+		};
+	}
+	
+	@Override
+	public int groundingCount(Atom filter) {
+		long l = 1;
+		for (Term t : filter.terms) {
+			if (t instanceof Variable) {
+				l = l * t.getDomain().size();
+			}
+		}
+		return (int) Math.min(l, Integer.MAX_VALUE);
+	}
+
+	@Override
+	public int groundingCount(Atom filter, boolean value) {
+		int groundings = this.groundingCount(filter);
+		int sample = 500; // 500 for a error of at most 5%
+
+		int count = 0;
+		Iterator<Atom> atoms = this.groundingIterator(filter);
+		for (int i = 0; i < sample; i++) {
+			if (this.valueOf(atoms.next()) == value) {
+				count++;
+			}
+		}
+		double proportion = ((double) count) / sample;
+		return (int) Math.round(proportion * groundings);
+	}
 	
 }

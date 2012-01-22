@@ -46,7 +46,7 @@ public class Predicate {
 	 */
 	public long totalGroundings() {
 		long i = 1;		
-		for (Domain d : argDomains) {
+		for (Domain d : this.argDomains) {
 			i = i * (long) d.size();
 		}
 		return i;

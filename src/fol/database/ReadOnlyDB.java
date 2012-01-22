@@ -14,6 +14,7 @@ import fol.Variable;
 class ReadOnlyDB implements Database {
 	
 	private final Set<CompositeKey> db;
+	@SuppressWarnings("unused")
 	private final Map<Predicate, CompositeKey[][]> indexedValues;
 	
 	public ReadOnlyDB(Set<CompositeKey> db, Map<Predicate, CompositeKey[][]> indexedValues) {
@@ -81,6 +82,24 @@ class ReadOnlyDB implements Database {
 				// do nothing
 			}
 		};
+	}
+
+	@Override
+	public Iterator<Atom> groundingIterator(Atom filter, boolean value) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int groundingCount(Atom filter) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int groundingCount(Atom filter, boolean value) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }
