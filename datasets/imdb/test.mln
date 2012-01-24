@@ -1,0 +1,37 @@
+//predicate declarations
+director(person)
+actor(person)
+movie(film, person)
+gender(person, ge)
+genre(person, gr)
+workedUnder(person, person)
+sameMovie(film, film)
+sameGenre(gr, gr)
+sameGender(gd, gd)
+samePerson(person, person)
+
+// clauses
+movie(x, y) v actor(y)
+
+movie(x, y) v director(y)
+
+//unit clauses
+director(x)
+
+actor(x)
+
+movie(x, y)
+
+gender(x, y)
+
+genre(x, y)
+
+workedUnder(x, y)
+
+sameMovie(x, y)
+
+sameGenre(x, y)
+
+sameGender(x, y)
+
+samePerson(x, y)

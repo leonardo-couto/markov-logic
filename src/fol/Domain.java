@@ -22,9 +22,6 @@ public class Domain extends HashSet<Constant> {
 	
 	public static final Domain universe = new Domain("universe", null);
 
-	/**
-	 * 
-	 */
 	public Domain(String name) {
 		this.name = name;
 		this.functions = new ArrayList<Function>();
@@ -111,6 +108,11 @@ public class Domain extends HashSet<Constant> {
 	 */
 	public static boolean contains(Domain d0, Domain d1) {
 		return d0 == d1 || (d0 != null && Domain.contains(d0.parent, d1));
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.name.hashCode();		
 	}
 	
 

@@ -21,15 +21,10 @@ import fol.database.SimpleDB;
 
 import util.Util;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public class ParseDataSet {
 	
 	private final Map<String, Predicate> predicateMap;
 	private final Map<String, Constant> constantMap;
-	private final Set<Atom> groundings;
 	private final Set<Constant> constants;
 	private final Database db;
 	private File dbFile;
@@ -40,7 +35,6 @@ public class ParseDataSet {
 		this.predicateMap = Util.toMap(predicates);
 		this.constants = getConstants(predicates);
 		this.constantMap = Util.toMap(constants);		
-		this.groundings = new HashSet<Atom>();
 		this.db = new SimpleDB();
 	}
 	
@@ -170,17 +164,14 @@ public class ParseDataSet {
 	}
 	
 	/**
-	 * @return the groundings
-	 */
-	public Set<Atom> getGroundings() {
-		return groundings;
-	}
-
-	/**
 	 * @return the constants
 	 */
 	public Set<Constant> getConstants() {
-		return constants;
+		return this.constants;
+	}
+	
+	public Database getDatabase() {
+		return this.db;
 	}
 	
 }

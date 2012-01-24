@@ -1,0 +1,6 @@
+director(person)
+actor(person)
+movie(film,person)
+gender(person,dgender)
+genre(person,dgenre)
+workedUnder(person,person)

@@ -3,17 +3,14 @@ package structureLearner;
 import java.util.List;
 import java.util.Set;
 
-import stat.convergence.SequentialConvergenceTester;
-import util.MyException;
-import weightLearner.WeightLearner;
-import weightLearner.wpll.WeightedPseudoLogLikelihood;
-
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
 import markovLogic.WeightedFormula.FormulasAndWeights;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
-
+import util.MyException;
+import weightLearner.WeightLearner;
+import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import fol.Atom;
 import fol.Formula;
 import fol.FormulaFactory;
@@ -40,8 +37,7 @@ public class SimpleLearner implements StructureLearner {
 		this.atoms = FormulaFactory.getUnitClauses(predicates);
 		
 		// Instantiate the weightLearner
-		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(predicates, 50000);
-		score.setTester(new SequentialConvergenceTester(0.99, 0.01));
+		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 500);
 		this.weighLearner = new WeightLearner(score, new AutomatedLBFGS(0.001));
 	}
 

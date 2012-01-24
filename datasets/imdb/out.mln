@@ -1,0 +1,48 @@
+//predicate declarations
+gender(person,ge)
+workedUnder(person,person)
+sameMovie(film,film)
+movie(film,person)
+samePerson(person,person)
+director(person)
+sameGenre(gr,gr)
+genre(person,gr)
+actor(person)
+sameGender(gd,gd)
+
+// -0.150809  movie(x,y) v actor(y)
+-0.150809  actor(a1) v movie(a2,a1)
+
+// 0.0825088  movie(x,y) v director(y)
+0.0825088  director(a1) v movie(a2,a1)
+
+// -2.86367  director(x)
+-2.86367  director(a1)
+
+// 3.06488  actor(x)
+3.06488  actor(a1)
+
+// -1.0963  movie(x,y)
+-1.0963  movie(a1,a2)
+
+// -0.135744  gender(x,y)
+-0.135744  gender(a1,a2)
+
+// -3.49263  genre(x,y)
+-3.49263  genre(a1,a2)
+
+// -4.16139  workedUnder(x,y)
+-4.16139  workedUnder(a1,a2)
+
+// -1.0991  sameMovie(x,y)
+-1.0991  sameMovie(a1,a2)
+
+// -1.78499  sameGenre(x,y)
+-1.78499  sameGenre(a1,a2)
+
+// 0       sameGender(x,y)
+0       sameGender(a1,a2)
+
+// -4.13413  samePerson(x,y)
+-4.13413  samePerson(a1,a2)
+

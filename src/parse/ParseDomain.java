@@ -17,17 +17,11 @@ import util.Util;
 import fol.Domain;
 import fol.Predicate;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public class ParseDomain {
-	// TODO: implement domain parent, to use the same predicate.
 	
 	private Map<String, Domain> domainMap;
 	private Set<Predicate> predicateSet;
 	private Set<Domain> domainSet;
-	private File domainFile;
 
 	/**
 	 * 
@@ -47,7 +41,7 @@ public class ParseDomain {
 	}
 
 	// TODO: Check file/lines format?
-	public void parse(File DomainFile) throws IOException, FileNotFoundException {
+	public void parse(File domainFile) throws IOException, FileNotFoundException {
 		BufferedReader bf = new BufferedReader(new FileReader(domainFile));
 		String line = bf.readLine();
 		while(line != null) {
