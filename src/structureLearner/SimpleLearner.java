@@ -1,5 +1,6 @@
 package structureLearner;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -11,7 +12,7 @@ import math.OptimizationException;
 import util.MyException;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
-import fol.Atom;
+import fol.ConjunctiveNormalForm;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
@@ -26,15 +27,19 @@ import fol.database.Database;
  */
 public class SimpleLearner implements StructureLearner {
 	
+	private final int MAX_VARS = 6;
+	
 	private final Set<Predicate> predicates;
 	private final Database db;
-	private final List<Atom> atoms;
+	private final FormulaFactory factory;
+	private final List<ConjunctiveNormalForm> atoms;
 	private WeightLearner weighLearner;
 	
 	public SimpleLearner(Set<Predicate> predicates, Database db) {
 		this.predicates = predicates;
 		this.db = db;
-		this.atoms = FormulaFactory.getUnitClauses(predicates);
+		this.factory = new FormulaFactory(predicates, MAX_VARS);
+		this.atoms = this.factory.getUnitClauses();
 		
 		// Instantiate the weightLearner
 		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 500);
@@ -46,12 +51,38 @@ public class SimpleLearner implements StructureLearner {
 		MarkovLogicNetwork mln = new MarkovLogicNetwork();
 		
 		// add unit clauses, learn weights and gets the score
-		double score = this.update(mln, this.atoms, new double[this.atoms.size()]);
+		double score = this.update(mln, this.atoms);
 		
-		System.out.println(mln.toString());
-		System.out.println("score: " + score);
+//		System.out.println(mln.toString());
+//		System.out.println("score: " + score);
+		
+		List<ConjunctiveNormalForm> clauses = null;
+		while (true) {
+			clauses = findBestClauses(mln, score);
+			clauses = Collections.emptyList();
+			if (clauses.isEmpty()) {
+				break;
+			}
+			score = this.update(mln, clauses);
+		}
 		
 		return mln;
+	}
+	
+	private List<ConjunctiveNormalForm> findBestClauses(MarkovLogicNetwork mln, double score) {
+		
+		this.factory.printCandidates(this.atoms);
+
+	
+		// - nunca repetir uma variável em um mesmo predicado
+		// - fazer uma lista de todos os atomos que compartilham uma variável com a fórmula de todas
+		// as possiveis maneiras.
+		
+		// - colocar os iguais
+		// - adicionar o atomo e sua negaçao
+		
+		
+		return Collections.emptyList();
 	}
 	
 	/**
@@ -61,14 +92,15 @@ public class SimpleLearner implements StructureLearner {
 	 * @param weights added Formulas weights
 	 * @return mln's score
 	 */
-	private double update(MarkovLogicNetwork mln, List<? extends Formula> formulas, double[] weights) {
+	private double update(MarkovLogicNetwork mln, List<? extends Formula> formulas) {
 
 		// add the formulas to mln and mln's associated weightLearner
-		mln.addAll(WeightedFormula.toWeightedFormulas(formulas, weights));
+		mln.addAll(WeightedFormula.toWeightedFormulas(formulas, new double[formulas.size()]));
 		this.weighLearner.addFormulas(formulas);
 		
 		// learn the optimum weights
 		FormulasAndWeights fw = WeightedFormula.toFormulasAndWeights(mln);
+		double[] weights;
 		try {
 			weights = this.weighLearner.learn(fw.weights);
 		} catch (OptimizationException e) {

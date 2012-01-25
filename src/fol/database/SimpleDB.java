@@ -18,7 +18,7 @@ public class SimpleDB implements Database {
 
 	@Override
 	public boolean valueOf(Atom a) {
-		return this.valueOf(new CompositeKey(a.predicate, a.terms, false));
+		return this.valueOf(new CompositeKey(a.predicate, a.terms));
 	}
 	
 	protected boolean valueOf(CompositeKey key) {
@@ -28,7 +28,7 @@ public class SimpleDB implements Database {
 
 	@Override
 	public boolean flip(Atom a) {
-		CompositeKey key = new CompositeKey(a.predicate, a.terms, false);
+		CompositeKey key = new CompositeKey(a.predicate, a.terms);
 		Boolean value = this.db.get(key);
 		if (value == null || !value.booleanValue()) { 
 			this.db.put(key, Boolean.TRUE);
@@ -41,7 +41,7 @@ public class SimpleDB implements Database {
 
 	@Override
 	public void set(Atom a, boolean value) {
-		CompositeKey key = new CompositeKey(a.predicate, a.terms, false);
+		CompositeKey key = new CompositeKey(a.predicate, a.terms);
 		Boolean current = this.db.get(key);
 		if (current == null) {
 			if (value) {

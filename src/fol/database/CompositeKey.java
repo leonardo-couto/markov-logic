@@ -6,12 +6,16 @@ import java.util.Comparator;
 import fol.Predicate;
 import fol.Term;
 
-class CompositeKey {
+public class CompositeKey {
 	
 	private final Term[] terms;
 	private final Predicate predicate;
 	private final int hashcode;
 	private boolean value;
+	
+	public CompositeKey(Predicate p, Term[] terms) {
+		this(p, terms, false);
+	}
 	
 	public CompositeKey(Predicate p, Term[] terms, boolean value) {
 		this.predicate = p;

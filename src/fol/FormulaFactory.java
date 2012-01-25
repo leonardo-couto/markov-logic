@@ -7,161 +7,172 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Set;
 
-import fol.operator.Biconditional;
-import fol.operator.Conjunction;
-import fol.operator.Disjunction;
-import fol.operator.Negation;
+import fol.database.CompositeKey;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public class FormulaFactory {
 	
-	protected final Set<Atom> atoms;
-
-	private static final Disjunction DISJUNCTION = Disjunction.OPERATOR;
-	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
-	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;
-	private static final Negation NEGATION = Negation.OPERATOR;
+	private final Set<Predicate> predicates;
+	private final Map<CompositeKey, Atom> atoms;
+	private final int maxVars;
 	
-	public FormulaFactory(Collection<Atom> atoms) {
-		this.atoms = new HashSet<Atom>(atoms);
+	public FormulaFactory(Set<Predicate> predicates, int maxVars) {
+		this.predicates = predicates;
+		this.atoms = new HashMap<CompositeKey, Atom>();
+		this.maxVars = maxVars;
 	}
 	
-	public static List<Formula> extendsFormula(Formula f0, Formula f1) {
-		List<Formula> out = new ArrayList<Formula>(5);
+	public List<ConjunctiveNormalForm> generateClauses(Collection<ConjunctiveNormalForm> seeds) {
+		Queue<ConjunctiveNormalForm> heap = new PriorityQueue<ConjunctiveNormalForm>();
 		
-		if(f0 != f1) {
-			// Disjunction
-			out.add(DISJUNCTION.apply(f0,f1));
-			// Implication
-			out.add(DISJUNCTION.apply(NEGATION.apply(f0),f1));
-			// Inverse Implication
-			out.add(DISJUNCTION.apply(f0,NEGATION.apply(f1)));
-			// Conjunction
-			out.add(CONJUNCTION.apply(f0,f1));
-			// Biconditional
-			out.add(BICONDITIONAL.apply(f0,f1));			
-		}
-		
-		return out;
-	}
-	
-	public Set<Formula> generateFormulas(Collection<Formula> clauses, int maxAtoms, int maxVars) {
-		Set<Formula> newFormulas = new HashSet<Formula>();
-		
-		for (Formula f : clauses) {
-			 if (f.length() >= maxAtoms ) {
-				 continue; 
-			 }
-			Set<Variable> variables = f.getVariables();
-			if (variables.size() > maxVars) {
-				continue;
-			}
-			nextAtom: for (Atom a : this.atoms) {
-				for (Atom fa : f.getAtoms()) {
-					if (fa == a) {
-						continue nextAtom;
-					}
-				}
-				for (Term t : a.terms) {
-					if (variables.contains(t)) {
-						newFormulas.addAll(extendsFormula(f, a));
-						continue nextAtom;
+		ArrayList<ConjunctiveNormalForm> pn = new ArrayList<ConjunctiveNormalForm>(2);
+		for (ConjunctiveNormalForm seed : seeds) {
+			Set<Variable> variables = seed.getVariables();
+			if (variables.size() >= this.maxVars) continue;
+			for (Predicate p : this.predicates) {
+				for (Atom literal : this.generateAtoms(p, variables)) {
+					
+					// TODO contar quantas variáveis NOVAS tem, ver se passa do limite
+					
+					ConjunctiveNormalForm positive = seed.addLiteral(literal, false);
+					if (positive == seed) continue;
+					ConjunctiveNormalForm negative = seed.addLiteral(literal, true);
+					pn.add(0, positive);
+					pn.add(1, negative);
+					
+					heap.add(positive);
+					heap.add(negative);
+					for (ConjunctiveNormalForm clause : this.putEquals(pn)) {
+						heap.add(clause);
 					}
 				}
 			}
 		}
-		newFormulas.addAll(putEquals(clauses));
-		return newFormulas;
+		
+		List<ConjunctiveNormalForm> clauses = new ArrayList<ConjunctiveNormalForm>(heap.size());
+		ConjunctiveNormalForm aux = heap.poll();
+		clauses.add(aux);
+		for (int i = 1; i < heap.size(); i++) {
+			ConjunctiveNormalForm clause = heap.poll();
+			if (!clause.equals(aux)) {
+				aux = clause;
+				clauses.add(clause);
+			}
+		}
+		
+		return clauses;	
 	}
 	
-	public Set<Formula> putEquals(Collection<Formula> clauses) {
-		Set<Formula> newFormulas = new HashSet<Formula>();
+	/**
+	 * Generate one Atom for each Predicate
+	 * @return
+	 */
+	public List<Atom> getAtoms() {
+		List<Atom> atoms = new ArrayList<Atom>(this.predicates.size());
+		for (Predicate p : this.predicates) {
+			Atom a = generateAtom(p);
+			CompositeKey key = new CompositeKey(p, a.terms);
+			Atom stored = this.atoms.get(key);
+			if (stored == null) {
+				this.atoms.put(key, a);
+				stored = a;
+			}
+			atoms.add(stored);
+		}
+		return atoms;
+	}	
+	
+	/**
+	 * Generates unit clauses (Atoms) for each Predicate.
+	 * Same as getAtoms, but encapsulates the Atom in
+	 * a ConjunctiveNormalForm object.
+	 * @return
+	 */
+	public List<ConjunctiveNormalForm> getUnitClauses() {
+		List<Atom> atoms = this.getAtoms();
+		List<ConjunctiveNormalForm> unitClauses = new ArrayList<ConjunctiveNormalForm>(atoms.size());
+		for (Atom a : atoms) {
+			unitClauses.add(a.toCNF().get(0));
+		}
+		return unitClauses;
+	}
+	
+	public void printCandidates(List<ConjunctiveNormalForm> clauses) {
+		for (ConjunctiveNormalForm cnf : this.generateClauses(clauses)) {
+			System.out.println(cnf);
+		}
+	}
+	
+	public List<ConjunctiveNormalForm> putEquals(Collection<ConjunctiveNormalForm> clauses) {
+		List<ConjunctiveNormalForm> newClauses = new ArrayList<ConjunctiveNormalForm>();
 		
-		for (Formula f : clauses) {
+		for (ConjunctiveNormalForm clause : clauses) {
 
-			Set<Variable> variables = f.getVariables();
+			Set<Variable> variables = clause.getVariables();
 
+			Term[] terms = new Term[2];
 			Variable[] vars = variables.toArray(new Variable[variables.size()]);
 			for (int i = 0; i < vars.length -1; i++) {
 				for (int j = i+1; j < vars.length; j++) {
-					if (vars[i].getDomain().equals(vars[j].getDomain())) {						
-						Atom equals = new Atom(Predicate.equals, vars[i], vars[j]);
-						for (Atom atom : f.getAtoms()) {
-							if (!(atom.predicate == Predicate.equals) || !atom.equals(equals)) {
-								newFormulas.addAll(extendsFormula(f, equals));								
-							}
+					if (vars[i].getDomain().equals(vars[j].getDomain())) {
+						terms[0] = vars[i];
+						terms[1] = vars[j];
+						CompositeKey key = new CompositeKey(Predicate.equals, terms);
+						Atom equals = this.atoms.get(key);
+						if (equals == null) {
+							equals = new Atom(Predicate.equals, terms[0], terms[1]);
+							this.atoms.put(key, equals);
 						}
+						ConjunctiveNormalForm positive = clause.addLiteral(equals, false);
+						if (positive == clause) continue;
+						ConjunctiveNormalForm negative = clause.addLiteral(equals, true);
+						newClauses.add(positive);
+						newClauses.add(negative);
 					}
 				}
 			}
 		}
-		return newFormulas;
+		return newClauses;
 	}
 	
-	public static Set<Atom> generateAtoms(Predicate p, int n) {
-		
-		Map<Domain, List<Variable>> mapVar = new HashMap<Domain, List<Variable>>();
-		List<List<Variable>> terms = new ArrayList<List<Variable>>();
-		Map<Domain, Integer> mapInt = new HashMap<Domain, Integer>();
-		
-		// Counts domain repetition in predicate arguments
+	/**
+	 * Generates one Atom (not grounded) of Predicate p.
+	 */
+	public static Atom generateAtom(Predicate p) {
+
+		List<Variable> var = new ArrayList<Variable>();
 		for (Domain d : p.getDomains()) {
-			if (mapInt.containsKey(d)) {
-				mapInt.put(d, mapInt.get(d).intValue() + 1);
-			} else {
-				mapInt.put(d, 1);
-			}
+			var.add(newVariableNotIn(d, var));
 		}
-		
-		for (Domain d : p.getDomains()) {
-			if (!mapVar.containsKey(d)) {
-				List<Variable> used = new ArrayList<Variable>(n);
-				for (int i = 0; i < Math.max(n,mapInt.get(d)); i++) {
-					used.add(newVariableNotIn(d, used));
-				}
-				mapVar.put(d, used);
-			}
-		}
-		
-		boolean first = true;
-		for (Domain d : p.getDomains()) {
-			if (first) {
-				for (Variable v : mapVar.get(d)) {
-					terms.add(Collections.singletonList(v));				
-				}
-				first = false;
-				continue;
-			}
-			List<List<Variable>> aux = new ArrayList<List<Variable>>();
-			for (List<Variable> lvar : terms) {
-				for (Variable v : mapVar.get(d)) {
-					if (!lvar.contains(v)) {
-						List<Variable> element = new ArrayList<Variable>(lvar);
-						element.add(v);
-						aux.add(element);
-					}
-				}
-			}
-			terms = aux;
-		}
-		
-		Set<Atom> out = new HashSet<Atom>();
-		for (List<Variable> lvar : terms) {
-			out.add(new Atom(p, lvar.toArray(new Term[lvar.size()])));
-		}
-		
-		return out;
-		
+		return new Atom(p, var.toArray(new Term[var.size()]));
 	}
 	
-	// Generate all possible (not grounded) Atoms of Predicate p with distinct Variables 
-	// that has at least one Variable in variables
-	public static Set<Atom> generateAtoms(Predicate p, Collection<Variable> variables) {
+//	// Generate one not grounded Atom of Predicate p with distinct Variables 
+//	// tries to use the Variables passed, if it is not possible, use a new one.
+//	@SuppressWarnings("unused")
+//	private static Atom generateAtom(Predicate p, Collection<Variable> variables) {
+//		List<Variable> vars = new ArrayList<Variable>(p.getDomains().size());
+//		domain:
+//		for (Domain d : p.getDomains()) {
+//			for(Variable v : variables) {
+//				if (!vars.contains(v) && Domain.in(v, d)) {
+//					vars.add(v);
+//					continue domain;
+//				}
+//			}
+//			vars.add(newVariableNotIn(d, vars));
+//		}
+//		return new Atom(p, vars.toArray(new Term[vars.size()]));
+//	}
+	
+	/** 
+	 * Generate all possible (not grounded) Atoms of Predicate p with distinct Variables 
+	 * that has at least one Variable in variables
+	 */
+	public Set<Atom> generateAtoms(Predicate p, Collection<Variable> variables) {
 		// The boolean indicates whether the List of Variables created has at least
 		// one Variable in variables.
 		Map<List<Variable>, Boolean> out = new HashMap<List<Variable>, Boolean>();
@@ -237,47 +248,17 @@ public class FormulaFactory {
 		Set<Atom> set = new HashSet<Atom>();
 		for (List<Variable> l : out.keySet()) {
 			if (out.get(l).booleanValue()) {
-				set.add(new Atom(p, l.toArray(new Term[l.size()])));
+				Term[] terms = l.toArray(new Term[l.size()]);
+				CompositeKey key = new CompositeKey(p, terms);
+				Atom a = this.atoms.get(key);
+				if (a == null) {
+					a = new Atom(p, terms);
+					this.atoms.put(key, a);
+				}
+				set.add(a);
 			}
 		}
 		return set;
-	}
-
-	// Generate one not grounded Atom of Predicate p with distinct Variables 
-	// tries to use the Variables passed, if it is not possible, use a new one.
-	public static Atom generateAtom(Predicate p, Collection<Variable> variables) {
-		List<Variable> vars = new ArrayList<Variable>(p.getDomains().size());
-		domain:
-		for (Domain d : p.getDomains()) {
-			for(Variable v : variables) {
-				if (!vars.contains(v) && Domain.in(v, d)) {
-					vars.add(v);
-					continue domain;
-				}
-			}
-			vars.add(newVariableNotIn(d, vars));
-		}
-		return new Atom(p, vars.toArray(new Term[vars.size()]));
-	}
-
-	
-	// Generates one Atom (not grounded) of Predicate p.
-	public static Atom generateAtom(Predicate p) {
-
-		List<Variable> var = new ArrayList<Variable>();
-		for (Domain d : p.getDomains()) {
-			var.add(newVariableNotIn(d, var));
-		}
-		return new Atom(p, var.toArray(new Term[var.size()]));
-	}
-	
-	// Generates one Atom (not grounded) for each Predicate p.
-	public static List<Atom> getUnitClauses(Collection<Predicate> predicates) {
-		List<Atom> atoms = new ArrayList<Atom>();
-		for (Predicate p : predicates) {
-			atoms.add(generateAtom(p));
-		}
-		return atoms;
 	}
 	
 	// Return a variable from Domain d not in c. If there is no Variable
@@ -290,6 +271,6 @@ public class FormulaFactory {
 			}
 		}
 		return d.newVariable();
-	}
-
+	}	
+	
 }
