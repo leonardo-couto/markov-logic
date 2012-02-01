@@ -46,7 +46,7 @@ public class LSMN implements StructureLearner {
 		this.atoms = this.factory.getUnitClauses();
 		
 		// Instantiate the weightLearner
-		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 500);
+		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 1000);
 		this.weighLearner = new WeightLearner(score, new AutomatedLBFGS(0.001));
 	}
 

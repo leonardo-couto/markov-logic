@@ -244,7 +244,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 		for (Variable v : vars) {
 			total = total * v.getConstants().size();
 		}
-		int sample = total < 250 ? 2*((int) total) : 500; // 500 for a error of at most 5%
+		int sample = total < 250 ? 2*((int) total) : 1000; // 500 for a error of at most 5%
 		// TODO tirar o 2* daqui e do SimpleDB, fazer as amostras serem exatas para < 100
 		
 		int count = 0;

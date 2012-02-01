@@ -147,7 +147,7 @@ public class SimpleDB implements Database {
 	@Override
 	public int groundingCount(Atom filter, boolean value) {
 		int total = this.groundingCount(filter);
-		int sample = total < 250 ? 2*total : 500; // 500 for a error of at most 5%
+		int sample = total < 250 ? 2*total : 1000; // 500 for a error of at most 5%
 
 		int count = 0;
 		Iterator<Atom> atoms = this.groundingIterator(filter);
