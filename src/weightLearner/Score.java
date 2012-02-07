@@ -9,9 +9,6 @@ import fol.Formula;
 /**
  * Given a list of formulas, computes the score given 
  * the function's weights and its first derivative.
- * 
- * @author Leonardo Castilho Couto
- *
  */
 public interface Score extends FunctionAndGradient {
 	

@@ -9,16 +9,21 @@ import markovLogic.WeightedFormula;
 import markovLogic.WeightedFormula.FormulasAndWeights;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
+import math.OrthantWiseLBFGS;
 import structureLearner.ScoredFormula;
 import structureLearner.StructureLearner;
 import util.MyException;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
+import fol.Atom;
 import fol.ConjunctiveNormalForm;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.database.Database;
+import fol.operator.Conjunction;
+import fol.operator.Disjunction;
+import fol.operator.Negation;
 
 /**
  * Based on Kok and Domingos paper Learning the Structure of Markov Logic Networks,
@@ -47,7 +52,8 @@ public class LSMN implements StructureLearner {
 		
 		// Instantiate the weightLearner
 		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 1000);
-		this.weighLearner = new WeightLearner(score, new AutomatedLBFGS(0.001));
+//		this.weighLearner = new WeightLearner(score, new AutomatedLBFGS(0.001));
+		this.weighLearner = new WeightLearner(score, new OrthantWiseLBFGS(1));
 	}
 
 	@Override
@@ -59,7 +65,36 @@ public class LSMN implements StructureLearner {
 		
 //		System.out.println(mln.toString());
 //		System.out.println("score: " + score);
-		
+
+//		try {
+//			if (Integer.valueOf(1).intValue() == 1) { // TODO REMOVER!!
+//				System.out.println("SCORE:" + score);
+//
+//
+//
+//				for (Predicate p : this.predicates) {
+//					double[] weights = new double[mln.size()+1];
+//					double[] mlnWeights = WeightedFormula.toFormulasAndWeights(mln).weights;
+//					for (int i = 0; i < mlnWeights.length; i++) {
+//						weights[i] = mlnWeights[i];
+//					}
+//					weights[weights.length-1] = -2;
+//					Atom a = FormulaFactory.generateAtom(p);
+//					Formula tautology = Conjunction.OPERATOR.apply(a, Negation.OPERATOR.apply(a));
+//					this.weighLearner.addFormula(tautology);
+//					weights = this.weighLearner.learn(weights);
+//					System.out.println(tautology.toString());
+//					System.out.println(String.format("weight: %s, score: %s.",weights[weights.length-1], this.weighLearner.score()-score));
+//					this.weighLearner.removeFormula(tautology);
+//				}
+//
+//
+//				return mln;
+//			}
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+
 		ScoredFormula clause = null;
 		while (true) {
 			clause = findBestClause(mln, score);
@@ -95,9 +130,11 @@ public class LSMN implements StructureLearner {
 				improved = false;
 			}
 			clauses.clear();
+			List<ConjunctiveNormalForm> bestClauses = new ArrayList<ConjunctiveNormalForm>(scoredClauses.size());
 			for (ScoredFormula f : scoredClauses) {
-				clauses.add(f.getFormula());
+				bestClauses.add((ConjunctiveNormalForm) f.getFormula());
 			}
+			clauses = new ArrayList<Formula>(this.factory.generateClauses(bestClauses));
 		}
 		
 		return bestClause.getFormula() == null ? null : bestClause;

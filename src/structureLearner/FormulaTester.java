@@ -54,16 +54,18 @@ public class FormulaTester implements Runnable {
 					nweights = this.learner.learn(this.lastWeights);
 					learnedWeight = nweights[nweights.length -1]; 
 					newScore = this.learner.score();
-				} catch (OptimizationException e) {
+				} catch (Exception e) {
 					// TODO: logar a excecao
 					// algum outro erro alem de otimizacao
 					// que talvez nao aconteceria para outra formula
 					// que vale a pena estar aqui?
+//					e.printStackTrace();
 					this.learner.removeFormula(f);
 					continue;
 				}
 				
 				this.learner.removeFormula(f);
+				System.out.println(String.format("formula: %s, weight: %s, score: %s", f, learnedWeight, newScore-this.lastScore));
 
 				if (Double.compare(newScore, this.lastScore) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
 					this.scoredCandidates.offer(new ScoredFormula(f, newScore - this.lastScore, learnedWeight));

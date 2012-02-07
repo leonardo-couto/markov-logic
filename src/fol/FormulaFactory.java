@@ -45,17 +45,17 @@ public class FormulaFactory {
 					
 					heap.add(positive);
 					heap.add(negative);
-					for (ConjunctiveNormalForm clause : this.putEquals(pn)) {
-						heap.add(clause);
-					}
 				}
 			}
+		}
+		for (ConjunctiveNormalForm clause : this.putEquals(seeds)) {
+			heap.add(clause);
 		}
 		
 		List<ConjunctiveNormalForm> clauses = new ArrayList<ConjunctiveNormalForm>(heap.size());
 		ConjunctiveNormalForm aux = heap.poll();
 		clauses.add(aux);
-		for (int i = 1; i < heap.size(); i++) {
+		for (int i = heap.size(); i > 0 ; i--) {
 			ConjunctiveNormalForm clause = heap.poll();
 			if (!clause.equals(aux)) {
 				aux = clause;
