@@ -345,7 +345,7 @@ public class LBFGS {
 			gnorm = Math.sqrt ( ddot ( n , g , 0, 1 , g , 0, 1 ) );
 			stp1= 1/gnorm;
 			ftol= 0.0001; 
-			maxfev= 5; // TODO: Original = 20
+			maxfev= 20; // TODO: Original = 20
 
 			if ( iprint [ 1 -1] >= 0 ) lb1 ( iprint , iter , nfun , gnorm , n , m , x , f , g , stp , finish );
 
@@ -461,7 +461,9 @@ public class LBFGS {
 			if ( info[0] != 1 )
 			{
 				iflag[0]=-1;
-				throw new ExceptionWithIflag( iflag[0], "Line search failed. See documentation of routine mcsrch. Error return of line search: info = "+info[0]+" Possible causes: function or gradient are incorrect, or incorrect tolerances." );
+				System.out.println("**** ERRO BUSCA EM LINHA: " + info[0]);
+				return; // TODO modified, line search error, return the best point so far
+//				throw new ExceptionWithIflag( iflag[0], "Line search failed. See documentation of routine mcsrch. Error return of line search: info = "+info[0]+" Possible causes: function or gradient are incorrect, or incorrect tolerances." );
 			}
 
 			nfun= nfun + nfev[0];

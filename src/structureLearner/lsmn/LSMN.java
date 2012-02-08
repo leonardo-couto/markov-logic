@@ -9,21 +9,18 @@ import markovLogic.WeightedFormula;
 import markovLogic.WeightedFormula.FormulasAndWeights;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
-import math.OrthantWiseLBFGS;
 import structureLearner.ScoredFormula;
 import structureLearner.StructureLearner;
 import util.MyException;
+import weightLearner.L1RegularizedScore;
+import weightLearner.Score;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
-import fol.Atom;
 import fol.ConjunctiveNormalForm;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.database.Database;
-import fol.operator.Conjunction;
-import fol.operator.Disjunction;
-import fol.operator.Negation;
 
 /**
  * Based on Kok and Domingos paper Learning the Structure of Markov Logic Networks,
@@ -42,7 +39,10 @@ public class LSMN implements StructureLearner {
 	private final Database db;
 	private final FormulaFactory factory;
 	private final List<ConjunctiveNormalForm> atoms;
-	private WeightLearner weighLearner;
+	private final WeightLearner weighLearner;
+	
+	private final Score score;
+	private final Score l1Score;
 	
 	public LSMN(Set<Predicate> predicates, Database db) {
 		this.predicates = predicates;
@@ -51,9 +51,12 @@ public class LSMN implements StructureLearner {
 		this.atoms = this.factory.getUnitClauses();
 		
 		// Instantiate the weightLearner
-		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 1000);
-//		this.weighLearner = new WeightLearner(score, new AutomatedLBFGS(0.001));
-		this.weighLearner = new WeightLearner(score, new OrthantWiseLBFGS(1));
+		this.score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 1000);
+		L1RegularizedScore l1Score = new L1RegularizedScore(this.score).setConstantWeight(-0.1);
+		l1Score.setStart(6);
+		this.l1Score = l1Score;
+			
+		this.weighLearner = new WeightLearner(this.l1Score, new AutomatedLBFGS(0.001));
 	}
 
 	@Override

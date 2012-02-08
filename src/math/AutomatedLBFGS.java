@@ -26,7 +26,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		this.lastValue = Double.NaN;
 	}
 
-	public double[] min(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
+	public double[] min(double[] x, ScalarFunction function, VectorFunction gradient) throws ExceptionWithIflag {
 		int n = function.lengthInput();
 		double[] out = Arrays.copyOf(x, n);
 		boolean diagco = false;
@@ -49,11 +49,11 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		return out;
 	}
 	
-	public double[] min(double[] x, FunctionAndGradient function) throws ExceptionWithIflag {
+	public double[] min(double[] x, DifferentiableFunction function) throws ExceptionWithIflag {
 		return this.min(x, function, function);
 	}
 	
-	public double[] max(double[] x, RnToRFunction function, RnToRnFunction gradient) throws ExceptionWithIflag {
+	public double[] max(double[] x, ScalarFunction function, VectorFunction gradient) throws ExceptionWithIflag {
 		int n = function.lengthInput();
 		double[] out = Arrays.copyOf(x, n);
 		boolean diagco = false;
@@ -76,7 +76,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		return out;
 	}
 	
-	public double[] max(double[] x, FunctionAndGradient function) throws ExceptionWithIflag {
+	public double[] max(double[] x, DifferentiableFunction function) throws ExceptionWithIflag {
 		return this.max(x, function, function);
 	}
 	

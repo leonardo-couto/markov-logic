@@ -11,10 +11,6 @@ import java.util.Set;
 import fol.Formula;
 import fol.Predicate;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public abstract class AbstractScore implements Score {
 	
 	private final List<Formula> formulas;

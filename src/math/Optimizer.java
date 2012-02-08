@@ -10,7 +10,7 @@ public interface Optimizer {
 	 * @param gradient The gradient to the function
 	 * @return The parameters that maximize the function.
 	 */
-	public double[] max(double[] x, RnToRFunction function, RnToRnFunction gradient) throws OptimizationException;
+	public double[] max(double[] x, ScalarFunction function, VectorFunction gradient) throws OptimizationException;
 
 	/**
 	 * Finds the argument that maximizes the function <code>function</code>.
@@ -19,7 +19,7 @@ public interface Optimizer {
 	 * @param function The function to maximize and the gradient to the function
 	 * @return The parameters that maximize the function.
 	 */
-	public double[] max(double[] x, FunctionAndGradient function) throws OptimizationException;
+	public double[] max(double[] x, DifferentiableFunction function) throws OptimizationException;
 
 	
 	/**
@@ -30,7 +30,7 @@ public interface Optimizer {
 	 * @param gradient The gradient to the function
 	 * @return The parameters that minimize the function.
 	 */
-	public double[] min(double[] x, RnToRFunction function, RnToRnFunction gradient) throws OptimizationException;
+	public double[] min(double[] x, ScalarFunction function, VectorFunction gradient) throws OptimizationException;
 
 	/**
 	 * Finds the argument that minimizes the function <code>function</code>.
@@ -40,7 +40,7 @@ public interface Optimizer {
 	 * @param gradient The gradient to the function
 	 * @return The parameters that minimize the function.
 	 */
-	public double[] min(double[] x, FunctionAndGradient function) throws OptimizationException;
+	public double[] min(double[] x, DifferentiableFunction function) throws OptimizationException;
 
 	
 	public void setPrecision(double eps);
