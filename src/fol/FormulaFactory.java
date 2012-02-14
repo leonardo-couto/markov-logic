@@ -25,11 +25,11 @@ public class FormulaFactory {
 		this.maxVars = maxVars;
 	}
 	
-	public List<ConjunctiveNormalForm> generateClauses(Collection<ConjunctiveNormalForm> seeds) {
+	public List<Formula> generateClauses(Collection<? extends Formula> seeds) {
 		Queue<ConjunctiveNormalForm> heap = new PriorityQueue<ConjunctiveNormalForm>();
 		
-		ArrayList<ConjunctiveNormalForm> pn = new ArrayList<ConjunctiveNormalForm>(2);
-		for (ConjunctiveNormalForm seed : seeds) {
+		for (Formula f : seeds) {
+			ConjunctiveNormalForm seed = (ConjunctiveNormalForm) f; // TODO: arrumar!!
 			Set<Variable> variables = seed.getVariables();
 			if (variables.size() >= this.maxVars) continue;
 			for (Predicate p : this.predicates) {
@@ -40,19 +40,17 @@ public class FormulaFactory {
 					ConjunctiveNormalForm positive = seed.addLiteral(literal, false);
 					if (positive == seed) continue;
 					ConjunctiveNormalForm negative = seed.addLiteral(literal, true);
-					pn.add(0, positive);
-					pn.add(1, negative);
 					
-					heap.add(positive);
-					heap.add(negative);
+					heap.offer(positive.normalizeVariables());
+					heap.offer(negative.normalizeVariables());
 				}
 			}
 		}
 		for (ConjunctiveNormalForm clause : this.putEquals(seeds)) {
-			heap.add(clause);
+			heap.offer(clause.normalizeVariables());
 		}
 		
-		List<ConjunctiveNormalForm> clauses = new ArrayList<ConjunctiveNormalForm>(heap.size());
+		List<Formula> clauses = new ArrayList<Formula>(heap.size());
 		ConjunctiveNormalForm aux = heap.poll();
 		clauses.add(aux);
 		for (int i = heap.size(); i > 0 ; i--) {
@@ -101,15 +99,16 @@ public class FormulaFactory {
 	}
 	
 	public void printCandidates(List<ConjunctiveNormalForm> clauses) {
-		for (ConjunctiveNormalForm cnf : this.generateClauses(clauses)) {
+		for (Formula cnf : this.generateClauses(clauses)) {
 			System.out.println(cnf);
 		}
 	}
 	
-	public List<ConjunctiveNormalForm> putEquals(Collection<ConjunctiveNormalForm> clauses) {
+	public List<ConjunctiveNormalForm> putEquals(Collection<? extends Formula> clauses) {
 		List<ConjunctiveNormalForm> newClauses = new ArrayList<ConjunctiveNormalForm>();
 		
-		for (ConjunctiveNormalForm clause : clauses) {
+		for (Formula f : clauses) {
+			ConjunctiveNormalForm clause = (ConjunctiveNormalForm) f;
 
 			Set<Variable> variables = clause.getVariables();
 

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +110,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	public List<Atom> getAtoms() {
 		return Arrays.asList(this.literals);
 	}
-
+	
 	@Override
 	public List<FormulaComponent> getComponents() {
 		int length = this.literals.length;
@@ -207,6 +208,41 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	@Override
 	public int length() {
 		return this.literals.length;
+	}
+	
+	/**
+	 * Replace the variables in such a way that the first variable in a 
+	 * domain that appears in the formula will be the first variable 
+	 * from that domain list of variables ({@link Domain#getVariables}).
+	 * @return A formula equivalent to this, with ordered variables.
+	 */
+	public ConjunctiveNormalForm normalizeVariables() {
+		Map<Domain, Iterator<Variable>> variables = new HashMap<Domain, Iterator<Variable>>();
+		Map<Variable, Variable> map = new HashMap<Variable, Variable>();
+		List<Atom> atoms = new ArrayList<Atom>(this.literals.length);
+		
+		for (Atom a : this.literals) {
+			Term[] oldTerms = a.terms;
+			Term[] terms = new Term[oldTerms.length];
+			for (int i = 0; i < oldTerms.length; i++) {
+				Variable v = (Variable) oldTerms[i];
+				if (map.containsKey(v)) {
+					terms[i] = map.get(v);
+				} else {
+					Domain d = v.getDomain();
+					if (!variables.containsKey(d)) {
+						variables.put(d, d.getVariables().iterator());
+					}
+					Variable v1 = variables.get(d).next();
+					map.put(v, v1);
+					terms[i] = v1;
+				}
+			}
+			atoms.add(new Atom(a.predicate, terms));
+		}		
+		
+		Atom[] literals = atoms.toArray(new Atom[atoms.size()]);
+		return new ConjunctiveNormalForm(literals, this.negated);
 	}
 
 	@Override

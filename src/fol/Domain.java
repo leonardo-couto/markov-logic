@@ -55,7 +55,7 @@ public class Domain extends HashSet<Constant> {
 	}
 
 	/**
-	 * @return the variables
+	 * @return the variables in this domain
 	 */
 	public List<Variable> getVariables() {
 		return this.variables;

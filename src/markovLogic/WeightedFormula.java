@@ -1,6 +1,7 @@
 package markovLogic;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import fol.Formula;
@@ -87,6 +88,27 @@ public class WeightedFormula {
 				.doubleToLongBits(other.weight))
 			return false;
 		return true;
+	}
+	
+	public static class AbsoluteWeightComparator implements Comparator<WeightedFormula> {
+		
+		private final boolean inverse;
+		
+		public AbsoluteWeightComparator() {
+			this(false);
+		}
+		
+		public AbsoluteWeightComparator(boolean inverse) {
+			this.inverse = inverse;
+		}
+
+		@Override
+		public int compare(WeightedFormula o1, WeightedFormula o2) {
+			double d1 = Math.abs(o1.getWeight());
+			double d2 = Math.abs(o2.getWeight());
+			return this.inverse ? Double.compare(d2, d1) : Double.compare(d1, d2);
+		}
+		
 	}
 
 }
