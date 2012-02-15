@@ -101,7 +101,7 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 			boolean ignoreExp = false;
 			double exp = 0, invexp = 0;
 			double diff = Math.abs(a - b);
-			if (Double.compare(diff, 50) > -1) {
+			if (Double.compare(diff, 20) > -1) {
 				ignoreExp = true;
 			} else {
 				exp = Math.exp(diff);
@@ -123,15 +123,15 @@ public class WeightedPseudoLogLikelihood extends AbstractScore {
 				int i = fd.i;
 
 				if (a > b) {
-					pGrad[i] = pGrad[i] + x - tc;
+					pGrad[i] += x - tc;
 					if(!ignoreExp) {
-						pGrad[i] = pGrad[i] + (tc-fc)/(exp+1.0);
+						pGrad[i] += (tc-fc)/(exp+1.0);
 					}
 
 				} else {
-					pGrad[i] = pGrad[i] + x - fc;			
+					pGrad[i] += x - fc;			
 					if(!ignoreExp) {
-						pGrad[i] = pGrad[i] + (fc-tc)/(exp+1.0);
+						pGrad[i] += (fc-tc)/(exp+1.0);
 					}
 				}
 			}

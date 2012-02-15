@@ -43,6 +43,14 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 		this.alpha = old.alpha;
 	}
 	
+	public double getAlpha() {
+		return this.alpha;
+	}
+	
+	public void setAlpha(double alpha) {
+		this.alpha = alpha;
+	}
+	
 	/**
 	 * @return the value attributed in {@link #setStart}
 	 */

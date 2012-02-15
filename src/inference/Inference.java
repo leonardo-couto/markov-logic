@@ -5,10 +5,6 @@ import java.util.Set;
 import fol.Atom;
 import fol.Formula;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public interface Inference {
 	
 	/**

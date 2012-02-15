@@ -15,6 +15,12 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	private double[] lastArgs;
 	private double lastValue;
 	
+	public boolean condition = true;
+	
+	private boolean stop(int i) {
+		return condition && i > 50;
+	}
+	
 	public AutomatedLBFGS(double precision) {
 		super();
 		this.m = 4; // 4 <= m <= 7
@@ -62,13 +68,24 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		double f = function.f(out);
 		double[] g = gradient.g(out);
 		
-		super.lbfgs(n, m, out, -1.0*f, changeSign(g), diagco, diag, iprint, eps, xtol, iflag);
+//		super.lbfgs(n, m, out, -1.0*f, changeSign(g), diagco, diag, iprint, eps, xtol, iflag);
+		System.out.println("************ entrando LBFGS ************** ");
+		System.out.println(String.format("%s;%s;%s", f, -100, Arrays.toString(out)));
 		
-		while (iflag[0] == 1) {
+		int i = 0;
+		do {
+			super.lbfgs(n, m, out, -1.0*f, changeSign(g), diagco, diag, iprint, eps, xtol, iflag);		
+			i++;
 			f = function.f(out);
 			g = gradient.g(out);
-			super.lbfgs(n, m, out, -1.0*f, changeSign(g), diagco, diag, iprint, eps, xtol, iflag);			
-		}
+			double sum = 0;
+			for (double d : g) {
+				sum += d*d;
+			}
+			System.out.println(String.format("%s;%s;%s", f, sum, Arrays.toString(out)));
+		} while (iflag[0] == 1 && !stop(i));
+		
+		System.out.println("************ Saindo LBFGS ************** ");
 		
 		this.lastValue = f;
 		this.lastArgs = out;
