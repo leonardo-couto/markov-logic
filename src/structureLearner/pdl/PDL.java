@@ -93,7 +93,7 @@ public class PDL implements StructureLearner {
 			
 			boolean changed = false;
 			for (WeightedFormula f : wFormulas) {
-				if (Double.compare(f.getWeight(), EPSLON) > 0) {
+				if (Double.compare(Math.abs(f.getWeight()), EPSLON) > 0) {
 					if (this.addClause(f, score)) {
 						score = this.preciseLearner.score();
 						System.out.println(String.format("%s;%s; %s", score, f.getWeight(), f.getFormula()));
