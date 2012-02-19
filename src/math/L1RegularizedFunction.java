@@ -17,7 +17,6 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 	private double weight;
 	private int start;
 	private int end;
-	private double alpha;
 	
 	public L1RegularizedFunction(ScalarFunction function, VectorFunction gradient) {
 		this.function = function;
@@ -27,7 +26,6 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 		this.end = Integer.MAX_VALUE;
 //		this.constant = false;
 		this.weight = 0;
-		this.alpha = 10e4;
 	}
 	
 	public L1RegularizedFunction(DifferentiableFunction function) {
@@ -40,15 +38,6 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 		this.start = old.start;
 		this.end = old.end;
 		this.weight = old.weight;
-		this.alpha = old.alpha;
-	}
-	
-	public double getAlpha() {
-		return this.alpha;
-	}
-	
-	public void setAlpha(double alpha) {
-		this.alpha = alpha;
 	}
 	
 	/**
@@ -108,19 +97,20 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 	}
 	
 	private double l1Norm(double x) {
-		double ax = this.alpha * x;
-		if (ax > 16.0 || ax < -16.0) {
-			return Math.abs(x);
-		}
-		return (Math.log(1+Math.exp(ax))+Math.log(1+Math.exp(-ax)))/this.alpha;
+		return Math.abs(x);
 	}
 	
-	private double l1Grad(double x) {
-		double ax = this.alpha * x;
-		if (ax > 16.0 || ax < -16.0) {
-			return x > 0 ? 1 : -1;
+	private double l1Grad(double x, double grad) {
+		if (this.weight == 0) { return 0; }
+		if (x == 0) {
+			double absweight = Math.abs(this.weight);
+			if (Math.abs(grad) > absweight) {
+				return grad*this.weight > 0 ? -1 : +1;
+			} else {
+				return -grad/this.weight;
+			}
 		}
-		return 1/(1+Math.exp(-ax)) - 1/(1+Math.exp(ax));
+		return x > 0 ? 1 : -1;
 	}
 
 	@Override
@@ -143,7 +133,7 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 		int end = Math.min(x.length, this.end);
 		double[] grad = this.gradient.g(x);
 		for (int i = start; i < end; i++) {
-			grad[i] += this.weight * this.l1Grad(x[i]);
+			grad[i] += this.weight * this.l1Grad(x[i], grad[i]);
 		}
 		return grad;
 	}

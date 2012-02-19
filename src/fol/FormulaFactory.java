@@ -63,6 +63,40 @@ public class FormulaFactory {
 		
 		return clauses;	
 	}
+
+	/**
+	 * Generate all possible combinations of containing the same literals of
+	 * given clause
+	 * 
+	 * @param clause
+	 * @return
+	 */
+	public List<ConjunctiveNormalForm> flipSigns(ConjunctiveNormalForm clause) {
+		List<Atom> literals = clause.getAtoms();
+		ArrayList<ConjunctiveNormalForm> aux;
+		List<ConjunctiveNormalForm> clauses = new ArrayList<ConjunctiveNormalForm>(2);
+		for (Atom literal : literals) {
+			if (clauses.isEmpty()) {
+				clauses.add(new ConjunctiveNormalForm(
+						new Atom[] { literal }, 
+						new boolean[] { false })
+				);
+				clauses.add(new ConjunctiveNormalForm(
+						new Atom[] { literal }, 
+						new boolean[] { true  })
+				);
+			} else {
+				aux = new ArrayList<ConjunctiveNormalForm>(clauses.size()*2);
+				for (ConjunctiveNormalForm c : clauses) {
+					aux.add(c.addLiteral(literal, false));
+					aux.add(c.addLiteral(literal, true ));
+				}
+				clauses = aux;
+			}			
+		}
+		
+		return clauses;
+	}
 	
 	/**
 	 * Generate one Atom for each Predicate

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -33,9 +34,10 @@ import fol.database.Database;
 public class PDL implements StructureLearner {
 	
 	private static final int MAX_VARS = 6;
-	private static final int BEAM_SIZE = 20;
-	private static final double EPSLON = 0.001; // min absolute weight
-	private static final double MIN_IMPROVEMENT = 0.005; // percent value of min score improvement
+//	private static final int BEAM_SIZE = 20;
+	private static final double EPSLON = 0.0001; // min absolute weight
+	private static final double MIN_IMPROVEMENT = 0.001; // percent value of min score improvement
+	private static final int MAX_LITERALS = 5;
 	
 	private final Set<Predicate> predicates;
 	private final Database db;
@@ -58,7 +60,7 @@ public class PDL implements StructureLearner {
 		
 		// Instantiate the weightLearner
 		// TODO: fazer pegar pelo menos 10 ground atomos verdadeiros
-		this.score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 50);
+		this.score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 500); // 50
 		L1RegularizedScore l1Score = new L1RegularizedScore(this.score).setConstantWeight(-0.1);
 //		l1Score.setStart(6);
 		this.l1Score = l1Score;
@@ -87,19 +89,20 @@ public class PDL implements StructureLearner {
 		}
 		double score = this.preciseLearner.score();
 		
-		List<Formula> candidates = this.factory.generateClauses(this.atoms);		
-		while (true) {
+		List<Formula> candidates = this.factory.generateClauses(this.atoms);	
+		
+		for (int i = 1; i < MAX_LITERALS; i++) {
 			List<WeightedFormula> wFormulas = this.batchLearn(candidates);
 			
 			boolean changed = false;
+			List<Formula> addedClauses = new ArrayList<Formula>();
 			for (WeightedFormula f : wFormulas) {
 				if (Double.compare(Math.abs(f.getWeight()), EPSLON) > 0) {
 					if (this.addClause(f, score)) {
 						score = this.preciseLearner.score();
+						addedClauses.add(f.getFormula());
 						System.out.println(String.format("%s;%s; %s", score, f.getWeight(), f.getFormula()));
 						changed = true;
-					} else {
-						break;
 					}					
 				} else {
 					break;
@@ -110,8 +113,12 @@ public class PDL implements StructureLearner {
 				break;
 			}
 			
-			List<Formula> clauses = WeightedFormula.toFormulasAndWeights(wFormulas).formulas;
-			candidates = this.factory.generateClauses(clauses);
+			HashSet<ConjunctiveNormalForm> flippedClauses = new HashSet<ConjunctiveNormalForm>((2 << i)*addedClauses.size());
+			for (Formula f : addedClauses) {
+				flippedClauses.addAll(this.factory.flipSigns((ConjunctiveNormalForm) f));
+			}
+//			List<Formula> clauses = WeightedFormula.toFormulasAndWeights(wFormulas).formulas;
+			candidates = this.factory.generateClauses(flippedClauses);
 		}
 		
 		// TODO: TIRAR AS QUE TEM PESO ZERO (no L1 score) ANTES DE ADICIONAR NA MLN
@@ -127,66 +134,104 @@ public class PDL implements StructureLearner {
 	
 	private List<WeightedFormula> batchLearn(List<Formula> candidates) {
 		try {
+			double min_weight = 10e-6;
 			double[] initialWeights = this.weightLearner.weights();
 			int initialSize = initialWeights.length;
+			this.l1Score.setStart(initialSize);
+			double[] weights = initialWeights;
+			int counter = 0;
 			
 			this.weightLearner.addFormulas(candidates);
-			double[] weights = initialWeights;
-			double alpha = 64.0;
-			for (int i = 0; i < 10; i++) {
-				alpha = alpha * 4.0;
-				System.out.println("alpha = " + alpha);
-//				if (i == 9) { this.l1Optimizer.condition = false; }
-				this.l1Score.setAlpha(alpha);
-				this.weightLearner.learn(weights);
-				weights = this.weightLearner.weights();
-			}
-			boolean removed = true;
-			while (removed) {
-				System.out.println("****************** REMOVENDO PESOS ZERADOS ******************");
-				removed = false;
-				List<Formula> formulas = new ArrayList<Formula>(this.weightLearner.getFormulas());
-				double[] newWeights = new double[weights.length];
-				int remove = 0;
-				int j = 0;
-				for (int i = 0; i < weights.length; i++) {
-					if (Math.abs(weights[i]) < 0.0001) {
-						remove++;
-						this.weightLearner.removeFormula(formulas.get(i));
-						removed = true;
-					} else {
-						newWeights[j] = weights[i];
-						j++;
-					}
+			{
+				boolean improved = true;
+				double score, min, lastScore;
+				lastScore = this.weightLearner.score();
+
+				while (improved) {
+					counter++;
+					weights = this.weightLearner.learn(weights);
+					score = this.weightLearner.score();
+					min = lastScore*(1 -1*MIN_IMPROVEMENT/2);
+					lastScore = score;
+					improved = score > min;
+					System.out.println(counter + ": " + score);
 				}
-				weights = Arrays.copyOf(newWeights, weights.length-remove);
-				weights = this.weightLearner.learn(weights);
+			}
+			
+			
+//			for (Formula f : candidates) {
+//				this.weightLearner.addFormula(f);
+//				weights = this.weightLearner.learn(weights);
+//				//this.removeClauses(this.weightLearner, min_weight);
+//			}
+			counter = 0;
+			int quantity = weights.length;
+			System.out.println("TOTAL FORMULAS = " + quantity);
+			while (this.removeClauses(this.weightLearner, min_weight, initialSize) > 0) {
+				weights = this.weightLearner.weights();
+				counter++;
+				System.out.println(counter + ": " + (quantity - weights.length));
 			}
 			
 			System.out.println(String.format("SOBRARAM %s FORMULAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", weights.length));
+		
 			
+			int finalLength = weights.length;
+			weights = Arrays.copyOfRange(weights, initialSize, finalLength);
+			List<Formula> formulas = this.weightLearner.getFormulas().subList(initialSize, finalLength);
+			List<WeightedFormula> wFormulas = WeightedFormula.toWeightedFormulas(formulas, weights);
+			Collections.sort(wFormulas, this.comparator);
+			this.printBatchLearner(wFormulas);
+			//wFormulas = wFormulas.subList(0, Math.min(BEAM_SIZE, wFormulas.size()));
 			
+			// clean weightLearner
 			ListIterator<Formula> iterator = candidates.listIterator(candidates.size());
 			while(iterator.hasPrevious()) {
 				this.weightLearner.removeFormula(iterator.previous());
 			}
 			this.weightLearner.learn(initialWeights);
-			
-			weights = Arrays.copyOfRange(weights, initialSize, weights.length);
-			System.out.println("************* IMPRIMINDO FORMULAS BATHLEARNER **************");
-			List<WeightedFormula> wFormulas = WeightedFormula.toWeightedFormulas(candidates, weights);
-			for (WeightedFormula wf : wFormulas) {
-				System.out.println(wf);
-			}
-			System.out.println("************* END IMPRIMINDO FORMULAS BATHLEARNER **************");
-			Collections.sort(wFormulas, this.comparator);
-			wFormulas = wFormulas.subList(0, Math.min(BEAM_SIZE, wFormulas.size()));
 
 			return wFormulas;
 		} catch (OptimizationException e) {
 			e.printStackTrace();
 			return Collections.emptyList();
 		}
+	}
+	
+	private void printBatchLearner(List<WeightedFormula> wFormulas) {
+		System.out.println("************* IMPRIMINDO FORMULAS BATHLEARNER **************");
+		for (WeightedFormula wf : wFormulas) {
+			System.out.println(wf);
+		}
+		System.out.println("************* END IMPRIMINDO FORMULAS BATHLEARNER **************");			
+	}
+	
+	private int removeClauses(WeightLearner learner, double weightThreeshold, int from) throws OptimizationException {
+		List<Formula> formulas = new ArrayList<Formula>(learner.getFormulas());
+		double[] weights = learner.weights();
+		double[] newWeights = new double[weights.length];
+		int remove = 0;
+		int j = 0;
+		for (int i = 0; i < from; i++) {
+			newWeights[i] = weights[i];
+			j++;
+		}
+		for (int i = from; i < weights.length; i++) {
+			if (Math.abs(weights[i]) < weightThreeshold) {
+				remove++;
+				learner.removeFormula(formulas.get(i));
+			} else {
+				newWeights[j] = weights[i];
+				j++;
+			}
+		}
+		
+		if (remove > 0) {
+			weights = Arrays.copyOf(newWeights, weights.length-remove);
+			weights = learner.learn(weights);
+		}
+		
+		return remove;
 	}
 	
 	private boolean addClause(WeightedFormula f, double lastScore) {

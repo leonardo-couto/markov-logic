@@ -15,10 +15,6 @@ import fol.Formula;
 import fol.Predicate;
 import fol.database.Database;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public class WeightedPseudoLogLikelihood extends AbstractScore {
 	
 	private final Map<Predicate, DataCount> dataCounts;

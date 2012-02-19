@@ -45,8 +45,11 @@ public class DataCount extends ArrayList<List<FormulaCount>> {
 		this.atoms = new ArrayList<Atom>(sampleSize);
 		
 		// pega uma lista aleatoria de grounds do predicado p
-		Iterator<Atom> it = this.db.groundingIterator(FormulaFactory.generateAtom(p));
-		for (int i = 0; i < sampleSize; i++) { this.atoms.add(it.next()); }
+		Atom filter = FormulaFactory.generateAtom(p);
+		Iterator<Atom> it = this.db.groundingIterator(filter);
+		Iterator<Atom> trueIt = this.db.groundingIterator(filter, true);
+		for (int i = 0; i < 10; i++) { this.atoms.add(trueIt.next()); }
+		for (int i = 10; i < sampleSize; i++) { this.atoms.add(it.next()); }
 		
 		this.formulas = new LinkedList<FormulaData>();
 		this.sampleSize = sampleSize;
