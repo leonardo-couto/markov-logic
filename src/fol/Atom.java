@@ -12,7 +12,7 @@ import java.util.Set;
 import fol.database.Database;
 import fol.operator.Operator;
 
-public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
+public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 
 	private final boolean grounded;
 	public final Predicate predicate;
@@ -23,13 +23,19 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	public Atom(Predicate predicate, Term ... terms) {
 		this.predicate = predicate;
 		this.terms = terms;
-		for (Term t : terms) {
-			if (!(t instanceof Constant)) {
+		for (int i = 0; i < terms.length; i++) {
+			if (!(terms[i] instanceof Constant)) {
 				this.grounded = false;
 				return;
 			}
 		}
 		this.grounded = true;
+	}
+	
+	protected Atom(Predicate predicate, Term[] terms, boolean grounded) {
+		this.predicate = predicate;
+		this.terms = terms;
+		this.grounded = grounded;
 	}
 	
 	@Override
@@ -164,26 +170,34 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 		if (this.grounded) return this;
 		int length = this.terms.length;
 		boolean modified = false;
+		boolean grounded = true;
 		
 		Term[] groundedTerms = new Term[length];
 		for (int i = 0; i < length; i++) {
 			Term t = this.terms[i];
-			Constant candidate = groundings.get(t);
-			boolean grounded = (candidate != null);
-			groundedTerms[i] = grounded ? candidate : t;
-			modified = modified || grounded;
+			if (t instanceof Constant) {
+				groundedTerms[i] = t;				
+			} else {
+				Constant candidate = groundings.get(t);
+				if (candidate == null) {
+					grounded = false;
+					groundedTerms[i] = t;	
+				} else {
+					modified = true;
+					groundedTerms[i] = candidate;
+				}
+			}
 		}
 		
-		return modified ? new Atom(this.predicate, groundedTerms) : this;
+		return modified ? new Atom(this.predicate, groundedTerms, grounded) : this;
 	}
 	
 	@Override
 	public List<ConjunctiveNormalForm> toCNF() {
-		ConjunctiveNormalForm formula = new ConjunctiveNormalForm(
-				new Atom[] {this}, 
-				new boolean[] {false}
-				);
-		return Collections.singletonList(formula);
+		Literal l = new Literal(this, true);
+		List<Literal> singleton = Collections.singletonList(l);
+		ConjunctiveNormalForm cnf = new ConjunctiveNormalForm(singleton);
+		return Collections.singletonList(cnf);
 	}
 	
 	public static void main(String[] args) {

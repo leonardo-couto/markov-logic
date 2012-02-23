@@ -3,7 +3,7 @@ package fol;
 import java.util.Arrays;
 import java.util.List;
 
-public class Predicate {
+public class Predicate implements Comparable<Predicate> {
 	
 	private final String name;
 	private final List<Domain> argDomains;
@@ -16,6 +16,11 @@ public class Predicate {
 		this.name = name;
 		this.argDomains = Arrays.asList(domains);
 		this.closedWorld = true;
+	}
+
+	@Override
+	public int compareTo(Predicate o) {
+		return this.name.compareTo(o.name);
 	}
 
 	/**
@@ -43,11 +48,17 @@ public class Predicate {
 	
 	/**
 	 * @return The total possible number of groundings.
+	 * Or Integer.MAX_VALUE if totalGrounds > Integer.MAX_VALUE
 	 */
-	public long totalGroundings() {
-		long i = 1;		
+	public int totalGroundings() {
+		int i = 1;		
 		for (Domain d : this.argDomains) {
-			i = i * (long) d.size();
+			int value = i * d.size();
+			if (i > value) { 
+				return Integer.MAX_VALUE; 
+			} else {
+				i = value;
+			}
 		}
 		return i;
 	}

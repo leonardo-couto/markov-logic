@@ -33,22 +33,22 @@ public class FormulaFactory {
 			Set<Variable> variables = seed.getVariables();
 			if (variables.size() >= this.maxVars) continue;
 			for (Predicate p : this.predicates) {
-				for (Atom literal : this.generateAtoms(p, variables)) {
+				for (Atom atom : this.generateAtoms(p, variables)) {
 					
 					// TODO contar quantas variáveis NOVAS tem, ver se passa do limite
 					
-					ConjunctiveNormalForm positive = seed.addLiteral(literal, false);
-					if (positive == seed) continue;
-					ConjunctiveNormalForm negative = seed.addLiteral(literal, true);
+					ConjunctiveNormalForm positive = seed.addLiteral(new Literal(atom, true));
+					if (positive == seed || positive.getVariables().size() > this.maxVars) continue;
+					ConjunctiveNormalForm negative = seed.addLiteral(new Literal(atom, false));
 					
 					heap.offer(positive.normalizeVariables());
 					heap.offer(negative.normalizeVariables());
 				}
 			}
 		}
-		for (ConjunctiveNormalForm clause : this.putEquals(seeds)) {
-			heap.offer(clause.normalizeVariables());
-		}
+//		for (ConjunctiveNormalForm clause : this.putEquals(heap)) {
+//			heap.offer(clause.normalizeVariables());
+//		}
 		
 		List<Formula> clauses = new ArrayList<Formula>(heap.size());
 		ConjunctiveNormalForm aux = heap.poll();
@@ -159,11 +159,11 @@ public class FormulaFactory {
 							equals = new Atom(Predicate.equals, terms[0], terms[1]);
 							this.atoms.put(key, equals);
 						}
-						ConjunctiveNormalForm positive = clause.addLiteral(equals, false);
+						ConjunctiveNormalForm positive = clause.addLiteral(new Literal(equals, true));
 						if (positive == clause) continue;
-						ConjunctiveNormalForm negative = clause.addLiteral(equals, true);
+//						ConjunctiveNormalForm negative = clause.addLiteral(new Literal(equals, false));
 						newClauses.add(positive);
-						newClauses.add(negative);
+//						newClauses.add(negative);
 					}
 				}
 			}
@@ -297,8 +297,8 @@ public class FormulaFactory {
 	// Return a variable from Domain d not in c. If there is no Variable
 	// in d that is not in c, creates a new one.
 	private static Variable newVariableNotIn(Domain d, Collection<Variable> c) {
-		Collections.sort(d.getVariables());
-		for (Variable v : d.getVariables()) {
+		List<Variable> variables = d.getVariables();
+		for (Variable v : variables) {
 			if (!c.contains(v)) {
 				return v;
 			}

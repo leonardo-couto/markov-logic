@@ -10,8 +10,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import structureLearner.FormulaTester;
-import structureLearner.ProducersWatcher;
 import structureLearner.ScoredFormula;
+import util.ProducersWatcher;
 
 import fol.Formula;
 import weightLearner.WeightLearner;

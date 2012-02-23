@@ -3,24 +3,23 @@ package fol.database;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import fol.Atom;
 import fol.Predicate;
 import fol.Term;
 
 public class CompositeKey {
 	
 	private final Term[] terms;
-	private final Predicate predicate;
+	public final Predicate predicate;
 	private final int hashcode;
-	private boolean value;
 	
-	public CompositeKey(Predicate p, Term[] terms) {
-		this(p, terms, false);
+	public CompositeKey(Atom atom) {
+		this(atom.predicate, atom.terms);
 	}
 	
-	public CompositeKey(Predicate p, Term[] terms, boolean value) {
+	public CompositeKey(Predicate p, Term[] terms) {
 		this.predicate = p;
 		this.terms = terms;
-		this.value = value;
 		this.hashcode = Arrays.hashCode(this.terms) + 17*this.predicate.hashCode();
 	}
 	
@@ -37,14 +36,6 @@ public class CompositeKey {
 	@Override
 	public int hashCode() {
 		return this.hashcode;
-	}
-	
-	public boolean getValue() {
-		return this.value;
-	}
-	
-	public void setValue(boolean value) {
-		this.value = value;
 	}
 	
 	/**

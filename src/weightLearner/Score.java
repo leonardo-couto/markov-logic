@@ -12,11 +12,11 @@ import fol.Formula;
  */
 public interface Score extends DifferentiableFunction {
 	
-	public boolean addFormula(Formula f);
+	public boolean addFormula(Formula formula);
 	
 	public boolean addFormulas(List<? extends Formula> formulas);
 	
-	public boolean removeFormula(Formula f);
+	public boolean removeFormula(Formula formula);
 	
 	public double getScore(double[] weights);
 	

@@ -283,7 +283,7 @@ public class GeneralFormula implements Formula {
 			for (Variable v : vars) {
 				groundings.put(v, v.getRandomConstant());
 			}
-			if (this.ground(groundings).getValue(db)) {
+			if (this.getValue(db, groundings)) {
 				count++;
 			}
 		}

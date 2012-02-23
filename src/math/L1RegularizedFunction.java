@@ -82,6 +82,10 @@ public class L1RegularizedFunction implements DifferentiableFunction {
 		this.end = i;
 	}
 	
+	public double getWeight() {
+		return this.weight;
+	}
+	
 	/**
 	 * <p>Set a constant L1 weight. This weight will be used for
 	 * all parameters in the {@link #getStart} to {@link #getEnd} interval.</p>

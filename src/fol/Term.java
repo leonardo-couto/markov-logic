@@ -6,7 +6,7 @@ package fol;
  * <code>Domain</code> eg. person, movie, etc.
  * 
  */
-public abstract class Term {
+public abstract class Term implements Comparable<Term> {
 	
 	protected final Domain domain;
 	private final String name;
@@ -16,7 +16,12 @@ public abstract class Term {
 		this.name = name;
 		this.setDomain(domain);
 	}
-
+	
+	@Override
+	public int compareTo(Term o) {
+		return this.name.compareTo(o.name);
+	}
+	
 	public Domain getDomain() { 
 		return this.domain;
 	}

@@ -4,10 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
@@ -18,10 +19,12 @@ import weightLearner.L1RegularizedScore;
 import weightLearner.Score;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
+import fol.Atom;
 import fol.ConjunctiveNormalForm;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
+import fol.Term;
 import fol.database.Database;
 
 /**
@@ -33,11 +36,20 @@ import fol.database.Database;
  */
 public class PDL implements StructureLearner {
 	
-	private static final int MAX_VARS = 6;
+	private static final int MAX_VARS = 4;
 //	private static final int BEAM_SIZE = 20;
-	private static final double EPSLON = 0.0001; // min absolute weight
-	private static final double MIN_IMPROVEMENT = 0.001; // percent value of min score improvement
+	private static final double EPSLON = 10e-8; // min absolute weight
+	private static final double MIN_IMPROVEMENT = 0.02; // percent value of min score improvement
+	private static final double MIN_ABSOLUTE_IMPROVEMENT = 0.005;
 	private static final int MAX_LITERALS = 5;
+	private static final int LOW_SAMPLE_SIZE = 250;
+	private static final int HIGH_SAMPLE_SIZE = 1000;
+	private static final double LOW_LBFGS_PRECISION = 0.01;
+	private static final double HIGH_LBFGS_PRECISION = 0.001;
+	private static final int THREADS = Runtime.getRuntime().availableProcessors();
+	private static final double L1_WEIGHT = -0.1;
+	
+	private static final Formula END = new Atom(Predicate.empty, new Term[0]);
 	
 	private final Set<Predicate> predicates;
 	private final Database db;
@@ -45,6 +57,7 @@ public class PDL implements StructureLearner {
 	private final List<ConjunctiveNormalForm> atoms;
 	private final WeightLearner weightLearner;
 	private final Comparator<WeightedFormula> comparator;
+//	private final UndirectedGraph<Literal, Edge> graph;
 	
 	private final WeightLearner preciseLearner;
 	
@@ -60,21 +73,27 @@ public class PDL implements StructureLearner {
 		
 		// Instantiate the weightLearner
 		// TODO: fazer pegar pelo menos 10 ground atomos verdadeiros
-		this.score = new WeightedPseudoLogLikelihood(this.predicates, this.db, 500); // 50
-		L1RegularizedScore l1Score = new L1RegularizedScore(this.score).setConstantWeight(-0.1);
-//		l1Score.setStart(6);
+		this.score = new WeightedPseudoLogLikelihood(this.predicates, this.db, LOW_SAMPLE_SIZE); // 50
+		L1RegularizedScore l1Score = new L1RegularizedScore(this.score).setConstantWeight(L1_WEIGHT);
+		l1Score.setStart(6);
 		this.l1Score = l1Score;
-		this.l1Optimizer = new AutomatedLBFGS(0.01);
+		this.l1Optimizer = new AutomatedLBFGS(LOW_LBFGS_PRECISION);
 			
 		this.weightLearner = new WeightLearner(this.l1Score, this.l1Optimizer);
 		this.preciseLearner = new WeightLearner(
-				new WeightedPseudoLogLikelihood(this.predicates, this.db, 5000), 
-				new AutomatedLBFGS(0.001));
+				new WeightedPseudoLogLikelihood(this.predicates, this.db, HIGH_SAMPLE_SIZE), 
+				new AutomatedLBFGS(HIGH_LBFGS_PRECISION));
 		this.comparator = new WeightedFormula.AbsoluteWeightComparator(true);
+//		this.graph = new SimpleGraph<Literal, PDL.Edge>(Edge.class);
 	}
 
 	@Override
 	public MarkovLogicNetwork learn() {
+		{
+			BlockingQueue<Formula> queue = new LinkedBlockingQueue<Formula>(this.atoms);
+			queue.add(END);
+			(new CountsGenerator(queue, this.db, HIGH_SAMPLE_SIZE)).run();
+		}
 	
 		// add unit clauses, learn weights and gets the score
 		this.weightLearner.addFormulas(this.atoms);
@@ -92,33 +111,36 @@ public class PDL implements StructureLearner {
 		List<Formula> candidates = this.factory.generateClauses(this.atoms);	
 		
 		for (int i = 1; i < MAX_LITERALS; i++) {
+			
 			List<WeightedFormula> wFormulas = this.batchLearn(candidates);
 			
-			boolean changed = false;
-			List<Formula> addedClauses = new ArrayList<Formula>();
+			BlockingQueue<Formula> queue = new LinkedBlockingQueue<Formula>(candidates);
 			for (WeightedFormula f : wFormulas) {
-				if (Double.compare(Math.abs(f.getWeight()), EPSLON) > 0) {
+				queue.offer(f.getFormula());
+			}
+			queue.add(END);
+			for (int j = 1; j < THREADS; j++) {
+				CountsGenerator thread = new CountsGenerator(queue, this.db, HIGH_SAMPLE_SIZE);
+				(new Thread(thread)).start();
+			}
+			CountsGenerator thread = new CountsGenerator(queue, this.db, HIGH_SAMPLE_SIZE);
+			thread.run();
+			
+			for (WeightedFormula f : wFormulas) {
+				if (Math.abs(f.getWeight()) > EPSLON) {
 					if (this.addClause(f, score)) {
 						score = this.preciseLearner.score();
-						addedClauses.add(f.getFormula());
 						System.out.println(String.format("%s;%s; %s", score, f.getWeight(), f.getFormula()));
-						changed = true;
-					}					
+					}
 				} else {
 					break;
 				}
 			}
 			
-			if (!changed) {
-				break;
-			}
 			
-			HashSet<ConjunctiveNormalForm> flippedClauses = new HashSet<ConjunctiveNormalForm>((2 << i)*addedClauses.size());
-			for (Formula f : addedClauses) {
-				flippedClauses.addAll(this.factory.flipSigns((ConjunctiveNormalForm) f));
-			}
-//			List<Formula> clauses = WeightedFormula.toFormulasAndWeights(wFormulas).formulas;
-			candidates = this.factory.generateClauses(flippedClauses);
+			List<Formula> clauses = WeightedFormula.toFormulasAndWeights(wFormulas).formulas;
+			if (clauses.isEmpty()) break;
+			candidates = this.factory.generateClauses(clauses);
 		}
 		
 		// TODO: TIRAR AS QUE TEM PESO ZERO (no L1 score) ANTES DE ADICIONAR NA MLN
@@ -133,6 +155,17 @@ public class PDL implements StructureLearner {
 	}
 	
 	private List<WeightedFormula> batchLearn(List<Formula> candidates) {
+		System.out.println("COMECANDO AS THREADS!!");
+		
+		BlockingQueue<Formula> queue = new LinkedBlockingQueue<Formula>(candidates);
+		queue.add(END);
+		for (int i = 1; i < THREADS; i++) {
+			CountsGenerator thread = new CountsGenerator(queue, this.db, LOW_SAMPLE_SIZE);
+			(new Thread(thread)).start();
+		}
+		CountsGenerator thread = new CountsGenerator(queue, this.db, LOW_SAMPLE_SIZE);
+		thread.run();		
+		
 		try {
 			double min_weight = 10e-6;
 			double[] initialWeights = this.weightLearner.weights();
@@ -151,7 +184,7 @@ public class PDL implements StructureLearner {
 					counter++;
 					weights = this.weightLearner.learn(weights);
 					score = this.weightLearner.score();
-					min = lastScore*(1 -1*MIN_IMPROVEMENT/2);
+					min = (lastScore + Math.max(-lastScore*MIN_IMPROVEMENT/20, MIN_ABSOLUTE_IMPROVEMENT/10));
 					lastScore = score;
 					improved = score > min;
 					System.out.println(counter + ": " + score);
@@ -159,19 +192,26 @@ public class PDL implements StructureLearner {
 			}
 			
 			
-//			for (Formula f : candidates) {
-//				this.weightLearner.addFormula(f);
-//				weights = this.weightLearner.learn(weights);
-//				//this.removeClauses(this.weightLearner, min_weight);
-//			}
 			counter = 0;
 			int quantity = weights.length;
 			System.out.println("TOTAL FORMULAS = " + quantity);
-			while (this.removeClauses(this.weightLearner, min_weight, initialSize) > 0) {
-				weights = this.weightLearner.weights();
-				counter++;
-				System.out.println(counter + ": " + (quantity - weights.length));
-			}
+			boolean stop = false;
+			do {
+				while (this.removeClauses(this.weightLearner, min_weight, initialSize) > 0) {
+					weights = this.weightLearner.weights();
+					counter++;
+					System.out.println(counter + ": " + (quantity - weights.length));
+				}
+				
+				if (weights.length > 50) {
+					this.l1Score.setConstantWeight(l1Score.getWeight() - 0.05);
+					this.weightLearner.learn(weights);
+				} else {
+					stop = true;
+				}
+
+			} while (!stop);
+			this.l1Score.setConstantWeight(L1_WEIGHT);
 			
 			System.out.println(String.format("SOBRARAM %s FORMULAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", weights.length));
 		
@@ -182,7 +222,6 @@ public class PDL implements StructureLearner {
 			List<WeightedFormula> wFormulas = WeightedFormula.toWeightedFormulas(formulas, weights);
 			Collections.sort(wFormulas, this.comparator);
 			this.printBatchLearner(wFormulas);
-			//wFormulas = wFormulas.subList(0, Math.min(BEAM_SIZE, wFormulas.size()));
 			
 			// clean weightLearner
 			ListIterator<Formula> iterator = candidates.listIterator(candidates.size());
@@ -244,7 +283,7 @@ public class PDL implements StructureLearner {
 			this.preciseLearner.addFormula(f.getFormula());
 			this.preciseLearner.learn(weights);
 			double score = this.preciseLearner.score();
-			double min = -1*MIN_IMPROVEMENT*lastScore;
+			double min = Math.max(-MIN_IMPROVEMENT*lastScore, MIN_ABSOLUTE_IMPROVEMENT);
 			if (Double.compare(score-lastScore, min) > -1) {
 				double[] initialWeights = this.weightLearner.weights();
 				initialWeights = Arrays.copyOf(initialWeights, length+1);
@@ -263,6 +302,37 @@ public class PDL implements StructureLearner {
 			e.printStackTrace();
 		}
 		return false;
+	}
+	
+	private static class CountsGenerator implements Runnable {
+		
+		private final BlockingQueue<Formula> queue;
+		private final Database db;
+		private final int samples;
+		
+		public CountsGenerator(BlockingQueue<Formula> queue, Database db, int samples) {
+			this.queue = queue;
+			this.db = db;
+			this.samples = samples;
+		}
+
+		@Override
+		public void run() {
+			try {
+				while (true) {
+					Formula formula;
+					formula = this.queue.take();
+					if (formula == END) {
+						this.queue.put(formula);
+						break;
+					}
+					this.db.getCounts(formula, samples);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}			
+		}
+		
 	}
 
 }

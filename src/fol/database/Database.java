@@ -1,8 +1,12 @@
 package fol.database;
 
 import java.util.Iterator;
+import java.util.List;
+
+import weightLearner.wpll.Count;
 
 import fol.Atom;
+import fol.Formula;
 
 public interface Database {
 	
@@ -24,5 +28,7 @@ public interface Database {
 	public Iterator<Atom> groundingIterator(Atom filter, boolean value);
 	public int groundingCount(Atom filter);
 	public int groundingCount(Atom filter, boolean value);
+	
+	public List<Count> getCounts(Formula formula, int sampleSize);
 	
 }

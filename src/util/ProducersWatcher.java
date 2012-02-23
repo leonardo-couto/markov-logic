@@ -1,4 +1,4 @@
-package structureLearner;
+package util;
 
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
