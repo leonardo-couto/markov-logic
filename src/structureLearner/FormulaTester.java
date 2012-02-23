@@ -3,7 +3,6 @@ package structureLearner;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 
-import math.OptimizationException;
 import weightLearner.WeightLearner;
 import fol.Formula;
 

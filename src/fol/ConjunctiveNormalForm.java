@@ -30,7 +30,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 		this(literals, false);
 	}
 	
-	private ConjunctiveNormalForm(List<Literal> literals, boolean ordered) {
+	ConjunctiveNormalForm(List<Literal> literals, boolean ordered) {
 		if (!ordered && literals.size() > 1) {
 			Collections.sort(literals);
 		}

@@ -175,7 +175,7 @@ public class GroundedMarkovNetwork {
 		for (Variable v : f.getVariables()) {
 			List<Formula> newFormulas = new LinkedList<Formula>();
 			if (v.getConstants().isEmpty()) {
-				v.newConstant();
+				v.getDomain().newConstant();
 			}
 			List<Constant> constants = new LinkedList<Constant>(v.getConstants());
 			for (Formula aux : formulas) {
