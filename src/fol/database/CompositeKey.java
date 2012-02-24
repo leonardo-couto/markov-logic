@@ -1,7 +1,6 @@
 package fol.database;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 import fol.Atom;
 import fol.Predicate;
@@ -38,19 +37,4 @@ public class CompositeKey {
 		return this.hashcode;
 	}
 	
-	/**
-	 * Gets a comparator for CompositeKeys 
-	 * @param domain index of terms, the term that will be used to compare
-	 * @return
-	 */
-	public static Comparator<CompositeKey> getComparator(final int domain) {
-		return new Comparator<CompositeKey>() {
-
-			@Override
-			public int compare(CompositeKey o1, CompositeKey o2) {
-				return o1.terms[domain].toString().compareTo(o2.terms[domain].toString());
-			}
-		};
-	}
-
 }

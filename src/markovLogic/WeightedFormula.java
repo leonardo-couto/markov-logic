@@ -6,12 +6,12 @@ import java.util.List;
 
 import fol.Formula;
 
-public class WeightedFormula {
+public class WeightedFormula <T extends Formula> {
 
-	private final Formula formula;
+	private final T formula;
 	private final double weight;
 	
-	public WeightedFormula(Formula formula, double weight) {
+	public WeightedFormula(T formula, double weight) {
 		this.formula = formula;
 		this.weight = weight;
 	}
@@ -24,31 +24,31 @@ public class WeightedFormula {
 		return this.weight;
 	}
 	
-	public static List<WeightedFormula> toWeightedFormulas(List<? extends Formula> formulas, double[] weights) {
-		ArrayList<WeightedFormula> list = new ArrayList<WeightedFormula>(weights.length);
+	public static <U extends Formula> List<WeightedFormula<U>> toWeightedFormulas(List<U> formulas, double[] weights) {
+		ArrayList<WeightedFormula<U>> list = new ArrayList<WeightedFormula<U>>(weights.length);
 		for (int i = 0; i < weights.length; i++) {
-			list.add(new WeightedFormula(formulas.get(i), weights[i]));
+			list.add(new WeightedFormula<U>(formulas.get(i), weights[i]));
 		}
 		return list;
 	}
 	
-	public static FormulasAndWeights toFormulasAndWeights(List<? extends WeightedFormula> wfs) {
+	public static <U extends Formula> FormulasAndWeights<U> toFormulasAndWeights(List<? extends WeightedFormula<U>> wfs) {
 		double[] weights = new double[wfs.size()];
-		ArrayList<Formula> formulas = new ArrayList<Formula>(weights.length);
+		ArrayList<U> formulas = new ArrayList<U>(weights.length);
 		int i = 0;
-		for (WeightedFormula f : wfs) {
+		for (WeightedFormula<U> f : wfs) {
 			weights[i] = f.weight;
 			formulas.add(f.formula);
 			i++;
 		}
-		return new FormulasAndWeights(formulas, weights);
+		return new FormulasAndWeights<U>(formulas, weights);
 	}
 
-	public static final class FormulasAndWeights {
-		public final List<Formula> formulas;
+	public static final class FormulasAndWeights<U extends Formula> {
+		public final List<U> formulas;
 		public final double[] weights;
 		
-		public FormulasAndWeights(List<Formula> formulas, double[] weights) {
+		public FormulasAndWeights(List<U> formulas, double[] weights) {
 			this.formulas = formulas;
 			this.weights = weights;
 		}
@@ -78,7 +78,7 @@ public class WeightedFormula {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		WeightedFormula other = (WeightedFormula) obj;
+		WeightedFormula<?> other = (WeightedFormula<?>) obj;
 		if (formula == null) {
 			if (other.formula != null)
 				return false;
@@ -90,7 +90,7 @@ public class WeightedFormula {
 		return true;
 	}
 	
-	public static class AbsoluteWeightComparator implements Comparator<WeightedFormula> {
+	public static class AbsoluteWeightComparator<T extends Formula> implements Comparator<WeightedFormula<T>> {
 		
 		private final boolean inverse;
 		
@@ -103,7 +103,7 @@ public class WeightedFormula {
 		}
 
 		@Override
-		public int compare(WeightedFormula o1, WeightedFormula o2) {
+		public int compare(WeightedFormula<T> o1, WeightedFormula<T> o2) {
 			double d1 = Math.abs(o1.getWeight());
 			double d2 = Math.abs(o2.getWeight());
 			return this.inverse ? Double.compare(d2, d1) : Double.compare(d1, d2);

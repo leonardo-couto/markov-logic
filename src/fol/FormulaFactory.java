@@ -31,7 +31,6 @@ public class FormulaFactory {
 		for (Formula f : seeds) {
 			ConjunctiveNormalForm seed = (ConjunctiveNormalForm) f; // TODO: arrumar!!
 			Set<Variable> variables = seed.getVariables();
-			if (variables.size() >= this.maxVars) continue;
 			for (Predicate p : this.predicates) {
 				for (Atom atom : this.generateAtoms(p, variables)) {
 					
@@ -78,7 +77,6 @@ public class FormulaFactory {
 			ConjunctiveNormalForm seed = new ConjunctiveNormalForm(literals, true);
 			
 			Set<Variable> variables = seed.getVariables();
-			if (variables.size() >= this.maxVars) continue;
 			for (Predicate p : this.predicates) {
 				for (Atom atom : this.generateAtoms(p, variables)) {
 					

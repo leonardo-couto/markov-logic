@@ -18,7 +18,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	public boolean condition = true;
 	
 	private boolean stop(int i) {
-		return condition && i > 20;
+		return condition && i > 50;
 	}
 	
 	public AutomatedLBFGS(double precision) {
