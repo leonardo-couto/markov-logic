@@ -3,6 +3,7 @@ package fol;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -40,19 +41,7 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	@Override
 	public int compareTo(Atom o) {
-		if (this.predicate == o.predicate) {
-			Term t1;
-			Term t2;
-			for (int i = 0; i < this.terms.length; i++) {
-				t1 = this.terms[i];
-				t2 = o.terms[i];
-				if (t1 != t2) {
-					return t1.toString().compareTo(t2.toString());
-				}
-			}
-			return 0;
-		}
-		return this.predicate.toString().compareTo(o.predicate.toString());
+		return compare(this, o);
 	}
 	
 	@Override
@@ -193,10 +182,10 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 	
 	@Override
-	public List<ConjunctiveNormalForm> toCNF() {
+	public List<Clause> toCNF() {
 		Literal l = new Literal(this, true);
 		List<Literal> singleton = Collections.singletonList(l);
-		ConjunctiveNormalForm cnf = new ConjunctiveNormalForm(singleton);
+		Clause cnf = new Clause(singleton);
 		return Collections.singletonList(cnf);
 	}
 	
@@ -214,6 +203,31 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	@Override
 	public double trueCount(Database db) {
 		return (double) db.groundingCount(this, true);
+	}
+	
+	private static int compare(Atom a0, Atom a1) {
+		if (a0.predicate == a1.predicate) {
+			Term t1;
+			Term t2;
+			for (int i = 0; i < a0.terms.length; i++) {
+				t1 = a0.terms[i];
+				t2 = a1.terms[i];
+				if (t1 != t2) {
+					return t1.compareTo(t2);
+				}
+			}
+			return 0;
+		}
+		return a0.predicate.compareTo(a1.predicate);
+	}
+	
+	public static final class DefaultComparator implements Comparator<Atom> {
+
+		@Override
+		public int compare(Atom a0, Atom a1) {
+			return Atom.compare(a0, a1);
+		}
+
 	}
 
 }

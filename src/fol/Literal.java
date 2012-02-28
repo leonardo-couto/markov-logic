@@ -115,9 +115,9 @@ public class Literal extends Atom {
 	}
 
 	@Override
-	public List<ConjunctiveNormalForm> toCNF() {
+	public List<Clause> toCNF() {
 		List<Literal> singleton = Collections.singletonList(this);
-		ConjunctiveNormalForm cnf = new ConjunctiveNormalForm(singleton);
+		Clause cnf = new Clause(singleton);
 		return Collections.singletonList(cnf);
 	}
 	
@@ -135,5 +135,5 @@ public class Literal extends Atom {
 	public double trueCount(Database db) {
 		return (double) db.groundingCount(this, this.signal);
 	}
-
+	
 }

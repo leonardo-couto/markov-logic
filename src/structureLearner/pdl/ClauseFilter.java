@@ -9,7 +9,7 @@ import markovLogic.WeightedFormula;
 import math.OptimizationException;
 import structureLearner.CountsGenerator;
 import weightLearner.WeightLearner;
-import fol.ConjunctiveNormalForm;
+import fol.Clause;
 import fol.FormulaFactory;
 
 public class ClauseFilter {
@@ -24,13 +24,13 @@ public class ClauseFilter {
 		this.counter = counter;
 	}
 	
-	public List<ConjunctiveNormalForm> filter(List<ConjunctiveNormalForm> candidates) {
+	public List<Clause> filter(List<Clause> candidates) {
 		
-		List<ConjunctiveNormalForm> all = new ArrayList<ConjunctiveNormalForm>();
-		List<List<ConjunctiveNormalForm>> flipList = new ArrayList<List<ConjunctiveNormalForm>>(candidates.size());
+		List<Clause> all = new ArrayList<Clause>();
+		List<List<Clause>> flipList = new ArrayList<List<Clause>>(candidates.size());
 		
-		for (ConjunctiveNormalForm candidate : candidates) {
-			List<ConjunctiveNormalForm> flips = this.factory.flipSigns(candidate);
+		for (Clause candidate : candidates) {
+			List<Clause> flips = this.factory.flipSigns(candidate);
 			flipList.add(flips);
 			all.addAll(flips);			
 		}
@@ -41,13 +41,13 @@ public class ClauseFilter {
 		double initialScore = this.wlearner.score();
 		double[] weights = this.wlearner.weights();
 //		List<ConjunctiveNormalForm> selection = new ArrayList<ConjunctiveNormalForm>(candidates.size());
-		List<WeightedFormula<ConjunctiveNormalForm>> selection = new ArrayList<WeightedFormula<ConjunctiveNormalForm>>(candidates.size());
+		List<WeightedFormula<Clause>> selection = new ArrayList<WeightedFormula<Clause>>(candidates.size());
 		
-		for (List<ConjunctiveNormalForm> flips : flipList) {
+		for (List<Clause> flips : flipList) {
 			double max = 0;
 			int index  = -1;
 			for (int i = 0; i < flips.size(); i++) {
-				ConjunctiveNormalForm clause = flips.get(i);
+				Clause clause = flips.get(i);
 				try {
 					this.wlearner.addFormula(clause);
 					double w = this.wlearner.learn(weights)[weights.length];
@@ -63,13 +63,13 @@ public class ClauseFilter {
 				}
 			}
 			if (index > -1) {
-				WeightedFormula<ConjunctiveNormalForm> cnf = new WeightedFormula<ConjunctiveNormalForm>(flips.get(index), max);
+				WeightedFormula<Clause> cnf = new WeightedFormula<Clause>(flips.get(index), max);
 				selection.add(cnf);
 //				selection.add(flips.get(index));
 			}
 		}
 		
-		Comparator<WeightedFormula<ConjunctiveNormalForm>> comparator = new WeightedFormula.AbsoluteWeightComparator<ConjunctiveNormalForm>(true);
+		Comparator<WeightedFormula<Clause>> comparator = new WeightedFormula.AbsoluteWeightComparator<Clause>(true);
 		Collections.sort(selection, comparator);
 		return WeightedFormula.toFormulasAndWeights(selection).formulas;
 		

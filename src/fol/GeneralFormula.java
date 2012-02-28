@@ -179,7 +179,7 @@ public class GeneralFormula implements Formula {
 	}
 	
 	@Override
-	public List<ConjunctiveNormalForm> toCNF() {
+	public List<Clause> toCNF() {
 		// TODO Auto-generated method stub
 		return null;
 	}

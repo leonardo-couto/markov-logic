@@ -1,6 +1,7 @@
 package fol;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -14,7 +15,7 @@ import java.util.Set;
 import fol.database.Database;
 import fol.operator.Disjunction;
 
-public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNormalForm> {
+public class Clause implements Formula, Comparable<Clause> {
 	
 	private static final String DISJUNCTION_CONNECTOR = " v ";
 	
@@ -26,15 +27,16 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	 * @param literals 
 	 * @param negated
 	 */
-	public ConjunctiveNormalForm(List<Literal> literals) {
+	public Clause(Collection<? extends Literal> literals) {
 		this(literals, false);
 	}
 	
-	ConjunctiveNormalForm(List<Literal> literals, boolean ordered) {
+	Clause(Collection<? extends Literal> literals, boolean ordered) {
+		List<Literal> list = new ArrayList<Literal>(literals);
 		if (!ordered && literals.size() > 1) {
-			Collections.sort(literals);
+			Collections.sort(list);
 		}
-		this.literals = literals;
+		this.literals = list;
 	}
 	
 	/**
@@ -44,7 +46,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	 * @param negated true for a negated literal
 	 * @return
 	 */
-	public ConjunctiveNormalForm addLiteral(Literal l) {
+	public Clause addLiteral(Literal l) {
 		int i = Collections.binarySearch(this.literals, l);
 		if (i >= 0) return this; // (+(insertion point) + 1)
 		
@@ -52,11 +54,11 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 		literals.addAll(this.literals);
 		literals.add(-i-1, l);
 		
-		return new ConjunctiveNormalForm(literals, true);
+		return new Clause(literals, true);
 	}
 	
 	@Override
-	public int compareTo(ConjunctiveNormalForm o) {
+	public int compareTo(Clause o) {
 		int s0 = this.literals.size();
 		int s1 = o.literals.size();
 		int size = Math.min(s0, s1);
@@ -75,8 +77,8 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (o instanceof ConjunctiveNormalForm) {
-			ConjunctiveNormalForm other = (ConjunctiveNormalForm) o;
+		if (o instanceof Clause) {
+			Clause other = (Clause) o;
 			return this.literals.equals(other.literals);
 		}
 		return false;
@@ -152,7 +154,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	}
 
 	@Override
-	public ConjunctiveNormalForm ground(Map<Variable, Constant> groundings) {
+	public Clause ground(Map<Variable, Constant> groundings) {
 		List<Literal> groundLiterals = new ArrayList<Literal>(this.literals);
 		
 		boolean changed = false;
@@ -165,7 +167,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 			}
 		}
 		
-		return changed ? new ConjunctiveNormalForm(groundLiterals, true) : this;
+		return changed ? new Clause(groundLiterals, true) : this;
 	}
 
 	@Override
@@ -199,7 +201,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	 * from that domain list of variables ({@link Domain#getVariables}).
 	 * @return A formula equivalent to this, with ordered variables.
 	 */
-	public ConjunctiveNormalForm normalizeVariables() {
+	public Clause normalizeVariables() {
 		Map<Domain, Iterator<Variable>> variables = new HashMap<Domain, Iterator<Variable>>();
 		Map<Variable, Variable> map = new HashMap<Variable, Variable>();
 		List<Literal> literals = new ArrayList<Literal>(this.literals.size());
@@ -225,7 +227,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 			this.addOrdered(literals, literal);
 		}		
 		
-		return new ConjunctiveNormalForm(literals, true);
+		return new Clause(literals, true);
 	}
 	
 	private void addOrdered(List<Literal> literals, Literal literal) {
@@ -243,7 +245,7 @@ public class ConjunctiveNormalForm implements Formula, Comparable<ConjunctiveNor
 	}
 	
 	@Override
-	public List<ConjunctiveNormalForm> toCNF() {
+	public List<Clause> toCNF() {
 		return Collections.singletonList(this);
 	}
 	

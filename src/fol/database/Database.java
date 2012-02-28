@@ -10,12 +10,16 @@ import fol.Formula;
 
 public interface Database {
 	
-//	public void close();
 	public boolean valueOf(Atom a);
-//	public boolean isVariable(Atom a);
+	
+	/**
+	 * Invert the value of Atom a in the database.
+	 * 
+	 * @param a Atom that will be flip.
+	 * @return The new value of a.
+	 */
 	public boolean flip(Atom a);
 	public void set(Atom a, boolean value);
-//	public void setVariable(Atom a, boolean initialValue);
 	/**
 	 * Allows one to set values without modifying the original Database.
 	 * 

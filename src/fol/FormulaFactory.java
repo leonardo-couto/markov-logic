@@ -26,17 +26,17 @@ public class FormulaFactory {
 	}
 	
 	public List<Formula> generateClauses(Collection<? extends Formula> seeds) {
-		Queue<ConjunctiveNormalForm> heap = new PriorityQueue<ConjunctiveNormalForm>();
+		Queue<Clause> heap = new PriorityQueue<Clause>();
 		
 		for (Formula f : seeds) {
-			ConjunctiveNormalForm seed = (ConjunctiveNormalForm) f; // TODO: arrumar!!
+			Clause seed = (Clause) f; // TODO: arrumar!!
 			Set<Variable> variables = seed.getVariables();
 			for (Predicate p : this.predicates) {
 				for (Atom atom : this.generateAtoms(p, variables)) {
 					
-					ConjunctiveNormalForm positive = seed.addLiteral(new Literal(atom, true));
+					Clause positive = seed.addLiteral(new Literal(atom, true));
 					if (positive == seed || positive.getVariables().size() > this.maxVars) continue;
-					ConjunctiveNormalForm negative = seed.addLiteral(new Literal(atom, false));
+					Clause negative = seed.addLiteral(new Literal(atom, false));
 					
 					heap.offer(positive.normalizeVariables());
 					heap.offer(negative.normalizeVariables());
@@ -48,10 +48,10 @@ public class FormulaFactory {
 //		}
 		
 		List<Formula> clauses = new ArrayList<Formula>(heap.size());
-		ConjunctiveNormalForm aux = heap.poll();
+		Clause aux = heap.poll();
 		clauses.add(aux);
 		for (int i = heap.size(); i > 0 ; i--) {
-			ConjunctiveNormalForm clause = heap.poll();
+			Clause clause = heap.poll();
 			if (!clause.equals(aux)) {
 				aux = clause;
 				clauses.add(clause);
@@ -61,10 +61,10 @@ public class FormulaFactory {
 		return clauses;	
 	}
 	
-	public List<ConjunctiveNormalForm> generatePositiveClauses(Collection<ConjunctiveNormalForm> seeds) {
-		Queue<ConjunctiveNormalForm> heap = new PriorityQueue<ConjunctiveNormalForm>();
+	public List<Clause> generatePositiveClauses(Collection<Clause> seeds) {
+		Queue<Clause> heap = new PriorityQueue<Clause>();
 		
-		for (ConjunctiveNormalForm f : seeds) {
+		for (Clause f : seeds) {
 			
 			// transform in positive only
 			List<Literal> literals = f.getLiterals();
@@ -74,13 +74,13 @@ public class FormulaFactory {
 					literals.set(i, new Literal(l, true));
 				}
 			}
-			ConjunctiveNormalForm seed = new ConjunctiveNormalForm(literals, true);
+			Clause seed = new Clause(literals, true);
 			
 			Set<Variable> variables = seed.getVariables();
 			for (Predicate p : this.predicates) {
 				for (Atom atom : this.generateAtoms(p, variables)) {
 					
-					ConjunctiveNormalForm positive = seed.addLiteral(new Literal(atom, true));
+					Clause positive = seed.addLiteral(new Literal(atom, true));
 					if (positive == seed || positive.getVariables().size() > this.maxVars) continue;
 					
 					heap.offer(positive.normalizeVariables());
@@ -88,11 +88,11 @@ public class FormulaFactory {
 			}
 		}
 		
-		List<ConjunctiveNormalForm> clauses = new ArrayList<ConjunctiveNormalForm>(heap.size());
-		ConjunctiveNormalForm aux = heap.poll();
+		List<Clause> clauses = new ArrayList<Clause>(heap.size());
+		Clause aux = heap.poll();
 		clauses.add(aux);
 		for (int i = heap.size(); i > 0 ; i--) {
-			ConjunctiveNormalForm clause = heap.poll();
+			Clause clause = heap.poll();
 			if (!clause.equals(aux)) {
 				aux = clause;
 				clauses.add(clause);
@@ -109,18 +109,18 @@ public class FormulaFactory {
 	 * @param clause
 	 * @return
 	 */
-	public List<ConjunctiveNormalForm> flipSigns(ConjunctiveNormalForm clause) {
+	public List<Clause> flipSigns(Clause clause) {
 		List<Literal> literals = clause.getLiterals();
-		ArrayList<ConjunctiveNormalForm> aux;
-		List<ConjunctiveNormalForm> clauses = new ArrayList<ConjunctiveNormalForm>(2);
+		ArrayList<Clause> aux;
+		List<Clause> clauses = new ArrayList<Clause>(2);
 		for (Literal literal : literals) {
 			Literal inverted = new Literal(literal, !literal.signal);
 			if (clauses.isEmpty()) {
-				clauses.add(new ConjunctiveNormalForm(Collections.singletonList(literal)));
-				clauses.add(new ConjunctiveNormalForm(Collections.singletonList(inverted)));
+				clauses.add(new Clause(Collections.singletonList(literal)));
+				clauses.add(new Clause(Collections.singletonList(inverted)));
 			} else {
-				aux = new ArrayList<ConjunctiveNormalForm>(clauses.size()*2);
-				for (ConjunctiveNormalForm c : clauses) {
+				aux = new ArrayList<Clause>(clauses.size()*2);
+				for (Clause c : clauses) {
 					aux.add(c.addLiteral(literal));
 					aux.add(c.addLiteral(inverted));
 				}
@@ -156,26 +156,26 @@ public class FormulaFactory {
 	 * a ConjunctiveNormalForm object.
 	 * @return
 	 */
-	public List<ConjunctiveNormalForm> getUnitClauses() {
+	public List<Clause> getUnitClauses() {
 		List<Atom> atoms = this.getAtoms();
-		List<ConjunctiveNormalForm> unitClauses = new ArrayList<ConjunctiveNormalForm>(atoms.size());
+		List<Clause> unitClauses = new ArrayList<Clause>(atoms.size());
 		for (Atom a : atoms) {
 			unitClauses.add(a.toCNF().get(0));
 		}
 		return unitClauses;
 	}
 	
-	public void printCandidates(List<ConjunctiveNormalForm> clauses) {
+	public void printCandidates(List<Clause> clauses) {
 		for (Formula cnf : this.generateClauses(clauses)) {
 			System.out.println(cnf);
 		}
 	}
 	
-	public List<ConjunctiveNormalForm> putEquals(Collection<? extends Formula> clauses) {
-		List<ConjunctiveNormalForm> newClauses = new ArrayList<ConjunctiveNormalForm>();
+	public List<Clause> putEquals(Collection<? extends Formula> clauses) {
+		List<Clause> newClauses = new ArrayList<Clause>();
 		
 		for (Formula f : clauses) {
-			ConjunctiveNormalForm clause = (ConjunctiveNormalForm) f;
+			Clause clause = (Clause) f;
 
 			Set<Variable> variables = clause.getVariables();
 
@@ -192,7 +192,7 @@ public class FormulaFactory {
 							equals = new Atom(Predicate.equals, terms[0], terms[1]);
 							this.atoms.put(key, equals);
 						}
-						ConjunctiveNormalForm positive = clause.addLiteral(new Literal(equals, true));
+						Clause positive = clause.addLiteral(new Literal(equals, true));
 						if (positive == clause) continue;
 //						ConjunctiveNormalForm negative = clause.addLiteral(new Literal(equals, false));
 						newClauses.add(positive);

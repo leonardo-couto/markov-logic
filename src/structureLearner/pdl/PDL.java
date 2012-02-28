@@ -19,7 +19,7 @@ import weightLearner.L1RegularizedScore;
 import weightLearner.Score;
 import weightLearner.WeightLearner;
 import weightLearner.wpll.WeightedPseudoLogLikelihood;
-import fol.ConjunctiveNormalForm;
+import fol.Clause;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
@@ -42,8 +42,8 @@ public class PDL implements StructureLearner {
 	private static final double L1_WEIGHT = -0.1;
 	
 	private final FormulaFactory factory;
-	private final List<ConjunctiveNormalForm> atoms;
-	private final Comparator<WeightedFormula<ConjunctiveNormalForm>> comparator;
+	private final List<Clause> atoms;
+	private final Comparator<WeightedFormula<Clause>> comparator;
 	
 	private final CountsGenerator preciseCounter;
 	private final CountsGenerator fastCounter;
@@ -71,7 +71,7 @@ public class PDL implements StructureLearner {
 		this.preciseLearner = new WeightLearner(preciseScore, preciseOptimizer);
 		this.l1Learner = this.fastLearner; // TODO: REMOVER, MODIFICACAO PARA TESTE
 		
-		this.comparator = new WeightedFormula.AbsoluteWeightComparator<ConjunctiveNormalForm>(true);
+		this.comparator = new WeightedFormula.AbsoluteWeightComparator<Clause>(true);
 		
 		this.preciseCounter = new CountsGenerator(db, HIGH_SAMPLE_SIZE, THREADS);
 		this.fastCounter = new CountsGenerator(db, LOW_SAMPLE_SIZE, THREADS);
@@ -95,7 +95,7 @@ public class PDL implements StructureLearner {
 			System.exit(1);			
 		}
 		double score = this.preciseLearner.score();
-		List<ConjunctiveNormalForm> candidates = this.atoms;
+		List<Clause> candidates = this.atoms;
 		
 		for (int i = 1; i < MAX_LITERALS; i++) {
 			candidates = this.factory.generatePositiveClauses(candidates);
@@ -108,10 +108,10 @@ public class PDL implements StructureLearner {
 			System.out.println("ADICIONANDO CANDIDATOS");
 
 //			List<ConjunctiveNormalForm> clauses = this.batchLearn(candidates);
-			List<ConjunctiveNormalForm> clauses = candidates.subList(0, Math.min(BEAM_SIZE, candidates.size()));
+			List<Clause> clauses = candidates.subList(0, Math.min(BEAM_SIZE, candidates.size()));
 			this.preciseCounter.count(clauses);
 			
-			for (ConjunctiveNormalForm cnf : clauses) {
+			for (Clause cnf : clauses) {
 				if (this.addClause(cnf, score)) {
 					double[] weights = this.preciseLearner.weights();
 					score = this.preciseLearner.score();
@@ -135,12 +135,12 @@ public class PDL implements StructureLearner {
 		return mln;
 	}
 	
-	private List<ConjunctiveNormalForm> batchLearn(List<ConjunctiveNormalForm> candidates) {
+	private List<Clause> batchLearn(List<Clause> candidates) {
 //		System.out.println("COMECANDO AS THREADS!!");
 //		this.fastCounter.count(candidates);		
 		
 		try {
-			List<WeightedFormula<ConjunctiveNormalForm>> wFormulas;
+			List<WeightedFormula<Clause>> wFormulas;
 			double[] initialWeights = this.l1Learner.weights();
 			int initialSize = initialWeights.length;
 			this.l1Score.setStart(initialSize);
@@ -213,15 +213,15 @@ public class PDL implements StructureLearner {
 			weights = Arrays.copyOfRange(weights, initialSize, finalLength);
 			
 			List<Formula> sublist = this.l1Learner.getFormulas().subList(initialSize, finalLength);
-			List<ConjunctiveNormalForm> formulas = new ArrayList<ConjunctiveNormalForm>(sublist.size());
-			for (Formula f : sublist) {	formulas.add((ConjunctiveNormalForm) f); }
+			List<Clause> formulas = new ArrayList<Clause>(sublist.size());
+			for (Formula f : sublist) {	formulas.add((Clause) f); }
 
 			wFormulas = WeightedFormula.toWeightedFormulas(formulas, weights);
 			Collections.sort(wFormulas, this.comparator);
 			this.printBatchLearner(wFormulas);
 			
 			// clean weightLearner
-			ListIterator<ConjunctiveNormalForm> iterator = candidates.listIterator(candidates.size());
+			ListIterator<Clause> iterator = candidates.listIterator(candidates.size());
 			while(iterator.hasPrevious()) {
 				this.l1Learner.removeFormula(iterator.previous());
 			}

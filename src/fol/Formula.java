@@ -18,7 +18,7 @@ public interface Formula {
 	public boolean hasPredicate(Predicate p);
 	public boolean isGrounded();
 	public int length();
-	public List<ConjunctiveNormalForm> toCNF();
+	public List<Clause> toCNF();
 	public double trueCount(Database db);
 
 }
