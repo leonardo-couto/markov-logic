@@ -17,7 +17,7 @@ public abstract class AbstractStructLearner implements StructureLearner {
 		this.atoms = atoms;
 		this.predicates = new HashSet<Predicate>(atoms.size()*2);
 		for (Atom a : atoms) {
-			if (a.predicate != Predicate.empty) {
+			if (a.predicate != Predicate.EMPTY) {
 			  this.predicates.add(a.predicate);
 			}
 		}

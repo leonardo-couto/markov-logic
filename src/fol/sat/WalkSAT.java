@@ -20,7 +20,9 @@ import fol.database.SimpleDB;
 
 public class WalkSAT {
 	
-	private final Comparator<Atom> comparator;
+	private static final List<Clause> FALSE = Collections.singletonList(Clause.FALSE);
+	
+	private final Comparator<Literal> comparator;
 	private final List<Literal> constants;
 	private final List<Clause> clauses;
 	private final ElementPicker picker;
@@ -45,7 +47,7 @@ public class WalkSAT {
 	private final int maxFlips;
 	
 	public WalkSAT(Collection<? extends Clause> clauses) {
-		this.comparator = new Atom.DefaultComparator();
+		this.comparator = new Literal.AtomComparator();
 		this.constants = new ArrayList<Literal>();
 		this.clauses = this.reduce(clauses);
 		this.picker = new ElementPicker(new Random());
@@ -63,12 +65,13 @@ public class WalkSAT {
 	
 	private Database assignConstants(Database db) {
 		for (Literal l : this.constants) {
-			db.set(l, l.signal);
+			db.set(l.atom, l.signal);
 		}
 		return db;
 	}
 	
 	private int deltaSatisfied(Atom a) {
+		if (Atom.TRUE == a) return 0;
 		int delta = 0;		
 	    boolean value = this.assignment.flip(a);
 	    
@@ -98,6 +101,7 @@ public class WalkSAT {
 	}
 	
 	private void flip(Atom a) {
+		if (Atom.TRUE == a) return;
 	    boolean value = this.assignment.flip(a);
 	    
 	    // update values in satMap
@@ -127,18 +131,19 @@ public class WalkSAT {
 	    int index = -1;
 	    int max = Integer.MIN_VALUE;
 	    for (int i = 0; i < size; i++) {
-	        Atom a = literals.get(i);
+	        Atom a = literals.get(i).atom;
 	        int delta = this.deltaSatisfied(a);
 	        if (delta > max) {
 	            max = delta;
 	            index = i;
 	        }
 	    }
-	    this.flip(literals.get(index));
+	    this.flip(literals.get(index).atom);
 	}
 	
 	private boolean isSatisfied() {
-		return !this.satMap.values().contains(Boolean.FALSE);
+		boolean b = !this.satMap.values().contains(Boolean.FALSE);
+		return b;
 	}
 	
 	private void updateSatMap() {
@@ -157,7 +162,7 @@ public class WalkSAT {
 	}
 	
 	private void randomWalk(Clause clause) {
-	    Atom a = this.picker.pick(clause.getLiterals());
+	    Atom a = this.picker.pick(clause.getLiterals()).atom;
 	    this.flip(a);
 	}
 	
@@ -171,14 +176,17 @@ public class WalkSAT {
 		List<Clause> clauseList = new ArrayList<Clause>(clauses);
 		boolean reduce = true;
 		while (reduce) {
+			reduce = false;
 			for (int i = 0; i < clauseList.size(); i++) {
 				Clause c = clauseList.get(i);
 				if (c.length() == 1) {
 					clauseList = this.reduce(clauseList, c);
+					if (clauseList != FALSE) {
+						reduce = true;
+					}
 					break;
 				}
 			}
-			reduce = false;
 		}
 		return clauseList;
 	}
@@ -189,7 +197,10 @@ public class WalkSAT {
 		List<Clause> reducedList = new ArrayList<Clause>(clauses.size());
 		for (Clause c : clauses) {
 			Clause reduced = this.reduceClause(c, literal);
-			if (reduced != null) {
+			if (!Clause.TRUE.equals(reduced)) {
+				if (Clause.FALSE.equals(reduced)) {
+					return FALSE;
+				}
 				reducedList.add(reduced);
 			}
 		}
@@ -206,10 +217,10 @@ public class WalkSAT {
 			
 			if (literal.signal != l.signal) { // remove literal from clause
 				literals.remove(index);
-				return literals.isEmpty() ? null : new Clause(literals);
+				return literals.isEmpty() ? Clause.FALSE : new Clause(literals);
 
-			} else { // clause always true, ignore it
-				return null;
+			} else { // clause always true
+				return Clause.TRUE;
 			}
 		}
 		// does not contain literal, don't reduce it
@@ -258,8 +269,8 @@ public class WalkSAT {
 		HashMap<CompositeKey, Atom> atoms = new HashMap<CompositeKey, Atom>();
 		for (Clause c : clauses) {
 			for (Literal l : c.getLiterals()) {
-				CompositeKey key = new CompositeKey(l);
-				atoms.put(key, l);
+				CompositeKey key = new CompositeKey(l.atom);
+				atoms.put(key, l.atom);
 				
 				Map<CompositeKey, List<Clause>> map = l.signal ? this.trueLiterals : this.falseLiterals;
 				List<Clause> mapClauses = map.get(key);

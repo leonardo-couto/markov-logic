@@ -27,7 +27,7 @@ public class FindCandidates implements Runnable {
 	private final BlockingQueue<Formula> naiveCandidates;
 	private final int threads;
 	
-	public static final Formula END = new Atom(Predicate.empty, new Term[0]); 
+	public static final Formula END = new Atom(Predicate.EMPTY, new Term[0]); 
 	private static final Disjunction DISJUNCTION = Disjunction.OPERATOR;
 //	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
 //	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;

@@ -7,13 +7,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import fol.Atom;
 import fol.Formula;
-import fol.Predicate;
-import fol.Term;
 import fol.database.Database;
 
 public class CountsGenerator {
 	
-	private static final Formula END = new Atom(Predicate.empty, new Term[0]);
+	private static final Formula END = Atom.TRUE;
 
 	private final Database db;
 	private final int samples;

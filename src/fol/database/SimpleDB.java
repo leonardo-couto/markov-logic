@@ -24,6 +24,7 @@ public class SimpleDB implements Database {
 
 	@Override
 	public boolean valueOf(Atom a) {
+		if (Atom.TRUE == a) return true;
 		return this.valueOf(new CompositeKey(a.predicate, a.terms));
 	}
 	
@@ -34,6 +35,7 @@ public class SimpleDB implements Database {
 
 	@Override
 	public boolean flip(Atom a) {
+		if (Atom.TRUE == a) return true;
 		CompositeKey key = new CompositeKey(a.predicate, a.terms);
 		Boolean value = this.db.get(key);
 		if (value == null || !value.booleanValue()) { 
@@ -47,6 +49,7 @@ public class SimpleDB implements Database {
 
 	@Override
 	public void set(Atom a, boolean value) {
+		if (Atom.TRUE == a) return;
 		CompositeKey key = new CompositeKey(a.predicate, a.terms);
 		Boolean current = this.db.get(key);
 		if (current == null) {
@@ -153,7 +156,8 @@ public class SimpleDB implements Database {
 	@Override
 	public int groundingCount(Atom filter, boolean value) {
 		int total = this.groundingCount(filter);
-		int sample = total < 250 ? 2*total : 1000; // 500 for a error of at most 5%
+		int sample = total < 700 ? total : 700; // 500 for a error of at most 5%
+		// TODO corrigir sample
 
 		int count = 0;
 		Iterator<Atom> atoms = this.groundingIterator(filter);

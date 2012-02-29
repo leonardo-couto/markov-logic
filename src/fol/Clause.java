@@ -3,6 +3,7 @@ package fol;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,40 +16,65 @@ import java.util.Set;
 import fol.database.Database;
 import fol.operator.Disjunction;
 
+/**
+ * Represents a Clause. A Clause is a disjunction of literals. 
+ */
 public class Clause implements Formula, Comparable<Clause> {
+	
+	public static final Clause FALSE = new Clause(Literal.FALSE);
+	public static final Clause TRUE  = new Clause(Literal.TRUE);
 	
 	private static final String DISJUNCTION_CONNECTOR = " v ";
 	
-	private final List<Literal> literals;
-	
+	private final List<Literal> literals;	
+
 	/**
-	 * Represents a formula in conjunctive normal form (CNF). A CNF formula is 
-	 * a disjunction of literals. A literal is an Atom, or its negation.
-	 * @param literals 
-	 * @param negated
+	 * Create a clause with this literals.
+	 * @param literals a Collection of Literal.
 	 */
 	public Clause(Collection<? extends Literal> literals) {
 		this(literals, false);
 	}
 	
+	/**
+	 * Creates a clause with a single literal
+	 */
+	public Clause(Literal literal) {
+		this.literals = Collections.singletonList(literal);
+	}
+	
 	Clause(Collection<? extends Literal> literals, boolean ordered) {
-		List<Literal> list = new ArrayList<Literal>(literals);
-		if (!ordered && literals.size() > 1) {
-			Collections.sort(list);
+		Iterator<? extends Literal> iterator = literals.iterator();
+		if (!ordered && !literals.isEmpty()) {
+			Clause clause = new Clause(iterator.next());
+			while (iterator.hasNext()) {
+				clause = clause.addLiteral(iterator.next());
+			}
+			this.literals = clause.literals;
+			
+		} else {
+			this.literals = new ArrayList<Literal>(literals);
 		}
-		this.literals = list;
 	}
 	
 	/**
 	 * Extends this clause by adding another literal.
-	 * If this clause already contains a, return this clause unmodified.
+	 * If this clause already contains this literal, return this clause unmodified.
+	 * If this clause contains 
 	 * @param a Atom
 	 * @param negated true for a negated literal
 	 * @return
 	 */
 	public Clause addLiteral(Literal l) {
-		int i = Collections.binarySearch(this.literals, l);
-		if (i >= 0) return this; // (+(insertion point) + 1)
+		if (TRUE.equals(this)) return TRUE;
+		if (FALSE.equals(this)) return new Clause(l);
+		
+		Comparator<Literal> comparator = new Literal.AtomComparator();
+		int i = Collections.binarySearch(this.literals, l, comparator);
+		if (i >= 0) { // (+(insertion point) + 1)
+			if (this.literals.get(i).signal == l.signal) return this;
+			else return TRUE;
+		}
 		
 		ArrayList<Literal> literals = new ArrayList<Literal>(this.literals.size()+1);
 		literals.addAll(this.literals);
@@ -88,7 +114,7 @@ public class Clause implements Formula, Comparable<Clause> {
 	public List<Atom> getAtoms() {
 		List<Atom> atoms = new ArrayList<Atom>(this.literals.size());
 		for (Literal l : this.literals) {
-			atoms.add(l.toAtom());
+			atoms.add(l.atom);
 		}
 		return atoms;
 	}
@@ -116,7 +142,7 @@ public class Clause implements Formula, Comparable<Clause> {
 	public Set<Predicate> getPredicates() {
 		Set<Predicate> predicates = new HashSet<Predicate>(this.literals.size()*2);
 		for (Literal l : this.literals) {
-			predicates.add(l.predicate);
+			predicates.addAll(l.getPredicates());
 		}
 		return predicates;
 	}
@@ -173,7 +199,7 @@ public class Clause implements Formula, Comparable<Clause> {
 	@Override
 	public boolean hasPredicate(Predicate p) {
 		for (Literal l : this.literals) {
-			if (p == l.predicate) {
+			if (p == l.atom.predicate) {
 				return true;
 			}
 		}
@@ -207,7 +233,7 @@ public class Clause implements Formula, Comparable<Clause> {
 		List<Literal> literals = new ArrayList<Literal>(this.literals.size());
 		
 		for (Literal l : this.literals) {
-			Term[] oldTerms = l.terms;
+			Term[] oldTerms = l.atom.terms;
 			Term[] terms = new Term[oldTerms.length];
 			for (int i = 0; i < oldTerms.length; i++) {
 				Variable v = (Variable) oldTerms[i];
@@ -223,7 +249,8 @@ public class Clause implements Formula, Comparable<Clause> {
 					terms[i] = v1;
 				}
 			}
-			Literal literal = new Literal(l.predicate, terms, false, l.signal); 
+			Atom atom = new Atom(l.atom.predicate, terms, false);
+			Literal literal = new Literal(atom, l.signal); 
 			this.addOrdered(literals, literal);
 		}		
 		
@@ -232,10 +259,10 @@ public class Clause implements Formula, Comparable<Clause> {
 	
 	private void addOrdered(List<Literal> literals, Literal literal) {
 		literals.add(literal);
-		Predicate p = literal.predicate;
+		Predicate p = literal.atom.predicate;
 		for (int i = literals.size()-1; i > 0; i--) {
 			Literal l = literals.get(i-1);
-			if (p == l.predicate && (literal.compareTo(l) < 0)) {
+			if (p == l.atom.predicate && (literal.compareTo(l) < 0)) {
 				literals.set(i, l);
 				literals.set(i-1, literal);
 			} else {

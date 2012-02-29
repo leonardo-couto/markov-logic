@@ -1,139 +1,147 @@
 package fol;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import fol.database.Database;
 
-public class Literal extends Atom {
+public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
+
+	public final Atom atom;
+	public final boolean signal;
+	
+	public static final Literal FALSE = new Literal(Atom.TRUE, false);
+	public static final Literal TRUE  = new Literal(Atom.TRUE, true);
 	
 	private static final Character NEGATION = '!';
 	
-	public final boolean signal;
-	
-	public Literal(Predicate predicate, boolean signal, Term ... terms) {
-		super(predicate, terms);
-		this.signal = signal;
-	}
-	
 	public Literal(Atom atom, boolean signal) {
-		super(atom.predicate, atom.terms, atom.isGrounded());
+		this.atom = atom;
 		this.signal = signal;
 	}
-	
-	Literal(Predicate predicate, Term[] terms, boolean grounded, boolean signal) {
-		super(predicate, terms, grounded);
-		this.signal = signal;
-	}
-	
+
 	@Override
-	public int compareTo(Atom atom) {
-//		int compare = super.compareTo(atom);
-//		if (compare == 0 && atom instanceof Literal) {
-//			Literal literal = (Literal) atom;
-//			return this.signal ? (literal.signal ? 0 : -1) : (literal.signal ? 1 : 0);
-//		}
-//		return compare;
-
-		if (this.predicate == atom.predicate) {
-			Term t1;
-			Term t2;
-			for (int i = 0; i < this.terms.length; i++) {
-				t1 = this.terms[i];
-				t2 = atom.terms[i];
-				if (t1 != t2) {
-					return t1.compareTo(t2);
-				}
-			}
-			if (atom instanceof Literal) {
-				return this.signal ? (((Literal) atom).signal ? 0 : -1) : (((Literal) atom).signal ? 1 : 0);
-			}			
-			return 0;
+	public int compareTo(Literal o) {
+		int compare = this.atom.compareTo(o.atom);
+		if (compare == 0) {
+			return this.signal ? (o.signal ? 0 : -1) : (o.signal ? 1 : 0);
 		}
-		return this.predicate.compareTo(atom.predicate);
+		return compare;
 	}
-
+	
 	@Override
 	public boolean equals(Object obj) {
-		if (super.equals(obj)) {
-			if (obj instanceof Literal) {
-				return this.signal == ((Literal) obj).signal;
-			}
-			return this.signal; // positive literal is an atom
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (!(obj instanceof Literal)) return false;
+		Literal other = (Literal) obj;
+		return this.atom.equals(other.atom) ? this.signal == other.signal : false;
+	}
+
+	@Override
+	public void evaluate(Deque<Boolean> stack, Database db) {
+		stack.push(this.getValue(db));
+	}
+	
+	private StringBuilder print() {
+		if (this.atom == Atom.TRUE) {
+			return this.signal ? new StringBuilder("TRUE") : new StringBuilder("FALSE");
 		}
-		return false;
-	}
-
-	@Override
-	public boolean getValue(Database db) {
-		return this.signal == super.getValue(db);
-	}
-
-	@Override
-	public int hashCode() {
-		int hashCode = super.hashCode();
-		return this.signal ? hashCode : -1 * hashCode;
+		StringBuilder sb = atom.print();
+		if (this.signal) {
+			sb.insert(0, NEGATION);
+		}
+		return sb;
 	}
 
 	@Override
 	public void print(Deque<StringBuilder> stack) {
-		super.print(stack);
-		if (!this.signal) {
-			stack.peek().insert(0, NEGATION);
-		}
+		stack.push(this.print());
+	}
+
+	@Override
+	public List<Atom> getAtoms() {
+		return Collections.singletonList(this.atom);
+	}
+
+	@Override
+	public List<FormulaComponent> getComponents() {
+		return Collections.<FormulaComponent>singletonList(this);
+	}
+
+	@Override
+	public Set<Predicate> getPredicates() {
+		return this.atom.getPredicates();
+	}
+
+	@Override
+	public boolean getValue(Database db) {
+		return this.signal == this.atom.getValue(db);
+	}
+
+	@Override
+	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+		return this.signal == this.atom.getValue(db, groundings);
+	}
+
+	@Override
+	public Set<Variable> getVariables() {
+		return this.atom.getVariables();
+	}
+
+	@Override
+	public Literal ground(Map<Variable, Constant> groundings) {
+		Atom grounded = this.atom.ground(groundings);
+		return this.atom == grounded ? this : new Literal(grounded, this.signal);
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = this.atom.hashCode();
+		return this.signal ? hash : -hash;
 	}
 	
 	@Override
-	public Literal ground(Map<Variable, Constant> groundings) {
-//		Atom ground = super.ground(groundings);
-//		return (this == ground) ? this : new Literal(ground, this.signal);
-		if (this.isGrounded()) return this;
-		int length = this.terms.length;
-		boolean modified = false;
-		boolean grounded = true;
-		
-		Term[] groundedTerms = new Term[length];
-		for (int i = 0; i < length; i++) {
-			Term t = this.terms[i];
-			if (t instanceof Constant) {
-				groundedTerms[i] = t;				
-			} else {
-				Constant candidate = groundings.get(t);
-				if (candidate == null) {
-					grounded = false;
-					groundedTerms[i] = t;	
-				} else {
-					modified = true;
-					groundedTerms[i] = candidate;
-				}
-			}
-		}
-		
-		return modified ? new Literal(this.predicate, groundedTerms, grounded, this.signal) : this;
+	public boolean hasPredicate(Predicate p) {
+		return this.atom.predicate == p;
+	}
+
+	@Override
+	public boolean isGrounded() {
+		return this.atom.isGrounded();
+	}
+
+	@Override
+	public int length() {
+		return 1;
 	}
 
 	@Override
 	public List<Clause> toCNF() {
-		List<Literal> singleton = Collections.singletonList(this);
-		Clause cnf = new Clause(singleton);
-		return Collections.singletonList(cnf);
+		return (new Clause(this)).toCNF();
 	}
 	
-	public Atom toAtom() {
-		return new Atom(this.predicate, this.terms);
-	}
-
 	@Override
 	public String toString() {
-		String atom = super.toString();
-		return this.signal ? atom : NEGATION.toString() + atom; 
+		return this.print().toString();
 	}
 
 	@Override
 	public double trueCount(Database db) {
-		return (double) db.groundingCount(this, this.signal);
+		return (double) db.groundingCount(this.atom, this.signal);
 	}
 	
+	public static final class AtomComparator implements Comparator<Literal> {
+
+		@Override
+		public int compare(Literal l0, Literal l1) {
+			return l0.atom.compareTo(l1.atom);
+		}
+
+	}
+
 }

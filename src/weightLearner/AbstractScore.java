@@ -79,7 +79,7 @@ public abstract class AbstractScore implements Score {
 	public boolean removeFormula(Formula f) {
 		if (remove(this.formulas, f)) {
 			for (Predicate p : f.getPredicates()) {
-				if (p != Predicate.equals && p != Predicate.empty) {
+				if (p != Predicate.EQUALS) {
 					remove(this.predicateFormulas.get(p), f);
 				}
 			}

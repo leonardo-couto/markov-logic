@@ -71,7 +71,7 @@ public class FormulaFactory {
 			for (int i = 0; i < literals.size(); i++) {
 				Literal l = literals.get(i);
 				if (!l.signal) {
-					literals.set(i, new Literal(l, true));
+					literals.set(i, new Literal(l.atom, true));
 				}
 			}
 			Clause seed = new Clause(literals, true);
@@ -114,7 +114,7 @@ public class FormulaFactory {
 		ArrayList<Clause> aux;
 		List<Clause> clauses = new ArrayList<Clause>(2);
 		for (Literal literal : literals) {
-			Literal inverted = new Literal(literal, !literal.signal);
+			Literal inverted = new Literal(literal.atom, !literal.signal);
 			if (clauses.isEmpty()) {
 				clauses.add(new Clause(Collections.singletonList(literal)));
 				clauses.add(new Clause(Collections.singletonList(inverted)));
@@ -186,10 +186,10 @@ public class FormulaFactory {
 					if (vars[i].getDomain().equals(vars[j].getDomain())) {
 						terms[0] = vars[i];
 						terms[1] = vars[j];
-						CompositeKey key = new CompositeKey(Predicate.equals, terms);
+						CompositeKey key = new CompositeKey(Predicate.EQUALS, terms);
 						Atom equals = this.atoms.get(key);
 						if (equals == null) {
-							equals = new Atom(Predicate.equals, terms[0], terms[1]);
+							equals = new Atom(Predicate.EQUALS, terms[0], terms[1]);
 							this.atoms.put(key, equals);
 						}
 						Clause positive = clause.addLiteral(new Literal(equals, true));

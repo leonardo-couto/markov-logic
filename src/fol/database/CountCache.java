@@ -40,7 +40,7 @@ public class CountCache {
 		Set<Predicate> predicates = data.counts.keySet();
 		List<Count> counts = new ArrayList<Count>(predicates.size()*sampleSize);
 		for (Predicate p : predicates) {
-			if (p == Predicate.equals || p == Predicate.empty) continue;
+			if (p == Predicate.EQUALS) continue;
 			this.updateCache(p, data, formula, sampleSize);
 			List<Count> pCounts = data.counts.get(p);
 			for (int i = 0; i < Math.min(sampleSize,pCounts.size()); i++) {

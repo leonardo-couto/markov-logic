@@ -70,7 +70,7 @@ public class EqualsFactory {
 				for (Entry<Variable, Integer> e : this.variables.entrySet()) {
 					if (e.getKey().getDomain().equals(v.getDomain())) {
 						this.equals.get(e.getValue()).put(
-								ret, new Atom(Predicate.equals, e.getKey(), v));
+								ret, new Atom(Predicate.EQUALS, e.getKey(), v));
 					}
 				}
 			} else {

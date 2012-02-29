@@ -3,7 +3,6 @@ package fol;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -13,13 +12,17 @@ import java.util.Set;
 import fol.database.Database;
 import fol.operator.Operator;
 
-public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
-
+public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
+	
 	private final boolean grounded;
+	
 	public final Predicate predicate;
 	public final Term[] terms;
 	
 	private static final Character COMMA = ',';
+	private static final Predicate EMPTY = new Predicate("empty");
+	
+	public static final Atom TRUE = new Atom(EMPTY, new Term[0], true);
 	
 	public Atom(Predicate predicate, Term ... terms) {
 		this.predicate = predicate;
@@ -41,7 +44,19 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	@Override
 	public int compareTo(Atom o) {
-		return compare(this, o);
+		if (this.predicate == o.predicate) {
+			Term t1;
+			Term t2;
+			for (int i = 0; i < this.terms.length; i++) {
+				t1 = this.terms[i];
+				t2 = o.terms[i];
+				if (t1 != t2) {
+					return t1.compareTo(t2);
+				}
+			}
+			return 0;
+		}
+		return this.predicate.compareTo(o.predicate);
 	}
 	
 	@Override
@@ -93,7 +108,7 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 		if (!this.grounded) {
 			throw new RuntimeException("getValue of non-grounded Atom " + this.toString());
 		}
-		return db.valueOf(this);
+		return this.predicate == EMPTY ? true : db.valueOf(this);
 	}
 
 	@Override
@@ -143,8 +158,12 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 		stack.push(this.print());
 	}
 	
-	private StringBuilder print() {
+	StringBuilder print() {
 		StringBuilder b = new StringBuilder();
+		if (this.predicate == EMPTY) {
+			b.append("TRUE");
+			return b;
+		}
 		b.append(this.predicate.toString()).append(Operator.LEFTP);
 		for (Term t : terms) {
 			b.append(t.toString());
@@ -183,16 +202,8 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	@Override
 	public List<Clause> toCNF() {
-		Literal l = new Literal(this, true);
-		List<Literal> singleton = Collections.singletonList(l);
-		Clause cnf = new Clause(singleton);
-		return Collections.singletonList(cnf);
-	}
-	
-	public static void main(String[] args) {
-		for (int i = 0; i < 11; i++) {
-			System.out.println(1 << i);
-		}
+		if (this.predicate == EMPTY) return Collections.singletonList(Clause.TRUE);
+		return (new Literal(this, true)).toCNF();
 	}
 	
 	@Override
@@ -203,31 +214,6 @@ public class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	@Override
 	public double trueCount(Database db) {
 		return (double) db.groundingCount(this, true);
-	}
-	
-	private static int compare(Atom a0, Atom a1) {
-		if (a0.predicate == a1.predicate) {
-			Term t1;
-			Term t2;
-			for (int i = 0; i < a0.terms.length; i++) {
-				t1 = a0.terms[i];
-				t2 = a1.terms[i];
-				if (t1 != t2) {
-					return t1.compareTo(t2);
-				}
-			}
-			return 0;
-		}
-		return a0.predicate.compareTo(a1.predicate);
-	}
-	
-	public static final class DefaultComparator implements Comparator<Atom> {
-
-		@Override
-		public int compare(Atom a0, Atom a1) {
-			return Atom.compare(a0, a1);
-		}
-
 	}
 
 }
