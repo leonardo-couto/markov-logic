@@ -271,9 +271,46 @@ public class Clause implements Formula, Comparable<Clause> {
 		}
 	}
 	
+	/**
+	 * <p>Reduce trivial values when searching for a model that
+	 * satisfies this Formula. Store the reduced Atoms and their
+	 * values in the constants map in the result.</p>
+	 * <p>
+	 */
+	public ReducedClause reduce(Map<Atom, Boolean> constants) {
+		
+		boolean modified = false;
+		
+		List<Literal> literals = new ArrayList<Literal>(this.literals.size());		
+		for (Literal literal : this.literals) {
+			if (literal.atom == Atom.TRUE) {
+				if (literal.signal) return new ReducedClause(Clause.TRUE);
+				modified = true;
+			}
+			Boolean b = constants.get(literal.atom);
+			if (b != null) {
+				if (b.booleanValue() == literal.signal) return new ReducedClause(Clause.TRUE);
+				modified = true;
+			} else {
+				literals.add(literal);
+			}
+		}
+		
+		int size = literals.size();
+		if (size == 0) return new ReducedClause(Clause.FALSE);
+		if (size == 1) {
+			Literal l = literals.get(0);
+			Map<Atom, Boolean> map = Collections.singletonMap(l.atom, l.signal);
+			return new ReducedClause(map, Clause.TRUE);
+		}
+		
+		Clause c = modified ? new Clause(literals, true) : this;
+		return new ReducedClause(c);
+	}
+	
 	@Override
-	public List<Clause> toCNF() {
-		return Collections.singletonList(this);
+	public CNF toCNF() {
+		return new CNF(this);
 	}
 	
 	@Override
@@ -322,6 +359,27 @@ public class Clause implements Formula, Comparable<Clause> {
 		
 		double ratio = ((double) count) / sample;
 		return ratio * total;
+	}
+	
+	/**
+	 * Stores the result of a call to reduce a Clause.
+	 * See {@link CNF#reduce()}
+	 */
+	public static class ReducedClause {
+		
+		public final Map<Atom, Boolean> constants;
+		public final Clause formula;
+		
+		public ReducedClause(Map<Atom, Boolean> constants, Clause formula) {
+			this.constants = constants;
+			this.formula = formula;
+		}
+		
+		public ReducedClause(Clause formula) {
+			this.constants = Collections.emptyMap();
+			this.formula = formula;
+		}
+		
 	}
 	
 }

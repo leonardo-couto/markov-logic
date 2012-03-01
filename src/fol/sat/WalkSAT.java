@@ -2,8 +2,6 @@ package fol.sat;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,17 +10,20 @@ import java.util.Random;
 
 import stat.ElementPicker;
 import fol.Atom;
+import fol.CNF;
+import fol.CNF.ReducedCNF;
 import fol.Clause;
 import fol.Literal;
 import fol.database.CompositeKey;
 import fol.database.Database;
 import fol.database.SimpleDB;
 
+/**
+ * Selman et. al. - Local Search Strategies for Satisfiability Testing (1996)
+ * McAllester et. al. - Evidence for Invariants in Local Search (1997)
+ */
 public class WalkSAT {
 	
-	private static final List<Clause> FALSE = Collections.singletonList(Clause.FALSE);
-	
-	private final Comparator<Literal> comparator;
 	private final List<Literal> constants;
 	private final List<Clause> clauses;
 	private final ElementPicker picker;
@@ -47,7 +48,6 @@ public class WalkSAT {
 	private final int maxFlips;
 	
 	public WalkSAT(Collection<? extends Clause> clauses) {
-		this.comparator = new Literal.AtomComparator();
 		this.constants = new ArrayList<Literal>();
 		this.clauses = this.reduce(clauses);
 		this.picker = new ElementPicker(new Random());
@@ -173,58 +173,12 @@ public class WalkSAT {
 	 * @return List of reduced clauses.
 	 */
 	private List<Clause> reduce(Collection<? extends Clause> clauses) {
-		List<Clause> clauseList = new ArrayList<Clause>(clauses);
-		boolean reduce = true;
-		while (reduce) {
-			reduce = false;
-			for (int i = 0; i < clauseList.size(); i++) {
-				Clause c = clauseList.get(i);
-				if (c.length() == 1) {
-					clauseList = this.reduce(clauseList, c);
-					if (clauseList != FALSE) {
-						reduce = true;
-					}
-					break;
-				}
-			}
+		CNF cnf = new CNF(clauses);
+		ReducedCNF reduced = cnf.reduce();
+		for (Entry<Atom, Boolean> e : reduced.constants.entrySet()) {
+			constants.add(new Literal(e.getKey(), e.getValue()));
 		}
-		return clauseList;
-	}
-	
-	private List<Clause> reduce(List<Clause> clauses, Clause clause) {
-		Literal literal = clause.getLiterals().get(0);
-		this.constants.add(literal);
-		List<Clause> reducedList = new ArrayList<Clause>(clauses.size());
-		for (Clause c : clauses) {
-			Clause reduced = this.reduceClause(c, literal);
-			if (!Clause.TRUE.equals(reduced)) {
-				if (Clause.FALSE.equals(reduced)) {
-					return FALSE;
-				}
-				reducedList.add(reduced);
-			}
-		}
-		
-		return reducedList;
-	}
-	
-	private Clause reduceClause(Clause clause, Literal literal) {
-		List<Literal> literals = clause.getLiterals();
-		int index = Collections.binarySearch(literals, literal, this.comparator);
-		
-		if (index > -1) { // clause contains literal
-			Literal l = literals.get(index);
-			
-			if (literal.signal != l.signal) { // remove literal from clause
-				literals.remove(index);
-				return literals.isEmpty() ? Clause.FALSE : new Clause(literals);
-
-			} else { // clause always true
-				return Clause.TRUE;
-			}
-		}
-		// does not contain literal, don't reduce it
-		return clause;
+		return reduced.formula.getClauses();
 	}
 	
 	public Database sat() {

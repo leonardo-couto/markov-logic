@@ -160,7 +160,8 @@ public class FormulaFactory {
 		List<Atom> atoms = this.getAtoms();
 		List<Clause> unitClauses = new ArrayList<Clause>(atoms.size());
 		for (Atom a : atoms) {
-			unitClauses.add(a.toCNF().get(0));
+			Literal literal = new Literal(a, true);
+			unitClauses.add(new Clause(literal));
 		}
 		return unitClauses;
 	}

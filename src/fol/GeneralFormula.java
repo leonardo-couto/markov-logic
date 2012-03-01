@@ -22,14 +22,14 @@ public class GeneralFormula implements Formula {
 	private final List<FormulaComponent> components;
 	
 	public GeneralFormula(List<FormulaComponent> components) {
-		this.components = components;
+		this.components = new ArrayList<FormulaComponent>(components);
 		this.atoms = new ArrayList<Atom>(components.size());
 		this.initAtoms();
 	}
 	
 	private GeneralFormula(List<FormulaComponent> components, List<Atom> atoms) {
-		this.atoms = atoms;
-		this.components = components;
+		this.atoms = new ArrayList<Atom>(atoms);
+		this.components = new ArrayList<FormulaComponent>(components);
 	}
 
 	@Override
@@ -141,19 +141,22 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public GeneralFormula ground(Map<Variable, Constant> groundings) {
+		int size = this.components.size();
 		List<Atom> groundedAtoms = new ArrayList<Atom>(this.atoms.size());
-		List<FormulaComponent> groundedComponents = new ArrayList<FormulaComponent>(this.components.size());
+		List<FormulaComponent> groundedComponents = new ArrayList<FormulaComponent>(size);
 		
 		int j = 0;
 		Atom ground;
 		for (Atom a : this.atoms) {
-			ground = a.isGrounded() ? a : a.ground(groundings);
+			ground = a.ground(groundings);
 			groundedAtoms.add(ground);
 			
 			if (a != ground) {
-				while (a != this.components.get(j)) {
-					groundedComponents.add(this.components.get(j));
+				FormulaComponent component = this.components.get(j);
+				while (a != component) {
+					groundedComponents.add(component);
 					j++;
+					component = j < size ? this.components.get(j) : null;
 				}
 				groundedComponents.add(ground);
 				j++;
@@ -163,25 +166,13 @@ public class GeneralFormula implements Formula {
 		for (int i = j; i < this.components.size(); i++) {
 			groundedComponents.add(this.components.get(i));
 		}
-		
-		// old code:
-		//		for (FormulaComponent component : this.components) {
-		//			if (component instanceof Atom) {
-		//				Atom groundedAtom = ((Atom) component).replaceVariables(groundings);
-		//				groundedAtoms.add(groundedAtom);
-		//				groundedComponents.add(groundedAtom);
-		//			} else {
-		//				groundedComponents.add(component);
-		//			}
-		//		}
 
 		return new GeneralFormula(groundedComponents, groundedAtoms);
 	}
 	
 	@Override
-	public List<Clause> toCNF() {
-		// TODO Auto-generated method stub
-		return null;
+	public CNF toCNF() {
+		throw new UnsupportedOperationException("method toCNF() not implemented for GeneralFormula yet.");
 	}
 	
 	public GeneralFormula toNegationNormalForm() {
@@ -271,11 +262,11 @@ public class GeneralFormula implements Formula {
 	public double trueCount(Database db) {
 		Set<Variable> vars = this.getVariables();
 		Map<Variable, Constant> groundings = new HashMap<Variable, Constant>();
-		long total = 1;
+		int total = 1;
 		for (Variable v : vars) {
 			total = total * v.getConstants().size();
 		}
-		int sample = total < 250 ? 2*((int) total) : 500; // 500 for a error of at most 5%
+		int sample = total < 700 ? total : 700; // 500 for a error of at most 5%
 		// TODO tirar o 2* daqui e do SimpleDB, fazer as amostras serem exatas para < 100
 		
 		int count = 0;

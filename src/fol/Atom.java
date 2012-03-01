@@ -201,8 +201,8 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 	
 	@Override
-	public List<Clause> toCNF() {
-		if (this.predicate == EMPTY) return Collections.singletonList(Clause.TRUE);
+	public CNF toCNF() {
+		if (this.predicate == EMPTY) return Clause.TRUE.toCNF();
 		return (new Literal(this, true)).toCNF();
 	}
 	

@@ -52,7 +52,7 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 			return this.signal ? new StringBuilder("TRUE") : new StringBuilder("FALSE");
 		}
 		StringBuilder sb = atom.print();
-		if (this.signal) {
+		if (!this.signal) {
 			sb.insert(0, NEGATION);
 		}
 		return sb;
@@ -121,7 +121,7 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 	}
 
 	@Override
-	public List<Clause> toCNF() {
+	public CNF toCNF() {
 		return (new Clause(this)).toCNF();
 	}
 	
