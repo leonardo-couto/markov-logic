@@ -13,9 +13,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import markovLogic.WeightedFormula;
+import markovLogic.weightLearner.WeightLearner;
 import math.OptimizationException;
 import util.MyException;
-import weightLearner.WeightLearner;
 import fol.Atom;
 import fol.Formula;
 

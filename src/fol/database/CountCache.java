@@ -9,7 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import weightLearner.wpll.Count;
+import markovLogic.weightLearner.wpll.Count;
+
 
 import fol.Atom;
 import fol.Constant;

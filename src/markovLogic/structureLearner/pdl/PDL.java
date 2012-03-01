@@ -1,4 +1,4 @@
-package structureLearner.pdl;
+package markovLogic.structureLearner.pdl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,15 +10,15 @@ import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
+import markovLogic.structureLearner.CountsGenerator;
+import markovLogic.structureLearner.StructureLearner;
+import markovLogic.weightLearner.L1RegularizedScore;
+import markovLogic.weightLearner.Score;
+import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
 import math.Optimizer;
-import structureLearner.CountsGenerator;
-import structureLearner.StructureLearner;
-import weightLearner.L1RegularizedScore;
-import weightLearner.Score;
-import weightLearner.WeightLearner;
-import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import fol.Clause;
 import fol.Formula;
 import fol.FormulaFactory;

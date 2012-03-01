@@ -1,4 +1,4 @@
-package weightLearner;
+package markovLogic.weightLearner;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package structureLearner;
+package markovLogic.structureLearner;
 
 import markovLogic.MarkovLogicNetwork;
 

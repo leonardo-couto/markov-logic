@@ -1,4 +1,4 @@
-package structureLearner;
+package markovLogic.structureLearner;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;

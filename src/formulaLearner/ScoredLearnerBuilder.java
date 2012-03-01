@@ -2,7 +2,8 @@ package formulaLearner;
 
 import java.util.Collection;
 
-import weightLearner.WeightLearner;
+import markovLogic.weightLearner.WeightLearner;
+
 
 import fol.Atom;
 

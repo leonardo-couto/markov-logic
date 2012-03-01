@@ -5,8 +5,8 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
+import markovLogic.weightLearner.WeightLearner;
 import math.OptimizationException;
-import weightLearner.WeightLearner;
 import fol.Formula;
 
 public class TestFormula implements Runnable {

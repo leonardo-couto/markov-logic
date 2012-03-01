@@ -1,7 +1,7 @@
 /**
  * 
  */
-package parse;
+package markovLogic.parse;
 
 import java.util.Arrays;
 

@@ -1,4 +1,4 @@
-package weightLearner.wpll;
+package markovLogic.weightLearner.wpll;
 
 import java.util.Iterator;
 import java.util.List;

@@ -3,7 +3,8 @@ package fol.database;
 import java.util.Iterator;
 import java.util.List;
 
-import weightLearner.wpll.Count;
+import markovLogic.weightLearner.wpll.Count;
+
 
 import fol.Atom;
 import fol.Formula;

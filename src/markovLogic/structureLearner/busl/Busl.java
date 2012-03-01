@@ -1,4 +1,4 @@
-package structureLearner.busl;
+package markovLogic.structureLearner.busl;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -14,6 +14,9 @@ import java.util.Set;
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.WeightedFormula;
 import markovLogic.WeightedFormula.FormulasAndWeights;
+import markovLogic.structureLearner.StructureLearner;
+import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
 import math.Optimizer;
@@ -25,11 +28,8 @@ import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
 import stat.convergence.SequentialConvergenceTester;
-import structureLearner.StructureLearner;
 import util.MyException;
 import util.Util;
-import weightLearner.WeightLearner;
-import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import GSIMN.GSIMN;
 import GSIMN.GSITest;
 import fol.Atom;

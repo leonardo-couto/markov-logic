@@ -5,12 +5,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
 import math.AutomatedLBFGS;
 import stat.convergence.SequentialConvergenceTester;
 import stat.convergence.SequentialTester;
 import util.MyException;
-import weightLearner.WeightLearner;
-import weightLearner.wpll.WeightedPseudoLogLikelihood;
 import fol.Atom;
 import fol.Formula;
 import fol.Predicate;

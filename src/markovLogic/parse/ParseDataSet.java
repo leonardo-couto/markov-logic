@@ -1,4 +1,4 @@
-package parse;
+package markovLogic.parse;
 
 import java.io.BufferedReader;
 import java.io.File;

@@ -1,4 +1,4 @@
-package inference;
+package markovLogic.inference;
 
 import java.util.ArrayList;
 import java.util.Arrays;

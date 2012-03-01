@@ -1,6 +1,6 @@
 package formulaLearner;
 
-import weightLearner.WeightLearner;
+import markovLogic.weightLearner.WeightLearner;
 
 public interface ScoredLearner extends FormulaLearner {
 	

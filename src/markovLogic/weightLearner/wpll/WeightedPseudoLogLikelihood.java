@@ -1,4 +1,4 @@
-package weightLearner.wpll;
+package markovLogic.weightLearner.wpll;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,7 +9,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
-import weightLearner.Score;
+import markovLogic.weightLearner.Score;
+
 import fol.Formula;
 import fol.Predicate;
 import fol.database.CompositeKey;

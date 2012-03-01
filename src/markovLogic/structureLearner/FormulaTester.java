@@ -1,9 +1,10 @@
-package structureLearner;
+package markovLogic.structureLearner;
 
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 
-import weightLearner.WeightLearner;
+import markovLogic.weightLearner.WeightLearner;
+
 import fol.Formula;
 
 /**

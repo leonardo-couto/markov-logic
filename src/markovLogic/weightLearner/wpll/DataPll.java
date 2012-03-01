@@ -1,4 +1,4 @@
-package weightLearner.wpll;
+package markovLogic.weightLearner.wpll;
 
 import fol.Atom;
 

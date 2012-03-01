@@ -8,8 +8,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import parse.ParseDataSet;
-import parse.ParseDomain;
+import markovLogic.parse.ParseDataSet;
+import markovLogic.parse.ParseDomain;
+
 import stat.ContingencyTable;
 import stat.Histogram;
 import stat.PearsonChiSquare;

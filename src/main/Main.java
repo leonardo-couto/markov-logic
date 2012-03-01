@@ -6,9 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import parse.ParseDataSet;
-import parse.ParseDomain;
-import structureLearner.busl.Busl;
+import markovLogic.parse.ParseDataSet;
+import markovLogic.parse.ParseDomain;
+import markovLogic.structureLearner.busl.Busl;
+
 
 public class Main {
 	
