@@ -23,6 +23,7 @@ import fol.Clause;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
+import fol.database.CountCache;
 import fol.database.Database;
 
 public class PDL implements StructureLearner {
@@ -44,6 +45,7 @@ public class PDL implements StructureLearner {
 	private final FormulaFactory factory;
 	private final List<Clause> atoms;
 	private final Comparator<WeightedFormula<Clause>> comparator;
+	private final CountCache cache;
 	
 	private final CountsGenerator preciseCounter;
 	private final CountsGenerator fastCounter;
@@ -57,9 +59,10 @@ public class PDL implements StructureLearner {
 	public PDL(Set<Predicate> predicates, Database db) {
 		this.factory = new FormulaFactory(predicates, MAX_VARS);
 		this.atoms = this.factory.getUnitClauses();
+		this.cache = new CountCache(db);
 		
-		Score fastScore = new WeightedPseudoLogLikelihood(predicates, db, LOW_SAMPLE_SIZE);
-		Score preciseScore = new WeightedPseudoLogLikelihood(predicates, db, HIGH_SAMPLE_SIZE);
+		Score fastScore = new WeightedPseudoLogLikelihood(predicates, this.cache, LOW_SAMPLE_SIZE);
+		Score preciseScore = new WeightedPseudoLogLikelihood(predicates, this.cache, HIGH_SAMPLE_SIZE);
 		L1RegularizedScore l1Score = new L1RegularizedScore(fastScore).setConstantWeight(L1_WEIGHT);
 		
 		Optimizer fastOptimizer = new AutomatedLBFGS(LOW_LBFGS_PRECISION);
@@ -73,8 +76,8 @@ public class PDL implements StructureLearner {
 		
 		this.comparator = new WeightedFormula.AbsoluteWeightComparator<Clause>(true);
 		
-		this.preciseCounter = new CountsGenerator(db, HIGH_SAMPLE_SIZE, THREADS);
-		this.fastCounter = new CountsGenerator(db, LOW_SAMPLE_SIZE, THREADS);
+		this.preciseCounter = new CountsGenerator(this.cache, HIGH_SAMPLE_SIZE, THREADS);
+		this.fastCounter = new CountsGenerator(this.cache, LOW_SAMPLE_SIZE, THREADS);
 	}
 
 	@Override

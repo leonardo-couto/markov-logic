@@ -52,6 +52,10 @@ public class CountCache {
 		return counts;
 	}
 	
+	public Database getDatabase() {
+		return this.db;
+	}
+	
 	private void updateCache(Predicate p, CountData data, Formula formula, int sampleSize) {
 
 		int samples = Math.min(p.totalGroundings(), sampleSize);

@@ -10,28 +10,27 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import markovLogic.weightLearner.Score;
-
 import fol.Formula;
 import fol.Predicate;
 import fol.database.CompositeKey;
-import fol.database.Database;
+import fol.database.CountCache;
 
 public class WeightedPseudoLogLikelihood implements Score {
 	
 	private final List<Formula> formulas;
 	private final List<Predicate> predicates;
 	private final Map<CompositeKey, List<Count>> countsMap;
-	private final Database db;
+	private final CountCache cache;
 	private final int sampleLimit;
 	
 	private final int[] samples;
 	private double[] grad = new double[0];
 	
-	public WeightedPseudoLogLikelihood(Collection<Predicate> predicates, Database db, int sampleLimit) {
+	public WeightedPseudoLogLikelihood(Collection<Predicate> predicates, CountCache cache, int sampleLimit) {
 		this.countsMap = new HashMap<CompositeKey, List<Count>>();
 		this.predicates = new ArrayList<Predicate>(predicates);
 		this.formulas = new LinkedList<Formula>();
-		this.db = db;
+		this.cache = cache;
 		this.sampleLimit = sampleLimit;
 		this.samples = new int[this.predicates.size()];
 		this.computeSamples();
@@ -40,7 +39,7 @@ public class WeightedPseudoLogLikelihood implements Score {
 	@Override
 	public boolean addFormula(Formula formula) {
 		int index = this.formulas.size();
-		List<Count> counts = this.db.getCounts(formula, this.sampleLimit);
+		List<Count> counts = this.cache.getCounts(formula, this.sampleLimit);
 		for (Count count : counts) {
 			this.store(count, index);
 			
@@ -76,7 +75,7 @@ public class WeightedPseudoLogLikelihood implements Score {
 
 	@Override
 	public WeightedPseudoLogLikelihood copy() {
-		WeightedPseudoLogLikelihood copy = new WeightedPseudoLogLikelihood(this.predicates, this.db, this.sampleLimit);
+		WeightedPseudoLogLikelihood copy = new WeightedPseudoLogLikelihood(this.predicates, this.cache, this.sampleLimit);
 		copy.formulas.addAll(this.formulas);
 		for (CompositeKey key : this.countsMap.keySet()) {
 			List<Count> value = this.countsMap.get(key);

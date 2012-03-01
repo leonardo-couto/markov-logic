@@ -34,6 +34,4 @@ public interface Database {
 	public int groundingCount(Atom filter);
 	public int groundingCount(Atom filter, boolean value);
 	
-	public List<Count> getCounts(Formula formula, int sampleSize);
-	
 }

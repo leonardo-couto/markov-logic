@@ -171,10 +171,4 @@ public class SimpleDB implements Database {
 		return (int) Math.round(ratio * total);
 	}
 
-	@Override
-	public List<Count> getCounts(Formula formula, int sampleSize) {
-		return this.counter.getCounts(formula, sampleSize);
-	}
-
-	
 }

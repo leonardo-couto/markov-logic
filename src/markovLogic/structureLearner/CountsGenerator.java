@@ -7,18 +7,18 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import fol.Atom;
 import fol.Formula;
-import fol.database.Database;
+import fol.database.CountCache;
 
 public class CountsGenerator {
 	
 	private static final Formula END = Atom.TRUE;
 
-	private final Database db;
+	private final CountCache cache;
 	private final int samples;
 	private final int threads;
 	
-	public CountsGenerator(Database db, int samples, int threads) {
-		this.db = db;
+	public CountsGenerator(CountCache cache, int samples, int threads) {
+		this.cache = cache;
 		this.samples = samples;
 		this.threads = threads;
 	}
@@ -59,7 +59,7 @@ public class CountsGenerator {
 						this.queue.put(formula);
 						break;
 					}
-					db.getCounts(formula, samples);
+					cache.getCounts(formula, samples);
 				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
