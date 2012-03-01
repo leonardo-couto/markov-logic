@@ -1,14 +1,13 @@
 package fol.sat;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import stat.ElementPicker;
 import fol.Atom;
 import fol.CNF;
 import fol.CNF.ReducedCNF;
@@ -26,8 +25,10 @@ public class WalkSAT {
 	
 	private final List<Literal> constants;
 	private final List<Clause> clauses;
-	private final ElementPicker picker;
-	private final Random random;
+	private final Random picker;
+	private final Random mRandom;
+	private final Random pRandom;
+	private final Random qRandom;
 	private final Map<Clause, Boolean> satMap;
 	private final List<Atom> variables;
 	
@@ -43,24 +44,33 @@ public class WalkSAT {
 	 * Probability of choosing a random walk approach rather
 	 * than the greedy one.
 	 */
-	private final double p; // default = 0.6
+	private final double p; // default = 0.5
+	private final double q; // default = 0.6
 	private final int maxTries; // < 10
 	private final int maxFlips;
 	
-	public WalkSAT(Collection<? extends Clause> clauses) {
+	private double temperature; // default = 0.5 (from paper Domingos)
+	
+	public WalkSAT(CNF cnf) {
 		this.constants = new ArrayList<Literal>();
-		this.clauses = this.reduce(clauses);
-		this.picker = new ElementPicker(new Random());
-		this.random = new Random();
+		this.variables = new ArrayList<Atom>();
+		this.clauses = this.reduce(cnf);
+		this.picker = new Random();
+		this.mRandom = new Random();
+		this.pRandom = new Random();
+		this.qRandom = new Random();
 		this.satMap = new HashMap<Clause, Boolean>();
+		this.assignment = this.assignConstants(new SimpleDB());
 		this.trueLiterals = new HashMap<CompositeKey, List<Clause>>();
 		this.falseLiterals = new HashMap<CompositeKey, List<Clause>>();
-		this.variables = this.variables(this.clauses);
-		this.assignment = this.assignConstants(new SimpleDB());
+		this.mapAtoms(this.clauses);
+		int size = this.variables.size();
 		
-		this.p = 0.6;
-		this.maxTries = 1;
-		this.maxFlips = 1000; // 2 ^ numero de atomos distintos ??
+		this.p = 0.5;
+		this.q = 0.6;
+		this.temperature = 0.5;
+		this.maxTries = 2;
+		this.maxFlips = 2*size*size;
 	}
 	
 	private Database assignConstants(Database db) {
@@ -69,35 +79,67 @@ public class WalkSAT {
 		}
 		return db;
 	}
+
+	/**
+	 * The break value counts how many clauses that were satisfied
+	 * before are now unsatisfied.
+	 */
+	private int breakValue(Atom a) {
+		return this.cost(a, true);
+	}
 	
-	private int deltaSatisfied(Atom a) {
-		if (Atom.TRUE == a) return 0;
-		int delta = 0;		
-	    boolean value = this.assignment.flip(a);
+	private Atom chooseVariable(Clause c) {
+		boolean greedy = (this.q < this.qRandom.nextDouble());
+		return greedy ? this.greedySearch(c) : this.pick(c.getLiterals()).atom ;
+	}
+	
+	/**
+	 * <p>Perform either delta cost or break value of a variable, depending
+	 * on the breakValue flag. See {@link #breakValue(Atom)} and
+	 * {@link #deltaCost(Atom)}</p>
+	 * 
+	 * @param var Atom candidate to have its value changed
+	 * @param breakValue flag to indicate whether to compute 
+	 * the breakValue (true) or the deltaCost (false). 
+	 * @return deltaCost or breakValue
+	 */
+	private int cost(Atom var, boolean breakValue) {
+		if (Atom.TRUE == var) return 0;
+		int satisfied = 0, broke = 0;		
+	    boolean value = this.assignment.flip(var);
 	    
 	    // update values in satMap
-	    CompositeKey key = new CompositeKey(a);
+	    CompositeKey key = new CompositeKey(var);
 	    List<Clause> cache = value ? this.trueLiterals.get(key) : this.falseLiterals.get(key);
 	    List<Clause> check = value ? this.falseLiterals.get(key) : this.trueLiterals.get(key);
 	    
 	    if (cache != null) {
 	    	for (Clause c : cache) {
 	    		if (!this.satMap.get(c).booleanValue()) {
-	    			delta++;
+	    			satisfied++;
 	    		}
 	    	}
 	    }
 	    if (check != null) {
 	    	for (Clause c : check) {
 	    		if (!c.getValue(this.assignment)) {
-	    			delta--;
+	    			broke++;
 	    		}
 	    	}
 	    }
 	    
 	    // flips back to original value
-	    this.assignment.set(a, !value);
-		return delta;
+	    this.assignment.set(var, !value);
+		return breakValue ? broke : broke - satisfied;
+	}
+	
+	/**
+	 * The delta cost is the difference between how many clauses were
+	 * satisfied before, and how many are satisfied after changing 
+	 * var's value.
+	 */
+	private int deltaCost(Atom a) {
+		return this.cost(a, false);
 	}
 	
 	private void flip(Atom a) {
@@ -125,20 +167,20 @@ public class WalkSAT {
 	    }
 	}
 	
-	private void greedySearch(Clause clause) {
+	private Atom greedySearch(Clause clause) {
 	    List<Literal> literals = clause.getLiterals();
 	    int size = literals.size();
 	    int index = -1;
-	    int max = Integer.MIN_VALUE;
+	    int max = Integer.MAX_VALUE;
 	    for (int i = 0; i < size; i++) {
 	        Atom a = literals.get(i).atom;
-	        int delta = this.deltaSatisfied(a);
-	        if (delta > max) {
-	            max = delta;
+	        int breakValue = this.breakValue(a);
+	        if (breakValue < max) {
+	            max = breakValue;
 	            index = i;
 	        }
 	    }
-	    this.flip(literals.get(index).atom);
+	    return literals.get(index).atom;
 	}
 	
 	private boolean isSatisfied() {
@@ -146,38 +188,85 @@ public class WalkSAT {
 		return b;
 	}
 	
-	private void updateSatMap() {
-		for (Clause c : this.clauses) {
-			Boolean sat = Boolean.valueOf(c.getValue(this.assignment));
-			this.satMap.put(c, sat);			
-		}		
+	/**
+	 * Maps each Atom to a List of Clauses where that atom appears.
+	 * If it appears as a positive literal, store the combination
+	 * in the trueLiterals map, else stores in falseLiteral.
+	 */
+	private void mapAtoms(List<Clause> clauses) {
+		for (Clause c : clauses) {
+			for (Literal l : c.getLiterals()) {
+				CompositeKey key = new CompositeKey(l.atom);
+				
+				Map<CompositeKey, List<Clause>> map = l.signal ? this.trueLiterals : this.falseLiterals;
+				List<Clause> mapClauses = map.get(key);
+				if (mapClauses == null) {
+					mapClauses = new ArrayList<Clause>();
+					map.put(key, mapClauses);
+				}
+				mapClauses.add(c);
+			}
+		}
+	}
+	
+	/**
+	 * Performs a metropolis move
+	 */
+	private void metropolis() {
+		Atom a = this.pick(this.variables);
+		int delta = this.deltaCost(a);
+		
+		if (delta < 1) {
+			this.flip(a);
+		} else {
+			double m = Math.exp(-delta/this.temperature);
+			if (mRandom.nextDouble() < m) {
+				this.flip(a);
+			}
+		}
+	}
+	
+	/**
+	 * Picks a random element from a List.
+	 */
+	private <T> T pick(List<T> list) {
+		int size = list.size();
+		int index = this.picker.nextInt(size);
+		return list.get(index);
 	}
 	
 	private Database randomAssignment() {
 		for (Atom a : this.variables) {
-			boolean value = this.random.nextBoolean();
+			boolean value = this.qRandom.nextBoolean();
 			this.assignment.set(a, value);
 		}
 		return this.assignment;
 	}
 	
-	private void randomWalk(Clause clause) {
-	    Atom a = this.picker.pick(clause.getLiterals()).atom;
-	    this.flip(a);
+	/**
+	 * Performs a randomWalk move
+	 */
+	private void randomWalk() {
+		Clause clause = this.pick(this.unsatisfiedClauses());
+		Atom var = this.chooseVariable(clause);
+	    this.flip(var);
 	}
 	
 	/**
 	 * Remove all clauses of length one (recursively) and 
-	 * add their literals to the constant list.
+	 * add their literals to the constant list. All other atoms
+	 * are added to the variables list.
 	 * @param clauses clauses to be reduced.
 	 * @return List of reduced clauses.
 	 */
-	private List<Clause> reduce(Collection<? extends Clause> clauses) {
-		CNF cnf = new CNF(clauses);
+	private List<Clause> reduce(CNF cnf) {
+		HashSet<Atom> atoms = new HashSet<Atom>(cnf.getAtoms());
 		ReducedCNF reduced = cnf.reduce();
 		for (Entry<Atom, Boolean> e : reduced.constants.entrySet()) {
 			constants.add(new Literal(e.getKey(), e.getValue()));
+			atoms.remove(e.getKey());
 		}
+		this.variables.addAll(atoms);
 		return reduced.formula.getClauses();
 	}
 	
@@ -198,12 +287,12 @@ public class WalkSAT {
 			this.updateSatMap();
 		}
 		for (int i = 0; i < this.maxFlips; i++) {
-			List<Clause> unsatisfied = this.unsatisfiedClauses();
-			Clause choosen = this.picker.pick(unsatisfied);
-
-			boolean randomWalk = (this.p > this.random.nextDouble());
-			if(randomWalk) this.randomWalk(choosen);
-			else this.greedySearch(choosen);
+            boolean randomWalk = (this.pRandom.nextDouble() < this.p);
+            if (randomWalk) {
+            	this.randomWalk();
+            } else {
+            	this.metropolis();
+            }		    
 			if (this.isSatisfied()) return this.assignment;
 		}
 		return null;
@@ -219,24 +308,11 @@ public class WalkSAT {
 		return clauses;
 	}
 	
-	private List<Atom> variables(List<Clause> clauses) {
-		HashMap<CompositeKey, Atom> atoms = new HashMap<CompositeKey, Atom>();
-		for (Clause c : clauses) {
-			for (Literal l : c.getLiterals()) {
-				CompositeKey key = new CompositeKey(l.atom);
-				atoms.put(key, l.atom);
-				
-				Map<CompositeKey, List<Clause>> map = l.signal ? this.trueLiterals : this.falseLiterals;
-				List<Clause> mapClauses = map.get(key);
-				if (mapClauses == null) {
-					mapClauses = new ArrayList<Clause>();
-					map.put(key, mapClauses);
-				}
-				mapClauses.add(c);
-			}
-		}
-		
-		return new ArrayList<Atom>(atoms.values());
+	private void updateSatMap() {
+		for (Clause c : this.clauses) {
+			Boolean sat = Boolean.valueOf(c.getValue(this.assignment));
+			this.satMap.put(c, sat);			
+		}		
 	}
 
 }
