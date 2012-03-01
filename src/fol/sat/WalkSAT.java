@@ -18,7 +18,8 @@ import fol.database.Database;
 import fol.database.SimpleDB;
 
 /**
- * Selman et. al. - Local Search Strategies for Satisfiability Testing (1996)
+ * Algorithm to solve the boolean satisfability problem, based on:<br>
+ * Selman et. al. - Local Search Strategies for Satisfiability Testing (1996)<br>
  * McAllester et. al. - Evidence for Invariants in Local Search (1997)
  */
 public class WalkSAT {
@@ -73,6 +74,11 @@ public class WalkSAT {
 		this.maxFlips = 2*size*size;
 	}
 	
+	/**
+	 * Attribute the value of all constants to the database
+	 * @param db
+	 * @return
+	 */
 	private Database assignConstants(Database db) {
 		for (Literal l : this.constants) {
 			db.set(l.atom, l.signal);
@@ -88,7 +94,13 @@ public class WalkSAT {
 		return this.cost(a, true);
 	}
 	
-	private Atom chooseVariable(Clause c) {
+	/**
+	 * Chooses a literal in <code>c</code> according to different strategies
+	 * and flip its value.
+	 * @param c
+	 * @return
+	 */
+	protected Atom chooseVariable(Clause c) {
 		boolean greedy = (this.q < this.qRandom.nextDouble());
 		return greedy ? this.greedySearch(c) : this.pick(c.getLiterals()).atom ;
 	}
@@ -142,12 +154,16 @@ public class WalkSAT {
 		return this.cost(a, false);
 	}
 	
-	private void flip(Atom a) {
-		if (Atom.TRUE == a) return;
-	    boolean value = this.assignment.flip(a);
+	/**
+	 * Flips the value of <code>var</var>. Updates the truth value
+	 * of all clauses to reflect the change in var's value.
+	 */
+	private void flip(Atom var) {
+		if (Atom.TRUE == var) return;
+	    boolean value = this.assignment.flip(var);
 	    
 	    // update values in satMap
-	    CompositeKey key = new CompositeKey(a);
+	    CompositeKey key = new CompositeKey(var);
 	    List<Clause> cache = value ? this.trueLiterals.get(key) : this.falseLiterals.get(key);
 	    List<Clause> check = value ? this.falseLiterals.get(key) : this.trueLiterals.get(key);
 	    
@@ -167,6 +183,12 @@ public class WalkSAT {
 	    }
 	}
 	
+	/**
+	 * Performs a greedy search, chooses the variable that has 
+	 * the smaller {@link #breakValue(Atom)}. Often a negative number.
+	 * @param clause
+	 * @return
+	 */
 	private Atom greedySearch(Clause clause) {
 	    List<Literal> literals = clause.getLiterals();
 	    int size = literals.size();
@@ -183,6 +205,9 @@ public class WalkSAT {
 	    return literals.get(index).atom;
 	}
 	
+	/**
+	 * @return true if all clauses are satisfied by the current assignment
+	 */
 	private boolean isSatisfied() {
 		boolean b = !this.satMap.values().contains(Boolean.FALSE);
 		return b;
@@ -235,6 +260,9 @@ public class WalkSAT {
 		return list.get(index);
 	}
 	
+	/**
+	 * Gives a random assignment for the variable values
+	 */
 	private Database randomAssignment() {
 		for (Atom a : this.variables) {
 			boolean value = this.qRandom.nextBoolean();
@@ -270,6 +298,10 @@ public class WalkSAT {
 		return reduced.formula.getClauses();
 	}
 	
+	/**
+	 * Solves the boolean satisfiability problem.<br>
+	 * Starts the local search with a random assignment.
+	 */
 	public Database sat() {
 		for (int i = 0; i < this.maxTries; i++) {
 			this.randomAssignment();
@@ -281,6 +313,12 @@ public class WalkSAT {
 		return null;
 	}
 	
+	/**
+	 * Solves the boolean satisfiability problem.<br>
+	 * Starts the local search with the given assignment.<br>
+	 * It does not check if the initialAssignment satisfies
+	 * the formula before starting the search.
+	 */
 	public Database sat(Database initialAssignment) {
 		if (this.assignment != initialAssignment) {
 			this.assignment = this.assignConstants(initialAssignment);
@@ -298,6 +336,9 @@ public class WalkSAT {
 		return null;
 	}
 	
+	/**
+	 * @return A List of all unsatisfied Clauses with the current assignment
+	 */
 	private List<Clause> unsatisfiedClauses() {
 		List<Clause> clauses = new ArrayList<Clause>(this.clauses.size());
 		for (Entry<Clause, Boolean> e : this.satMap.entrySet()) {
