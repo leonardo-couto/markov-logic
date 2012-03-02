@@ -13,7 +13,6 @@ import markovLogic.weightLearner.Score;
 import fol.Formula;
 import fol.Predicate;
 import fol.database.CompositeKey;
-import fol.database.CountCache;
 
 public class WeightedPseudoLogLikelihood implements Score {
 	

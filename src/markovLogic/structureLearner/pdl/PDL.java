@@ -9,11 +9,12 @@ import java.util.ListIterator;
 import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
-import markovLogic.structureLearner.CountsGenerator;
 import markovLogic.structureLearner.StructureLearner;
 import markovLogic.weightLearner.L1RegularizedScore;
 import markovLogic.weightLearner.Score;
 import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.CountCache;
+import markovLogic.weightLearner.wpll.CountsGenerator;
 import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
@@ -24,7 +25,6 @@ import fol.FormulaFactory;
 import fol.Predicate;
 import fol.WeightedFormula;
 import fol.WeightedFormula.AbsoluteWeightComparator;
-import fol.database.CountCache;
 import fol.database.Database;
 
 public class PDL implements StructureLearner {

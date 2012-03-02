@@ -1,4 +1,4 @@
-package fol.database;
+package markovLogic.weightLearner.wpll;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,15 +9,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import markovLogic.weightLearner.wpll.Count;
-
-
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
+import fol.database.Database;
 
 public class CountCache {
 	

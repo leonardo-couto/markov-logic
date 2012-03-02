@@ -2,25 +2,18 @@ package fol.database;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-
-import markovLogic.weightLearner.wpll.Count;
-
 
 import fol.Atom;
 import fol.Constant;
-import fol.Formula;
 import fol.Term;
 import fol.Variable;
 
 public class SimpleDB implements Database {
 	
 	private final HashMap<CompositeKey, Boolean> db;
-	private final CountCache counter;
 	
 	public SimpleDB() {
 		this.db = new HashMap<CompositeKey, Boolean>();
-		this.counter = new CountCache(this);
 	}
 
 	@Override

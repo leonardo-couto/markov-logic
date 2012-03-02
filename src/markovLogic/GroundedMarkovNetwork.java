@@ -11,15 +11,15 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-import util.ListPointer;
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
 import fol.Predicate;
-import fol.Term;
 import fol.Variable;
 import fol.WeightedFormula;
+import fol.database.Database;
 
+@SuppressWarnings("rawtypes")
 public class GroundedMarkovNetwork {
 	
 	private final List<WeightedFormula> formulas;
@@ -192,36 +192,16 @@ public class GroundedMarkovNetwork {
 	/**
 	 * Get the sum of weights of the satisfied formulas given
 	 * the possible world <code>world</code>
-	 * @param world List of Atom.TRUE and Atom.FALSE representing
-	 *     the groundings truth values.
 	 * @return the sum of weights of all formulas that are true
 	 *         in the given world.
 	 */
-	public double sumWeights(List<Atom> world) {
-		double value = 0d;
-		for (int i = 0; i < this.formulas.size(); i++) {
-			List<Integer> idx = this.mapFormulaGrounding.get(i);
-			WeightedFormula wf = this.formulas.get(i);
-			Formula f = wf.getFormula();
-			double d = wf.getWeight();
-			if (f instanceof Atom) {
-				if (idx.get(0) == null) { // evidence
-					value = value + d * f.getValue();
-				} else {
-					value = value + d * world.get(idx.get(0)).getValue();
-				}
-			} else {
-				List<Atom> atoms = f.getAtoms();
-				for (int j = 0; j < atoms.size(); j++) {
-					Integer k = idx.get(j);
-					if (k != null) {
-						atoms.set(j, world.get(k));
-					}
-				}
-				value = value + d * f.getValue();
-			}
+	public double sumWeights(Database world) {
+		double sum = 0d;
+		for (WeightedFormula wf : this.formulas) {
+			boolean value = wf.getFormula().getValue(world);
+			if (value) sum += wf.getWeight();			
 		}
-		return value;
+		return sum;
 	}
 	
 }

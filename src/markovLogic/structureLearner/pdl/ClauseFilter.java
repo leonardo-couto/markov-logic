@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import markovLogic.structureLearner.CountsGenerator;
 import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.CountsGenerator;
 import math.OptimizationException;
 import fol.Clause;
 import fol.FormulaFactory;

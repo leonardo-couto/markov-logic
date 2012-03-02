@@ -1,4 +1,4 @@
-package markovLogic.structureLearner;
+package markovLogic.weightLearner.wpll;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -7,7 +7,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import fol.Atom;
 import fol.Formula;
-import fol.database.CountCache;
 
 public class CountsGenerator {
 	
