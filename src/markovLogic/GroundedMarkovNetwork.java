@@ -18,6 +18,7 @@ import fol.Formula;
 import fol.Predicate;
 import fol.Term;
 import fol.Variable;
+import fol.WeightedFormula;
 
 public class GroundedMarkovNetwork {
 	

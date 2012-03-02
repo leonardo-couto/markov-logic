@@ -12,6 +12,7 @@ import java.util.Set;
 import fol.Atom;
 import fol.Formula;
 import fol.Predicate;
+import fol.WeightedFormula;
 
 public class MarkovLogicNetwork implements List<WeightedFormula> {
 	

@@ -9,7 +9,6 @@ import java.util.ListIterator;
 import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
-import markovLogic.WeightedFormula;
 import markovLogic.structureLearner.CountsGenerator;
 import markovLogic.structureLearner.StructureLearner;
 import markovLogic.weightLearner.L1RegularizedScore;
@@ -23,6 +22,8 @@ import fol.Clause;
 import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
+import fol.WeightedFormula;
+import fol.WeightedFormula.AbsoluteWeightComparator;
 import fol.database.CountCache;
 import fol.database.Database;
 
@@ -44,7 +45,7 @@ public class PDL implements StructureLearner {
 	
 	private final FormulaFactory factory;
 	private final List<Clause> atoms;
-	private final Comparator<WeightedFormula<Clause>> comparator;
+	private final Comparator<WeightedFormula<?>> comparator;
 	private final CountCache cache;
 	
 	private final CountsGenerator preciseCounter;
@@ -74,7 +75,7 @@ public class PDL implements StructureLearner {
 		this.preciseLearner = new WeightLearner(preciseScore, preciseOptimizer);
 		this.l1Learner = this.fastLearner; // TODO: REMOVER, MODIFICACAO PARA TESTE
 		
-		this.comparator = new WeightedFormula.AbsoluteWeightComparator<Clause>(true);
+		this.comparator = new AbsoluteWeightComparator();
 		
 		this.preciseCounter = new CountsGenerator(this.cache, HIGH_SAMPLE_SIZE, THREADS);
 		this.fastCounter = new CountsGenerator(this.cache, LOW_SAMPLE_SIZE, THREADS);

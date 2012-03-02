@@ -12,12 +12,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import markovLogic.WeightedFormula;
 import markovLogic.weightLearner.WeightLearner;
 import math.OptimizationException;
 import util.MyException;
 import fol.Atom;
 import fol.Formula;
+import fol.WeightedFormula;
 
 // TODO: doNotReplace flag? (set initial formulas not replaceable)
 public class ParallelLearner implements ScoredLearner {

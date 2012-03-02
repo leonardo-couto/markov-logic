@@ -1,7 +1,7 @@
 package markovLogic.structureLearner;
 
-import markovLogic.WeightedFormula;
 import fol.Formula;
+import fol.WeightedFormula;
 
 public class ScoredFormula extends WeightedFormula implements Comparable<ScoredFormula> {
 	

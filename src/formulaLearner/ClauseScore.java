@@ -1,7 +1,7 @@
 package formulaLearner;
 
-import markovLogic.WeightedFormula;
 import fol.Formula;
+import fol.WeightedFormula;
 
 public class ClauseScore extends WeightedFormula implements Comparable<ClauseScore> {
 	

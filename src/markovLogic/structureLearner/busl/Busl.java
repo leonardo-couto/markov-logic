@@ -12,8 +12,6 @@ import java.util.Queue;
 import java.util.Set;
 
 import markovLogic.MarkovLogicNetwork;
-import markovLogic.WeightedFormula;
-import markovLogic.WeightedFormula.FormulasAndWeights;
 import markovLogic.structureLearner.StructureLearner;
 import markovLogic.weightLearner.WeightLearner;
 import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
@@ -37,6 +35,8 @@ import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
+import fol.WeightedFormula;
+import fol.WeightedFormula.FormulasAndWeights;
 import formulaLearner.ParallelLearner;
 import formulaLearner.ParallelLearnerBuilder;
 import formulaLearner.ScoredLearner;

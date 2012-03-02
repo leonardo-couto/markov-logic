@@ -5,12 +5,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import markovLogic.WeightedFormula;
 import markovLogic.structureLearner.CountsGenerator;
 import markovLogic.weightLearner.WeightLearner;
 import math.OptimizationException;
 import fol.Clause;
 import fol.FormulaFactory;
+import fol.WeightedFormula;
+import fol.WeightedFormula.AbsoluteWeightComparator;
 
 public class ClauseFilter {
 	
@@ -69,7 +70,7 @@ public class ClauseFilter {
 			}
 		}
 		
-		Comparator<WeightedFormula<Clause>> comparator = new WeightedFormula.AbsoluteWeightComparator<Clause>(true);
+		Comparator<WeightedFormula<?>> comparator = new AbsoluteWeightComparator(true);
 		Collections.sort(selection, comparator);
 		return WeightedFormula.toFormulasAndWeights(selection).formulas;
 		

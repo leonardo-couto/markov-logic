@@ -8,7 +8,6 @@ import java.util.Set;
 
 import markovLogic.GroundedMarkovNetwork;
 import markovLogic.MarkovLogicNetwork;
-import markovLogic.WeightedFormula;
 import stat.sampling.CrossJoinSampler;
 import stat.sampling.Sampler;
 import fol.Atom;
@@ -17,6 +16,7 @@ import fol.Domain;
 import fol.Formula;
 import fol.Predicate;
 import fol.Variable;
+import fol.WeightedFormula;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
