@@ -10,18 +10,20 @@ import java.util.Map;
 import java.util.Set;
 
 import fol.database.Database;
+import fol.database.Groundings;
 import fol.operator.Operator;
 
 public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	private final boolean grounded;
-	
 	public final Predicate predicate;
 	public final Term[] terms;
 	
+	// lazy instantiated
+	private int hashCode = -1;
+	
 	private static final Character COMMA = ',';
 	private static final Predicate EMPTY = new Predicate("empty");
-	
 	public static final Atom TRUE = new Atom(EMPTY, new Term[0], true);
 	
 	public Atom(Predicate predicate, Term ... terms) {
@@ -61,17 +63,15 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		
 		Atom other = (Atom) obj;
-		if (!predicate.equals(other.predicate))
-			return false;
-		if (!Arrays.equals(terms, other.terms))
-			return false;
+		if (this.predicate != other.predicate) return false;
+		for (int i = 0; i < this.terms.length; i++) {
+			if (this.terms[i] != other.terms[i]) return false;
+		}
 		return true;
 	}
 	
@@ -130,12 +130,9 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result
-				+ ((predicate == null) ? 0 : predicate.hashCode());
-		result = prime * result + Arrays.hashCode(terms);
-		return result;
+		if (this.hashCode != -1) return this.hashCode;
+		this.hashCode = Arrays.hashCode(this.terms) + 17*this.predicate.hashCode();
+		return this.hashCode;
 	}
 
 	@Override
@@ -213,7 +210,7 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 
 	@Override
 	public double trueCount(Database db) {
-		return (double) db.groundingCount(this, true);
+		return Groundings.groundingCount(this, true, db);
 	}
 
 }

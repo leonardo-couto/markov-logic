@@ -16,6 +16,7 @@ import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
 import fol.database.Database;
+import fol.database.Groundings;
 
 public class CountCache {
 	
@@ -108,7 +109,7 @@ public class CountCache {
 		}
 		if (samples > atoms.size()) {
 			Atom filter = FormulaFactory.generateAtom(p);
-			Iterator<Atom> iterator = this.db.groundingIterator(filter);
+			Iterator<Atom> iterator = new Groundings(filter);
 			for (int i = atoms.size(); i < samples; i++) {
 				atoms.add(iterator.next());
 			}

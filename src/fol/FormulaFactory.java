@@ -11,17 +11,13 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
-import fol.database.CompositeKey;
-
 public class FormulaFactory {
 	
 	private final Set<Predicate> predicates;
-	private final Map<CompositeKey, Atom> atoms;
 	private final int maxVars;
 	
 	public FormulaFactory(Set<Predicate> predicates, int maxVars) {
 		this.predicates = predicates;
-		this.atoms = new HashMap<CompositeKey, Atom>();
 		this.maxVars = maxVars;
 	}
 	
@@ -139,13 +135,7 @@ public class FormulaFactory {
 		List<Atom> atoms = new ArrayList<Atom>(this.predicates.size());
 		for (Predicate p : this.predicates) {
 			Atom a = generateAtom(p);
-			CompositeKey key = new CompositeKey(p, a.terms);
-			Atom stored = this.atoms.get(key);
-			if (stored == null) {
-				this.atoms.put(key, a);
-				stored = a;
-			}
-			atoms.add(stored);
+			atoms.add(a);
 		}
 		return atoms;
 	}	
@@ -187,12 +177,7 @@ public class FormulaFactory {
 					if (vars[i].getDomain().equals(vars[j].getDomain())) {
 						terms[0] = vars[i];
 						terms[1] = vars[j];
-						CompositeKey key = new CompositeKey(Predicate.EQUALS, terms);
-						Atom equals = this.atoms.get(key);
-						if (equals == null) {
-							equals = new Atom(Predicate.EQUALS, terms[0], terms[1]);
-							this.atoms.put(key, equals);
-						}
+						Atom equals = new Atom(Predicate.EQUALS, terms);
 						Clause positive = clause.addLiteral(new Literal(equals, true));
 						if (positive == clause) continue;
 //						ConjunctiveNormalForm negative = clause.addLiteral(new Literal(equals, false));
@@ -316,12 +301,7 @@ public class FormulaFactory {
 		for (List<Variable> l : out.keySet()) {
 			if (out.get(l).booleanValue()) {
 				Term[] terms = l.toArray(new Term[l.size()]);
-				CompositeKey key = new CompositeKey(p, terms);
-				Atom a = this.atoms.get(key);
-				if (a == null) {
-					a = new Atom(p, terms);
-					this.atoms.put(key, a);
-				}
+				Atom a = new Atom(p, terms);
 				set.add(a);
 			}
 		}

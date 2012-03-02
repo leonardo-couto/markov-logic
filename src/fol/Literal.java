@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fol.database.Database;
+import fol.database.Groundings;
 
 public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 
@@ -132,7 +133,7 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 
 	@Override
 	public double trueCount(Database db) {
-		return (double) db.groundingCount(this.atom, this.signal);
+		return Groundings.groundingCount(this.atom, this.signal, db);
 	}
 	
 	public static final class AtomComparator implements Comparator<Literal> {

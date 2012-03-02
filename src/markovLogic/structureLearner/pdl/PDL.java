@@ -32,7 +32,7 @@ public class PDL implements StructureLearner {
 	// PARAMETERS !!!!!
 	private static final int MAX_VARS = 3;
 	private static final int BEAM_SIZE = 50;
-	private static final double EPSLON = 10e-8; // min absolute weight
+	private static final double EPSLON = 1e-8; // min absolute weight
 	private static final double MIN_IMPROVEMENT = 0.02; // percent value of min score improvement
 	private static final double MIN_ABSOLUTE_IMPROVEMENT = 0.005;
 	private static final int MAX_LITERALS = 5;

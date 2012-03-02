@@ -7,15 +7,15 @@ import fol.Atom;
 public class LocalDB extends SimpleDB {
 
 	private final SimpleDB db;
-	private final HashMap<CompositeKey, Boolean> local;
+	private final HashMap<Atom, Boolean> local;
 	
 	public LocalDB(SimpleDB db) {
 		this.db = db; 
-		this.local = new HashMap<CompositeKey, Boolean>();
+		this.local = new HashMap<Atom, Boolean>();
 	}
 
 	@Override
-	protected boolean valueOf(CompositeKey key) {
+	public boolean valueOf(Atom key) {
 		if (this.local.containsKey(key)) {
 			return this.local.get(key).booleanValue();
 		}
@@ -23,9 +23,8 @@ public class LocalDB extends SimpleDB {
 	}
 	
 	@Override
-	public boolean flip(Atom a) {
-		if (Atom.TRUE == a) return true;
-		CompositeKey key = new CompositeKey(a.predicate, a.terms);
+	public boolean flip(Atom key) {
+		if (Atom.TRUE == key) return true;
 		if (this.local.containsKey(key)) {
 			boolean value = !this.local.get(key).booleanValue();
 			this.local.remove(key);
@@ -37,9 +36,8 @@ public class LocalDB extends SimpleDB {
 	}
 	
 	@Override
-	public void set(Atom a, boolean value) {
-		if (Atom.TRUE == a) return;
-		CompositeKey key = new CompositeKey(a.predicate, a.terms);
+	public void set(Atom key, boolean value) {
+		if (Atom.TRUE == key) return;
 		if (this.local.containsKey(key)) {
 			boolean current = this.local.get(key).booleanValue();
 			if (value != current) {

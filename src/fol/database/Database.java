@@ -1,7 +1,5 @@
 package fol.database;
 
-import java.util.Iterator;
-
 import fol.Atom;
 
 public interface Database {
@@ -24,9 +22,5 @@ public interface Database {
 	 * local and original copy will generate inconsistencies.
 	 */
 	public Database getLocalCopy();
-	public Iterator<Atom> groundingIterator(Atom filter);
-	public Iterator<Atom> groundingIterator(Atom filter, boolean value);
-	public int groundingCount(Atom filter);
-	public int groundingCount(Atom filter, boolean value);
 	
 }

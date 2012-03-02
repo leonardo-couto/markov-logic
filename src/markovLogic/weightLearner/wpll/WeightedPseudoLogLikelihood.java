@@ -10,15 +10,15 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import markovLogic.weightLearner.Score;
+import fol.Atom;
 import fol.Formula;
 import fol.Predicate;
-import fol.database.CompositeKey;
 
 public class WeightedPseudoLogLikelihood implements Score {
 	
 	private final List<Formula> formulas;
 	private final List<Predicate> predicates;
-	private final Map<CompositeKey, List<Count>> countsMap;
+	private final Map<Atom, List<Count>> countsMap;
 	private final CountCache cache;
 	private final int sampleLimit;
 	
@@ -26,7 +26,7 @@ public class WeightedPseudoLogLikelihood implements Score {
 	private double[] grad = new double[0];
 	
 	public WeightedPseudoLogLikelihood(Collection<Predicate> predicates, CountCache cache, int sampleLimit) {
-		this.countsMap = new HashMap<CompositeKey, List<Count>>();
+		this.countsMap = new HashMap<Atom, List<Count>>();
 		this.predicates = new ArrayList<Predicate>(predicates);
 		this.formulas = new LinkedList<Formula>();
 		this.cache = cache;
@@ -76,7 +76,7 @@ public class WeightedPseudoLogLikelihood implements Score {
 	public WeightedPseudoLogLikelihood copy() {
 		WeightedPseudoLogLikelihood copy = new WeightedPseudoLogLikelihood(this.predicates, this.cache, this.sampleLimit);
 		copy.formulas.addAll(this.formulas);
-		for (CompositeKey key : this.countsMap.keySet()) {
+		for (Atom key : this.countsMap.keySet()) {
 			List<Count> value = this.countsMap.get(key);
 			copy.countsMap.put(key, new ArrayList<Count>(value));			
 		}
@@ -171,7 +171,7 @@ public class WeightedPseudoLogLikelihood implements Score {
 	}
 	
 	private void remove(int index) {
-		for (CompositeKey key : this.countsMap.keySet()) {
+		for (Atom key : this.countsMap.keySet()) {
 			List<Count> value = this.countsMap.get(key);
 			if (index < value.size()) {
 				value.remove(index);
@@ -195,7 +195,7 @@ public class WeightedPseudoLogLikelihood implements Score {
 	}
 	
 	private void store(Count count, int index) {
-		CompositeKey key = new CompositeKey(count.getAtom());
+		Atom key = count.getAtom();
 		List<Count> counts = this.countsMap.get(key);
 		if (counts == null) {
 			counts = new ArrayList<Count>();

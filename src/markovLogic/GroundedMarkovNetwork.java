@@ -19,16 +19,15 @@ import fol.Variable;
 import fol.WeightedFormula;
 import fol.database.Database;
 
-@SuppressWarnings("rawtypes")
 public class GroundedMarkovNetwork {
 	
-	private final List<WeightedFormula> formulas;
+	private final List<WeightedFormula<?>> formulas;
 	private final List<Atom> groundings;
 	private final List<List<Integer>> mapFormulaGrounding;
 	
 	private GroundedMarkovNetwork() {
 		super();
-		this.formulas = new LinkedList<WeightedFormula>();
+		this.formulas = new LinkedList<WeightedFormula<?>>();
 		this.groundings = new LinkedList<Atom>();
 		this.mapFormulaGrounding = new LinkedList<List<Integer>>();
 	}
@@ -41,24 +40,22 @@ public class GroundedMarkovNetwork {
 		return new ArrayList<Atom>(this.groundings);
 	}
 	
-	public List<WeightedFormula> getGroundedFormulas() {
+	public List<WeightedFormula<?>> getGroundedFormulas() {
 		return this.formulas;
 	}
 	
-	// TODO: se tiver dois predicados iguais na mesma formula, ver o que fazer.
-	//       se eles gerarem groundings diferentes, deveriam estar os dois
 	public static GroundedMarkovNetwork ground(MarkovLogicNetwork mln, Atom query, Collection<Atom> given) {
 		GroundedMarkovNetwork groundedMln = new GroundedMarkovNetwork();
 		
 		// Store the atomicFormulas
 		HashMap<Predicate,Double> atomicFormulas = new HashMap<Predicate,Double>();
-		for (WeightedFormula f : mln) {
+		for (WeightedFormula<?> f : mln) {
 			if (f.getFormula() instanceof Atom) {
 				atomicFormulas.put(((Atom) f.getFormula()).predicate, f.getWeight());
 			}
 		}
 		
-		Set<WeightedFormula> groundedFormulas = new HashSet<WeightedFormula>();
+		Set<WeightedFormula<?>> groundedFormulas = new HashSet<WeightedFormula<?>>();
 		List<Atom> groundings = new LinkedList<Atom>();
 		Queue<Atom> queue = new LinkedList<Atom>();
 		queue.offer(query);
@@ -67,17 +64,17 @@ public class GroundedMarkovNetwork {
 		// Main loop, ground all formulas
 		while (!queue.isEmpty()) {
 			Atom a = queue.poll(); // starts with a grounded atom
-			for (WeightedFormula wf : mln) {
+			for (WeightedFormula<?> wf : mln) {
 				Formula f = wf.getFormula();
 				double w = wf.getWeight();
 				if (f.hasPredicate(a.predicate)) {
 					if (f instanceof Atom) {
-						groundedFormulas.add(new WeightedFormula(a, w));
+						groundedFormulas.add(new WeightedFormula<Formula>(a, w));
 					} else {
 						Formula aux = replaceVars(a, f);
 						List<Formula> formulas = getGroundings(aux); // ground all other variables
 						for (Formula grounded : formulas) { // check if any new ground has been produced
-							groundedFormulas.add(new WeightedFormula(grounded, w));
+							groundedFormulas.add(new WeightedFormula<Formula>(grounded, w));
 							List<Atom> groundedAtoms = grounded.getAtoms();
 							for (int i = 0; i < groundedAtoms.size(); i++) {
 								if (!groundedAtomIn(groundedAtoms, i, groundings)) {
@@ -91,7 +88,7 @@ public class GroundedMarkovNetwork {
 										// represents this evidence
 										Atom aGiven = groundedAtoms.get(i);
 										if (atomicFormulas.containsKey(aGiven.predicate)) {
-											groundedFormulas.add(new WeightedFormula(aGiven, atomicFormulas.get(aGiven.predicate)));
+											groundedFormulas.add(new WeightedFormula<Formula>(aGiven, atomicFormulas.get(aGiven.predicate)));
 										}
 									}
 								}
@@ -104,7 +101,7 @@ public class GroundedMarkovNetwork {
 		
 		// initializes the GroundedMarkovNetwork instance
 		groundedMln.groundings.addAll(groundings);
-		for (WeightedFormula f : groundedFormulas) {
+		for (WeightedFormula<?> f : groundedFormulas) {
 			List<Integer> map = new LinkedList<Integer>();
 			groundedMln.formulas.add(f);
 			groundedMln.mapFormulaGrounding.add(map);
@@ -197,7 +194,7 @@ public class GroundedMarkovNetwork {
 	 */
 	public double sumWeights(Database world) {
 		double sum = 0d;
-		for (WeightedFormula wf : this.formulas) {
+		for (WeightedFormula<?> wf : this.formulas) {
 			boolean value = wf.getFormula().getValue(world);
 			if (value) sum += wf.getWeight();			
 		}
