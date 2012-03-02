@@ -15,7 +15,7 @@ public class SequentialConvergenceTester implements SequentialTester {
 	private boolean hasLimit;
 
 	public SequentialConvergenceTester(double confidenceLevel, double precision) {
-		this.tester = ConvergenceTester.getTester(confidenceLevel, precision);
+		this.tester = new ConvergenceTester(confidenceLevel, precision);
 		this.mean = new Mean();
 		this.variance = new Variance();
 		this.converged = false;
