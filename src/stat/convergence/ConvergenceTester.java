@@ -28,12 +28,12 @@ public class ConvergenceTester {
 	//
 	// P(|Y-s| <= epsilon*n*u) = p
 	public boolean hasConverged(double variance, double mean, int n) {
-		variance = Math.max(variance, 0.001);
-			double z = this.z.valueOf(n);
-			double precision = mean > 1 ? this.precision*mean : this.precision;
-			double a = precision*n;
-			double b = z*Math.sqrt(variance*n);
-			return (Double.compare(a, b) > 0);
+		variance = Math.max(variance, 0.5 / n);
+		double z = this.z.valueOf(n);
+		double precision = mean > 1 ? this.precision*mean : this.precision;
+		double a = precision*n;
+		double b = z*Math.sqrt(variance*n);
+		return (Double.compare(a, b) > 0);
 	}
 
 	public double getPrecision() {
