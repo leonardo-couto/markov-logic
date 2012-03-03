@@ -13,7 +13,6 @@ import fol.CNF;
 import fol.CNF.ReducedCNF;
 import fol.Clause;
 import fol.Literal;
-import fol.database.CompositeKey;
 import fol.database.Database;
 import fol.database.SimpleDB;
 
@@ -35,8 +34,8 @@ public class WalkSAT {
 	
 	// Maps a Atom to all the clauses it appears with a true signal
 	// and false signal in trueLiterals and falseLiterals respectively.
-	private final Map<CompositeKey, List<Clause>> trueLiterals;
-	private final Map<CompositeKey, List<Clause>> falseLiterals;
+	private final Map<Atom, List<Clause>> trueLiterals;
+	private final Map<Atom, List<Clause>> falseLiterals;
 	
 	
 	private Database assignment;
@@ -62,8 +61,8 @@ public class WalkSAT {
 		this.qRandom = new Random();
 		this.satMap = new HashMap<Clause, Boolean>();
 		this.assignment = this.assignConstants(new SimpleDB());
-		this.trueLiterals = new HashMap<CompositeKey, List<Clause>>();
-		this.falseLiterals = new HashMap<CompositeKey, List<Clause>>();
+		this.trueLiterals = new HashMap<Atom, List<Clause>>();
+		this.falseLiterals = new HashMap<Atom, List<Clause>>();
 		this.mapAtoms(this.clauses);
 		int size = this.variables.size();
 		
@@ -121,9 +120,8 @@ public class WalkSAT {
 	    boolean value = this.assignment.flip(var);
 	    
 	    // update values in satMap
-	    CompositeKey key = new CompositeKey(var);
-	    List<Clause> cache = value ? this.trueLiterals.get(key) : this.falseLiterals.get(key);
-	    List<Clause> check = value ? this.falseLiterals.get(key) : this.trueLiterals.get(key);
+	    List<Clause> cache = value ? this.trueLiterals.get(var) : this.falseLiterals.get(var);
+	    List<Clause> check = value ? this.falseLiterals.get(var) : this.trueLiterals.get(var);
 	    
 	    if (cache != null) {
 	    	for (Clause c : cache) {
@@ -163,9 +161,8 @@ public class WalkSAT {
 	    boolean value = this.assignment.flip(var);
 	    
 	    // update values in satMap
-	    CompositeKey key = new CompositeKey(var);
-	    List<Clause> cache = value ? this.trueLiterals.get(key) : this.falseLiterals.get(key);
-	    List<Clause> check = value ? this.falseLiterals.get(key) : this.trueLiterals.get(key);
+	    List<Clause> cache = value ? this.trueLiterals.get(var) : this.falseLiterals.get(var);
+	    List<Clause> check = value ? this.falseLiterals.get(var) : this.trueLiterals.get(var);
 	    
 	    if (cache != null) {
 	    	for (Clause c : cache) {
@@ -221,13 +218,12 @@ public class WalkSAT {
 	private void mapAtoms(List<Clause> clauses) {
 		for (Clause c : clauses) {
 			for (Literal l : c.getLiterals()) {
-				CompositeKey key = new CompositeKey(l.atom);
 				
-				Map<CompositeKey, List<Clause>> map = l.signal ? this.trueLiterals : this.falseLiterals;
-				List<Clause> mapClauses = map.get(key);
+				Map<Atom, List<Clause>> map = l.signal ? this.trueLiterals : this.falseLiterals;
+				List<Clause> mapClauses = map.get(l.atom);
 				if (mapClauses == null) {
 					mapClauses = new ArrayList<Clause>();
-					map.put(key, mapClauses);
+					map.put(l.atom, mapClauses);
 				}
 				mapClauses.add(c);
 			}
