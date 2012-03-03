@@ -133,8 +133,8 @@ public class PDL implements StructureLearner {
 		
 		double[] weights = this.preciseLearner.weights();
 		List<Formula> formulas = this.preciseLearner.getFormulas();
-		MarkovLogicNetwork mln = new MarkovLogicNetwork();
-		mln.addAll(WeightedFormula.toWeightedFormulas(formulas, weights));
+		List<WeightedFormula<Formula>> wfs = WeightedFormula.toWeightedFormulas(formulas, weights);
+		MarkovLogicNetwork mln = new MarkovLogicNetwork(wfs);
 		
 		return mln;
 	}
