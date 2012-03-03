@@ -70,7 +70,7 @@ public class Grounder {
 	// check if any new ground has been produced, if has add to queue
 	// replace all the evidences
 	// replace all atoms for cached atoms
-	public List<Formula> processFormulas(List<Formula> formulas, Queue<Atom> queue) {
+	private List<Formula> processFormulas(List<Formula> formulas, Queue<Atom> queue) {
 		List<Formula> out = new ArrayList<Formula>(formulas.size());
 		
 		formulas: for (Formula formula : formulas) { 
