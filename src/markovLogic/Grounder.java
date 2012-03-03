@@ -98,7 +98,7 @@ public class Grounder {
 			out.add(formula);
 		}
 		
-		return formulas;
+		return out;
 	}
 	
 	/**

@@ -6,9 +6,9 @@ import java.util.Random;
 
 public class Variable extends Term {
 	
-	private final List<Constant> constants;
+	private List<Constant> constants;
 	private final LocalRandom random;
-	private final int size;
+	private int size;
 	
 	/**
 	 * @param name
@@ -40,10 +40,18 @@ public class Variable extends Term {
 	 * Return a List with all Constants belonging to the domain of this Variable.
 	 */
 	public List<Constant> getConstants() {
+		if (this.size != this.domain.size()) {
+			this.constants = new ArrayList<Constant>(this.domain);
+			this.size = this.constants.size();
+		}
 		return this.constants;
 	}
 	
 	public Constant getRandomConstant() {
+		if (this.size != this.domain.size()) {
+			this.constants = new ArrayList<Constant>(this.domain);
+			this.size = this.constants.size();
+		}
 		Random r = this.random.get();
 		return this.constants.get(r.nextInt(this.size));
 	}

@@ -65,7 +65,7 @@ public class MarkovLogicNetwork {
 	@Override
 	public String toString() {
 		final String comma = " : ";
-		final String eol = "\n";
+		final String eol = System.getProperty("line.separator");
 		StringBuilder sb = new StringBuilder();
 		for (WeightedFormula<?> wf : this.wFormulas) {
 			sb.append(wf.getWeight());

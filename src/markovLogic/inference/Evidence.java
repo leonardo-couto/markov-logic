@@ -10,6 +10,8 @@ import fol.database.SimpleDB;
 
 public class Evidence extends SimpleDB {
 	
+	public static final Evidence NO_EVIDENCE = new Evidence(new SimpleDB());
+	
 	private final Map<Predicate, Boolean> evidence;
 	private final Database database;
 	

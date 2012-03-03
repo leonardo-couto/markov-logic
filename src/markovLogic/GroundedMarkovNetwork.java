@@ -50,4 +50,18 @@ public class GroundedMarkovNetwork {
 		return sum;
 	}
 	
+	@Override
+	public String toString() {
+		final String comma = " : ";
+		final String eol = System.getProperty("line.separator");
+		StringBuilder sb = new StringBuilder();
+		for (WeightedFormula<?> wf : this.formulas) {
+			sb.append(wf.getWeight());
+			sb.append(comma);
+			sb.append(wf.getFormula());
+			sb.append(eol);
+		}
+		return sb.toString();
+	}
+	
 }
