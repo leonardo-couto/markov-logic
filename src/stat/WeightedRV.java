@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class WeightedRV<T extends RandomVariable<T>> {
+public class WeightedRV<T> {
 	
 	public final T rv;
 	public final double value;
@@ -30,7 +30,7 @@ public class WeightedRV<T extends RandomVariable<T>> {
 	 * @param list
 	 * @return
 	 */
-	public static <E extends RandomVariable<E>> List<E> getRvList(List<WeightedRV<E>> list) {
+	public static <E> List<E> getRvList(List<WeightedRV<E>> list) {
 		List<E> out = new ArrayList<E>(list.size());
 		for (WeightedRV<E> wrv : list) {
 			out.add(wrv.rv);
@@ -43,7 +43,7 @@ public class WeightedRV<T extends RandomVariable<T>> {
 	 * @param list
 	 * @return
 	 */
-	public static <E extends RandomVariable<E>> Map<E,Double> getMap(List<WeightedRV<E>> list) {
+	public static <E> Map<E,Double> getMap(List<WeightedRV<E>> list) {
 		Map<E, Double> out = new HashMap<E, Double>(2*list.size());
 		for (WeightedRV<E> wrv : list) {
 			out.put(wrv.rv, wrv.value);

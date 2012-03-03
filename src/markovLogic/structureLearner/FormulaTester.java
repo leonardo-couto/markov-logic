@@ -20,13 +20,13 @@ public class FormulaTester implements Runnable {
 	private final double lastScore;
 	private final CountDownLatch done;
 	private final Queue<? extends Formula> candidates;
-	private final Queue<ScoredFormula> scoredCandidates;
+	private final Queue<ScoredFormula<?>> scoredCandidates;
 	private final double epslon; // only accepts formulas with weight > epslon
 
 	
 	public FormulaTester(WeightLearner learner, double[] lastWeights, 
 			double lastScore, CountDownLatch done, Queue<? extends Formula> candidates, 
-			Queue<ScoredFormula> scoredCandidates, double epslon) {
+			Queue<ScoredFormula<?>> scoredCandidates, double epslon) {
 		this.learner = learner.copy();
 		this.lastWeights = lastWeights;
 		this.lastScore = lastScore;
@@ -68,7 +68,7 @@ public class FormulaTester implements Runnable {
 				System.out.println(String.format("formula: %s, weight: %s, score: %s", f, learnedWeight, newScore-this.lastScore));
 
 				if (Double.compare(newScore, this.lastScore) > 0 && Double.compare(Math.abs(learnedWeight), epslon) > 0) {
-					this.scoredCandidates.offer(new ScoredFormula(f, newScore - this.lastScore, learnedWeight));
+					this.scoredCandidates.offer(new ScoredFormula<Formula>(f, newScore - this.lastScore, learnedWeight));
 				}
 			}
 		} finally {

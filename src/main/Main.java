@@ -33,7 +33,7 @@ public class Main {
 //		GSIMN<Atom> gs = new GSIMN<Atom>(atoms, iTest);
 //		System.out.println(gs.run());
 		System.out.println("runing busl...");
-		Busl busl = new Busl(domain.getPredicates());
+		Busl busl = new Busl(this.domain.getPredicates(), this.dataSet.getDatabase());
 		System.out.println(busl.learn());
 	}
 	

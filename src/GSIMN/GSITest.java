@@ -10,33 +10,32 @@ import java.util.Map;
 import java.util.Set;
 
 import stat.IndependenceTest;
-import stat.RandomVariable;
 
-public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<RV> {
+public class GSITest<T> implements IndependenceTest<T> {
 	
 	public static PrintStream out = System.out;
 	
 	// Maps a tuple of RandomVariable (order independent) into a Map of tests results
 	// (X,Y) -> {(Z0 -> true/false), (Z1 -> true/false), ...}
-	private final Map<Set<RV>, Map<Collection<RV>, Boolean>> knowledgeBase;
-	private final IndependenceTest<RV> itest;
-	private final Map<Set<RV>,Double> pvalueMap;
+	private final Map<Set<T>, Map<Collection<T>, Boolean>> knowledgeBase;
+	private final IndependenceTest<T> itest;
+	private final Map<Set<T>,Double> pvalueMap;
 	
-	public GSITest(IndependenceTest<RV> itest) {
-		this.knowledgeBase = new HashMap<Set<RV>, Map<Collection<RV>,Boolean>>();
+	public GSITest(IndependenceTest<T> itest) {
+		this.knowledgeBase = new HashMap<Set<T>, Map<Collection<T>,Boolean>>();
 		this.itest = itest;
-		pvalueMap = new HashMap<Set<RV>, Double>();
+		pvalueMap = new HashMap<Set<T>, Double>();
 	}
 	
-	private Set<RV> getXYSet(RV x, RV y) {
-		Set<RV> xy = new HashSet<RV>();
+	private Set<T> getXYSet(T x, T y) {
+		Set<T> xy = new HashSet<T>();
 		xy.add(x);
 		xy.add(y);
 		return xy;
 	}
 	
-	public void addPValue(RV x, RV y, double pvalue) {
-		Set<RV> xy = this.getXYSet(x, y);
+	public void addPValue(T x, T y, double pvalue) {
+		Set<T> xy = this.getXYSet(x, y);
 		this.pvalueMap.put(xy, pvalue);
 	}
 	
@@ -49,8 +48,8 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 	 * @param T Collection of RandomVariable known to be dependent of X
 	 * @return true if X and Y are independent given Z
 	 */
-	public boolean test(RV x, RV y, Collection<RV> z, Collection<RV> F, Collection<RV> T) {
-		Set<RV> xy = this.getXYSet(x, y);
+	public boolean test(T x, T y, Collection<T> z, Collection<T> F, Collection<T> T) {
+		Set<T> xy = this.getXYSet(x, y);
 		
 		// check the p-value between 
 		if (this.pvalueMap.containsKey(xy)) {
@@ -69,8 +68,8 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 		
 		// Check the KB for this test
 		if(this.knowledgeBase.containsKey(xy)) {
-			Map<Collection<RV>,Boolean> kb = this.knowledgeBase.get(xy);
-			for (Collection<RV> A : this.knowledgeBase.get(xy).keySet()) {
+			Map<Collection<T>,Boolean> kb = this.knowledgeBase.get(xy);
+			for (Collection<T> A : this.knowledgeBase.get(xy).keySet()) {
 				if (A.containsAll(z)) {
 					if (z.containsAll(A)) {
 						return kb.get(A).booleanValue();
@@ -93,7 +92,7 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 		}
 		// Attempt to infer dependence by Strong Union.
 		if(this.knowledgeBase.containsKey(xy)) {
-			for (Collection<RV> A : this.knowledgeBase.get(xy).keySet()) {
+			for (Collection<T> A : this.knowledgeBase.get(xy).keySet()) {
 				if(!this.knowledgeBase.get(xy).get(A).booleanValue() && A.containsAll(z)) {
 					addKB(xy, z, false);
 					imprime(x, y, z, false, "Strong Union");
@@ -102,15 +101,15 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 			}
 		}
 		// Attempt to infer dependence by the D-triangle rule.
-		for (RV w : z) {
-			Set<RV> xw = this.getXYSet(x, w);
-			Set<RV> wy = this.getXYSet(w, y);
+		for (T w : z) {
+			Set<T> xw = this.getXYSet(x, w);
+			Set<T> wy = this.getXYSet(w, y);
 			if(this.knowledgeBase.containsKey(xw) && this.knowledgeBase.containsKey(wy)) {
-				for (Collection<RV> A : this.knowledgeBase.get(xw).keySet()) {
+				for (Collection<T> A : this.knowledgeBase.get(xw).keySet()) {
 					if(!this.knowledgeBase.get(xw).get(A).booleanValue() &&  A.containsAll(z)) {
-						for (Collection<RV> B : this.knowledgeBase.get(wy).keySet()) {
+						for (Collection<T> B : this.knowledgeBase.get(wy).keySet()) {
 							if(!this.knowledgeBase.get(wy).get(B).booleanValue() && B.containsAll(z)) {
-								Set<RV> C = new HashSet<RV>(A);
+								Set<T> C = new HashSet<T>(A);
 								C.retainAll(B);
 								addKB(xy, C, false);
 								addKB(xy, z, false);
@@ -124,7 +123,7 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 		}
 		// Attempt to infer independence by Strong Union.
 		if(this.knowledgeBase.containsKey(xy)) {
-			for (Collection<RV> A : this.knowledgeBase.get(xy).keySet()) {
+			for (Collection<T> A : this.knowledgeBase.get(xy).keySet()) {
 				if(this.knowledgeBase.get(xy).get(A).booleanValue() && z.containsAll(A)) {
 					addKB(xy, z, true);
 					imprime(x, y, z, true, "Strong Union");
@@ -133,13 +132,13 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 			}
 		}
 		// Attempt to infer independence by the I-triangle rule.
-		for (RV w : z) {
-			Set<RV> xw = this.getXYSet(x, w);
-			Set<RV> wy = this.getXYSet(w, y);
+		for (T w : z) {
+			Set<T> xw = this.getXYSet(x, w);
+			Set<T> wy = this.getXYSet(w, y);
 			if(this.knowledgeBase.containsKey(xw) && this.knowledgeBase.containsKey(wy)) {
-				for (Collection<RV> A : this.knowledgeBase.get(xw).keySet()) {
+				for (Collection<T> A : this.knowledgeBase.get(xw).keySet()) {
 					if(this.knowledgeBase.get(xw).get(A).booleanValue() &&  z.containsAll(A)) {
-						for (Collection<RV> B : this.knowledgeBase.get(wy).keySet()) {
+						for (Collection<T> B : this.knowledgeBase.get(wy).keySet()) {
 							if(!this.knowledgeBase.get(wy).get(B).booleanValue() && B.containsAll(A)) {
 								addKB(xy, A, true);
 								addKB(xy, z, true);
@@ -151,7 +150,7 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 				}
 			}
 		}
-		if(itest.test(x, y, new HashSet<RV>(z))) {
+		if(itest.test(x, y, new HashSet<T>(z))) {
 			addKB(xy, z, true);
 			imprime(x, y, z, true, "teste estatistico");
 			return true;
@@ -162,20 +161,20 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 		return false;
 	}
 	
-	private void imprime(RV X, RV Y, Collection<RV> Z, boolean b, String desc) {
+	private void imprime(T X, T Y, Collection<T> Z, boolean b, String desc) {
 		// TODO: REMOVER METODO!!
 		out.println("I( " + X.toString() + ", " + Y.toString() + "| " + Arrays.deepToString(Z.toArray()) + ") " + b + ". Por: " + desc);
 	}
 	
-	private void addKB(Set<RV> xy, Collection<RV> Z, boolean b) {
+	private void addKB(Set<T> xy, Collection<T> Z, boolean b) {
 		if(!this.knowledgeBase.containsKey(xy)) {
-			this.knowledgeBase.put(xy, new HashMap<Collection<RV>, Boolean>());
+			this.knowledgeBase.put(xy, new HashMap<Collection<T>, Boolean>());
 		}
-		this.knowledgeBase.get(xy).put(new ArrayList<RV>(Z), new Boolean(b));
+		this.knowledgeBase.get(xy).put(new ArrayList<T>(Z), new Boolean(b));
 	}
 
 	@Override
-	public boolean test(RV x, RV y, Set<RV> z) {
+	public boolean test(T x, T y, Set<T> z) {
 		return itest.test(x, y, z);
 	}
 
@@ -185,8 +184,8 @@ public class GSITest<RV extends RandomVariable<RV>> implements IndependenceTest<
 	}
 
 	@Override
-	public double pvalue(RV x, RV y) {
-		Set<RV> xy = this.getXYSet(x, y);
+	public double pvalue(T x, T y) {
+		Set<T> xy = this.getXYSet(x, y);
 		// if pvalue was already evaluated
 		if (this.pvalueMap.containsKey(xy)) {
 			return this.pvalueMap.get(xy);

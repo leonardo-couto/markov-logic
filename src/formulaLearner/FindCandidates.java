@@ -14,7 +14,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import fol.Atom;
 import fol.Formula;
-import fol.Predicate;
 import fol.Term;
 import fol.Variable;
 import fol.operator.Disjunction;
@@ -27,7 +26,7 @@ public class FindCandidates implements Runnable {
 	private final BlockingQueue<Formula> naiveCandidates;
 	private final int threads;
 	
-	public static final Formula END = new Atom(Predicate.EMPTY, new Term[0]); 
+	public static final Formula END = Atom.TRUE; 
 	private static final Disjunction DISJUNCTION = Disjunction.OPERATOR;
 //	private static final Conjunction CONJUNCTION = Conjunction.OPERATOR;
 //	private static final Biconditional BICONDITIONAL = Biconditional.OPERATOR;

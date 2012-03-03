@@ -2,14 +2,9 @@ package stat;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import util.MyException;
-import util.Util;
 
 
 /**
@@ -18,7 +13,6 @@ import util.Util;
  */
 public class DefaultTest<T> implements IndependenceTest<T> {
 
-	private static int maxPartitions = 10;
 	public final double alpha;
 	private final FisherExact fe = new FisherExact(1000);
 	private final Distribution<T> distribution;
@@ -68,17 +62,6 @@ public class DefaultTest<T> implements IndependenceTest<T> {
 		} else {
 			boolean[] d = dataIterator.next();
 			data.add(d);
-			boolean removed = false;
-			for (int i = z.size(); i > 0; i--) {
-				if (d[i-1] == -1.0) {
-					removed = true;
-					nodes.remove(i-1);
-				}
-			}
-			if (removed) {
-				data.clear();
-				dataIterator = this.distribution.getDataIterator(x, y, nodes.subList(0, nodes.size() -2));
-			}
 		}
 		
 		getNextNElements(data, dataIterator, sampledElements);
@@ -90,7 +73,7 @@ public class DefaultTest<T> implements IndependenceTest<T> {
 		int nMatrices = cells / 4;
 
 		MultiDimensionalHistogram histogram = new MultiDimensionalHistogram(nodes.size());
-		histogram.addAll(data);
+		histogram.addAll(convert(data));
 		data.clear();
 		
 		boolean[] stopped = new boolean[nMatrices];
@@ -145,7 +128,7 @@ public class DefaultTest<T> implements IndependenceTest<T> {
 				}
 			}
 			sampledElements = sampledElements + increment;
-			histogram.addAll(data);
+			histogram.addAll(convert(data));
 			data.clear();
 		}
 	}
@@ -234,6 +217,20 @@ public class DefaultTest<T> implements IndependenceTest<T> {
 	@Override
 	public boolean test(double pvalue) {
 		return Double.compare(pvalue, this.alpha) > 0;
+	}
+	
+	private static List<double[]> convert(List<boolean[]> original) {
+		List<double[]> list = new ArrayList<double[]>(original.size());
+		for (boolean[] values : original) {
+			double[] converted = new double[values.length];
+			int i = 0;
+			for (boolean value : values) {
+				converted[i++] = value ? 1.0 : 0.0;
+			}
+			list.add(converted);
+		}
+		
+		return list;
 	}
 
 	public static void main(String[] args) { // TODO: REMOVER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -94,7 +94,7 @@ public class MyLBFGS {
 	 * @return alpha that minimizes the function f(x + alpha*direction)
 	 */
 	private double lineSearch(double[] x, double[] direction) {
-		return 0;
+		throw new UnsupportedOperationException("Not implemented yet.");
 	}
 	
 	
@@ -116,7 +116,7 @@ public class MyLBFGS {
 		for (int i = 0; i < vector.length; i++) {
 			sum += vector[i] * vector[i] * matrix[i];
 		}
-		return 0;
+		return sum;
 	}
 	
 	private static double dotProduct(double[] x, double[] y) {

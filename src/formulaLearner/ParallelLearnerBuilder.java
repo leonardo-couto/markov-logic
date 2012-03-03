@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.Set;
 
 import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.CountCache;
 import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
 import math.AutomatedLBFGS;
-import stat.convergence.SequentialConvergenceTester;
-import stat.convergence.SequentialTester;
 import util.MyException;
 import fol.Atom;
 import fol.Formula;
@@ -18,6 +17,7 @@ import fol.Predicate;
 public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 	
 	private Set<Atom> atoms;
+	private CountCache cache;
 	private Atom target;
 	private List<Formula> formulas;
 	private WeightLearner fastLearner;
@@ -31,6 +31,7 @@ public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 	
 	public ParallelLearnerBuilder() {
 		this.atoms = null;
+		this.cache = null;
 		this.target = null;
 		this.formulas = null;
 		this.fastLearner = null;
@@ -45,10 +46,11 @@ public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 	
 	/**
 	 * Builds a ParallelLearner.
-	 * <br>
-	 * The field <code>atoms</code> is required to be set before calling this 
-	 * method, not setting it will cause this method to throw an exception.
-	 * <br>
+	 * <p>
+	 * The field <code>atoms</code> and <code>cache</code> are required to 
+	 * be set  before calling this  method, not setting it will cause this 
+	 * method to throw an exception.
+	 * </p>
 	 * Most other fields are required by ParallelLearn, but have a
 	 * default value defined.
 	 * <code>target</code>, <code>formulas</code>, <code>initialArgs</code> and
@@ -60,14 +62,14 @@ public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 		if (this.atoms == null || this.atoms.isEmpty()) {
 			throw new MyException("Cannot build a FormulaLearner. Atoms not set.");
 		}
+		if (this.cache == null) {
+			throw new MyException("Cannot build a FormulaLearner. Database not set.");
+		}
 		
 		ParallelLearner pl;
 		if (this.fastLearner == null) {
 			Set<Predicate> predicates = Atom.getPredicates(this.atoms);
-			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates, 300);
-			SequentialTester tester = new SequentialConvergenceTester(0.95, 0.05);
-			tester.setSampleLimit(500);
-			fastScore.setTester(tester);
+			WeightedPseudoLogLikelihood fastScore = new WeightedPseudoLogLikelihood(predicates, this.cache, 300);
 			this.fastLearner = new WeightLearner(fastScore, new AutomatedLBFGS(0.02));
 			pl = new ParallelLearner(this);
 			this.fastLearner = null;
@@ -87,6 +89,15 @@ public class ParallelLearnerBuilder implements ScoredLearnerBuilder {
 	@Override
 	public Set<Atom> getAtoms() {
 		return this.atoms;
+	}
+	
+	public ParallelLearnerBuilder setCache(CountCache cache) {
+		this.cache = cache;
+		return this;
+	}
+	
+	public CountCache getCache() {
+		return this.cache;
 	}
 	
 	@Override

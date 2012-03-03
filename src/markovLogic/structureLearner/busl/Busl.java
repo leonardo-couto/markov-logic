@@ -14,6 +14,7 @@ import java.util.Set;
 import markovLogic.MarkovLogicNetwork;
 import markovLogic.structureLearner.StructureLearner;
 import markovLogic.weightLearner.WeightLearner;
+import markovLogic.weightLearner.wpll.CountCache;
 import markovLogic.weightLearner.wpll.WeightedPseudoLogLikelihood;
 import math.AutomatedLBFGS;
 import math.OptimizationException;
@@ -25,7 +26,7 @@ import org.jgrapht.alg.BronKerboschCliqueFinder;
 import org.jgrapht.graph.DefaultEdge;
 
 import stat.DefaultTest;
-import stat.convergence.SequentialConvergenceTester;
+import stat.fol.AtomDistribution;
 import util.MyException;
 import util.Util;
 import GSIMN.GSIMN;
@@ -37,6 +38,7 @@ import fol.Predicate;
 import fol.Variable;
 import fol.WeightedFormula;
 import fol.WeightedFormula.FormulasAndWeights;
+import fol.database.Database;
 import formulaLearner.ParallelLearner;
 import formulaLearner.ParallelLearnerBuilder;
 import formulaLearner.ScoredLearner;
@@ -51,17 +53,22 @@ public class Busl implements StructureLearner {
 	
 	public static PrintStream out = System.out;
 	
+	private final Database db;
+	private final CountCache cache;
+	private final FormulaFactory factory;
 	private final Set<Predicate> predicates;
 	private final Set<Atom> tNodes;
-	private final MarkovLogicNetwork mln;
+	private MarkovLogicNetwork mln;
 	private WeightLearner wl;
 	
-	public Busl(Set<Predicate> predicates) {
+	public Busl(Set<Predicate> predicates, Database db) {
 		this.predicates = predicates;
+		this.db = db;
+		this.cache = new CountCache(db);
+		this.factory = new FormulaFactory(predicates, 5);
 		this.tNodes = new HashSet<Atom>();
 		this.mln = new MarkovLogicNetwork();
-		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(predicates, 50000);
-		score.setTester(new SequentialConvergenceTester(0.99, 0.01));
+		WeightedPseudoLogLikelihood score = new WeightedPseudoLogLikelihood(predicates, this.cache, 500);
 		this.wl = new WeightLearner(score, new AutomatedLBFGS(0.001));
 		GSIMN.out = Util.dummyOutput;
 		GSITest.out = Util.dummyOutput;
@@ -82,7 +89,8 @@ public class Busl implements StructureLearner {
 		    this.updateMln(formulas, new double[formulas.size()]);
 		}
 		
-		DefaultTest<Atom> test = new DefaultTest<Atom>(0.05, this.tNodes);
+		AtomDistribution distribution = new AtomDistribution(this.tNodes, this.db);
+		DefaultTest<Atom> test = new DefaultTest<Atom>(0.05, distribution);
 		GSIMN<Atom> gsimn = new GSIMN<Atom>(this.tNodes, test);
 		UndirectedGraph<Atom, DefaultEdge> graph = gsimn.getGraph();
 		BronKerboschCliqueFinder<Atom, DefaultEdge> cliques = new BronKerboschCliqueFinder<Atom, DefaultEdge>(graph);
@@ -95,8 +103,7 @@ public class Busl implements StructureLearner {
 		for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
 			{
 				Set<Predicate> predicates = Atom.getPredicates(clique);
-				WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates, 50000);
-				exactScore.setTester(new SequentialConvergenceTester(0.99, 0.01));
+				WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates, this.cache, 5000);
 				Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
 				builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
 			}
@@ -118,7 +125,7 @@ public class Busl implements StructureLearner {
 		while(true) {
 			
 			for (Predicate p : this.predicates) {
-				Set<Atom> nodes = FormulaFactory.generateAtoms(p, vars);
+				Set<Atom> nodes = this.factory.generateAtoms(p, vars);
 				candidates.addAll(nodes);
 				candidates.removeAll(this.tNodes);
 			}
@@ -128,7 +135,7 @@ public class Busl implements StructureLearner {
 			Queue<TNode> queue = new PriorityQueue<TNode>(candidates.size(), TNode.COMPARATOR);
 			for (Atom node : candidates) {
 				builder.setTarget(node);
-				List<WeightedFormula> list = new ArrayList<WeightedFormula>();
+				List<WeightedFormula<?>> list = new ArrayList<WeightedFormula<?>>();
 				List<Formula> learnedFormulas = new LinkedList<Formula>();
 				gsimn.addVariable(node);
 				out.println("***************************************************************************************************************************");
@@ -139,8 +146,7 @@ public class Busl implements StructureLearner {
 				for (Set<Atom> clique : cliques.getAllMaximalCliques()) {
 					{
 						Set<Predicate> predicates = Atom.getPredicates(clique);
-						WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates, 50000);
-						exactScore.setTester(new SequentialConvergenceTester(0.99, 0.01));
+						WeightedPseudoLogLikelihood exactScore = new WeightedPseudoLogLikelihood(predicates, this.cache, 5000);
 						Optimizer preciseOptimizer = new AutomatedLBFGS(0.001);
 						builder.setWeightLearner(new WeightLearner(exactScore, preciseOptimizer));
 					}
@@ -152,7 +158,7 @@ public class Busl implements StructureLearner {
 					ScoredLearner formulaLearner = builder.setAtoms(clique).build();
 					List<Formula> formulas = formulaLearner.learn();
 					double[] weights = formulaLearner.getWeightLearner().weights();
-					FormulasAndWeights fws = this.removeDuplicates(formulas, weights, true);
+					FormulasAndWeights<?> fws = this.removeDuplicates(formulas, weights, true);
 					learnedFormulas.addAll(fws.formulas);
 					list.addAll(WeightedFormula.toWeightedFormulas(fws.formulas, fws.weights));
 
@@ -162,7 +168,7 @@ public class Busl implements StructureLearner {
 					WeightLearner wl = this.wl.copy();
 					wl.addFormulas(learnedFormulas);
 					try {
-						List<WeightedFormula> cmln = new ArrayList<WeightedFormula>(this.mln);
+						List<WeightedFormula<?>> cmln = new ArrayList<WeightedFormula<?>>(this.mln.getFormulas());
 						cmln.addAll(list);
 						wl.learn(WeightedFormula.toFormulasAndWeights(cmln).weights);
 					} catch (OptimizationException e) {
@@ -186,7 +192,9 @@ public class Busl implements StructureLearner {
 				out.println("formulas: " + queue.peek().formulas);
 				out.println("***************************************************************************************************************************");
 				this.wl = queue.peek().learner;
-				this.mln.addAll(queue.peek().formulas);
+				List<WeightedFormula<?>> formulas = this.mln.getFormulas();
+				formulas.addAll(queue.peek().formulas);
+				this.mln = new MarkovLogicNetwork(formulas);
 				gsimn.addVariable(queue.peek().node);
 				this.tNodes.add(queue.peek().node);
 			}
@@ -210,14 +218,16 @@ public class Busl implements StructureLearner {
 	 */
 	private double updateMln(List<Formula> formulas, double[] weights) {
 
-		FormulasAndWeights fw = this.removeDuplicates(formulas, weights, false);
+		FormulasAndWeights<?> fw = this.removeDuplicates(formulas, weights, false);
 		
 		// add the formulas to mln and mln's associated weightLearner
-		this.mln.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, fw.weights));
+		List<WeightedFormula<?>> list = this.mln.getFormulas();
+		list.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, fw.weights));
+		this.mln = new MarkovLogicNetwork(list);
 		this.wl.addFormulas(fw.formulas);
 		
 		// learn the optimum weights
-		fw = WeightedFormula.toFormulasAndWeights(this.mln);
+		fw = WeightedFormula.toFormulasAndWeights(this.mln.getFormulas());
 		try {
 			weights = this.wl.learn(fw.weights);
 		} catch (OptimizationException e) {
@@ -226,8 +236,8 @@ public class Busl implements StructureLearner {
 		}
 		
 		// update the MLN with optimum weights
-		this.mln.clear();
-		this.mln.addAll(WeightedFormula.toWeightedFormulas(fw.formulas, weights));
+		list = this.mln.getFormulas();
+		this.mln = new MarkovLogicNetwork(WeightedFormula.toWeightedFormulas(fw.formulas, weights));
 		
 		return this.wl.score();
 	}
@@ -239,7 +249,7 @@ public class Busl implements StructureLearner {
 	 * @param atoms if true remove all atoms from formulas
 	 * @return 
 	 */
-	private FormulasAndWeights removeDuplicates(List<Formula> formulas, double[] weights, boolean atoms) {
+	private FormulasAndWeights<?> removeDuplicates(List<Formula> formulas, double[] weights, boolean atoms) {
 		// remove formulas already in the mln
 		
 		if (atoms) {
@@ -254,7 +264,7 @@ public class Busl implements StructureLearner {
 			}
 		}
 		
-		for (WeightedFormula wf : this.mln) {
+		for (WeightedFormula<?> wf : this.mln.getFormulas()) {
 			Formula f = wf.getFormula();
 			ListIterator<Formula> it = formulas.listIterator();
 			int j = 0;
@@ -288,16 +298,16 @@ public class Busl implements StructureLearner {
 			}
 		}
 		
-		return new FormulasAndWeights(formulas, nweights);
+		return new FormulasAndWeights<Formula>(formulas, nweights);
 	}
 	
 	private static class TNode {
 		public final Atom node;
-		public final List<WeightedFormula> formulas;
+		public final List<WeightedFormula<?>> formulas;
 		public final WeightLearner learner;
 		public final double score;
 		
-		public TNode(Atom node, List<WeightedFormula> formulas, WeightLearner learner, double score) {
+		public TNode(Atom node, List<WeightedFormula<?>> formulas, WeightLearner learner, double score) {
 			this.node = node;
 			this.formulas = formulas;
 			this.learner = learner;

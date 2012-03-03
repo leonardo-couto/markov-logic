@@ -13,68 +13,67 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
 import stat.IndependenceTest;
-import stat.RandomVariable;
 import stat.WeightedRV;
 import util.Util;
 
-public class GSIMN<RV extends RandomVariable<RV>> {
+public class GSIMN<T> {
 	public static PrintStream out = System.out;
 	
-	private UndirectedGraph<RV, DefaultEdge> graph;
-	private final Set<RV> vars;
-	private final GSITest<RV> test;
-	private final Map<RV, List<WeightedRV<RV>>> pvalues;
-	private final Map<RV, Set<RV>> independent;
+	private UndirectedGraph<T, DefaultEdge> graph;
+	private final Set<T> vars;
+	private final GSITest<T> test;
+	private final Map<T, List<WeightedRV<T>>> pvalues;
+	private final Map<T, Set<T>> independent;
 
-	public GSIMN(Set<RV> V, IndependenceTest<RV> test) {
-		this.graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
-		this.vars = new HashSet<RV>(V);
-		this.test = new GSITest<RV>(test);
-		this.pvalues = new HashMap<RV, List<WeightedRV<RV>>>();
-		this.independent = new HashMap<RV, Set<RV>>();
+	public GSIMN(Set<T> V, IndependenceTest<T> test) {
+		this.graph = new SimpleGraph<T, DefaultEdge>(DefaultEdge.class);
+		this.vars = new HashSet<T>(V);
+		this.test = new GSITest<T>(test);
+		this.pvalues = new HashMap<T, List<WeightedRV<T>>>();
+		this.independent = new HashMap<T, Set<T>>();
 		this.run(false, null);
 	}
 	
 	/**
 	 * 
-	 * @param target Set of RV that will have the p-value 
+	 * @param target Set of T that will have the p-value 
 	 *   evaluated against all the others variables. 
 	 */
-	private void initPValues(Set<RV> target) {
+	private void initPValues(Set<T> target) {
 		// TODO: PARALELIZAR? PROCURAR FOR PARALELO NO JAVA
 		// TODO: remover prints;
-		Set<RV> aux = new HashSet<RV>(target);
+		Set<T> aux = new HashSet<T>(target);
 		int npv = (this.vars.size()*(this.vars.size()-1))/2;
 		int blah = 0;
-		for (RV X : this.vars) {
+		for (T X : this.vars) {
 			aux.remove(X);
-			for (RV Y : aux) {
+			for (T Y : aux) {
 				blah++;
 				long time = System.currentTimeMillis();
 				double d = this.test.pvalue(X, Y);
 				out.println(d + " : " + blah + "/" + npv + " t = " + (System.currentTimeMillis()-time) +
 						" X = " + X + " Y = " + Y);
-				this.pvalues.get(X).add(new WeightedRV<RV>(Y, d));
-				this.pvalues.get(Y).add(new WeightedRV<RV>(X, d));
+				this.pvalues.get(X).add(new WeightedRV<T>(Y, d));
+				this.pvalues.get(Y).add(new WeightedRV<T>(X, d));
 			}
 		}
 	}
 	
 	/**
 	 * 
-	 * @param target Set of RV that will be updated
+	 * @param target Set of T that will be updated
 	 *  in the graph. 
 	 */
-	private void updateGraph(UndirectedGraph<RV, DefaultEdge> graph, Map<RV, Set<RV>> dependent) {
-		Set<RV> aux = new HashSet<RV>(this.vars);
-		for (RV X : this.vars) {
+	private void updateGraph(UndirectedGraph<T, DefaultEdge> graph, Map<T, Set<T>> dependent) {
+		Set<T> aux = new HashSet<T>(this.vars);
+		for (T X : this.vars) {
 			aux.remove(X);
-			for (RV Y : aux) {
+			for (T Y : aux) {
 				if(dependent.get(X).contains(Y)) {
 					graph.addEdge(X, Y);
 				}
@@ -83,7 +82,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 		this.graph = graph;
 	}
 	
-	private boolean test(RV x, RV y, Collection<RV> z, Collection<RV> independent, Collection<RV> dependent) {
+	private boolean test(T x, T y, Collection<T> z, Collection<T> independent, Collection<T> dependent) {
 		return this.test.test(x, y, z, independent, dependent);
 	}
 	
@@ -91,11 +90,11 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 	 * 
 	 * @return the independence graph
 	 */
-	public UndirectedGraph<RV, DefaultEdge> getGraph() {
+	public UndirectedGraph<T, DefaultEdge> getGraph() {
 		return this.graph;
 	}
 	
-	public boolean addVariable(RV var) {
+	public boolean addVariable(T var) {
 		if (this.vars.contains(var)) {
 			return false;
 		}
@@ -103,14 +102,14 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 		return true;
 	}
 	
-	public boolean removeVariable(RV var) {
+	public boolean removeVariable(T var) {
 		if (!this.vars.contains(var)) {
 			return false;
 		}
 		this.graph.removeVertex(var);
 		this.pvalues.remove(var);
-		for (Entry<RV, List<WeightedRV<RV>>> entry : this.pvalues.entrySet()) {
-			Iterator<WeightedRV<RV>> it = entry.getValue().iterator();
+		for (Entry<T, List<WeightedRV<T>>> entry : this.pvalues.entrySet()) {
+			Iterator<WeightedRV<T>> it = entry.getValue().iterator();
 			while (it.hasNext()) {
 				if (it.next().rv.equals(var)) {
 					it.remove();
@@ -119,49 +118,49 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			}
 		}
 		this.independent.remove(var);
-		for (Entry<RV, Set<RV>> entry : this.independent.entrySet()) {
+		for (Entry<T, Set<T>> entry : this.independent.entrySet()) {
 			entry.getValue().remove(var);
 		}
 		this.vars.remove(var);
 		return true;
 	}
 	
-	private UndirectedGraph<RV, DefaultEdge> run(boolean target, RV targetVar) {
+	private UndirectedGraph<T, DefaultEdge> run(boolean target, T targetVar) {
 		
-		Map<RV, Set<RV>> dependent = new HashMap<RV, Set<RV>>();
-		Map<RV, List<RV>> lambda = new HashMap<RV, List<RV>>();
-		List<WeightedRV<RV>> piW = new ArrayList<WeightedRV<RV>>();
-		UndirectedGraph<RV, DefaultEdge> graph = new SimpleGraph<RV, DefaultEdge>(DefaultEdge.class);
+		Map<T, Set<T>> dependent = new HashMap<T, Set<T>>();
+		Map<T, List<T>> lambda = new HashMap<T, List<T>>();
+		List<WeightedRV<T>> piW = new ArrayList<WeightedRV<T>>();
+		UndirectedGraph<T, DefaultEdge> graph = new SimpleGraph<T, DefaultEdge>(DefaultEdge.class);
 
-		for (RV x : this.vars) {
-			dependent.put(x, new HashSet<RV>());
+		for (T x : this.vars) {
+			dependent.put(x, new HashSet<T>());
 			graph.addVertex(x);
 		}
 		
 		if (target) {
-			this.pvalues.put(targetVar, new ArrayList<WeightedRV<RV>>());
-			this.independent.put(targetVar, new HashSet<RV>());
-			dependent.put(targetVar, new HashSet<RV>());
+			this.pvalues.put(targetVar, new ArrayList<WeightedRV<T>>());
+			this.independent.put(targetVar, new HashSet<T>());
+			dependent.put(targetVar, new HashSet<T>());
 			graph.addVertex(targetVar);
 			this.initPValues(Collections.singleton(targetVar));
 			this.vars.add(targetVar);
 		} else {
-			for (RV x : this.vars) {
-				this.pvalues.put(x, new ArrayList<WeightedRV<RV>>());
-				this.independent.put(x, new HashSet<RV>());
+			for (T x : this.vars) {
+				this.pvalues.put(x, new ArrayList<WeightedRV<T>>());
+				this.independent.put(x, new HashSet<T>());
 			}
 			this.initPValues(this.vars);
 		}
 		
-		for (RV x : this.vars) {
+		for (T x : this.vars) {
 			
 			// Computes pi (variable test ordering)
-			List<WeightedRV<RV>> wrv = this.pvalues.get(x);
+			List<WeightedRV<T>> wrv = this.pvalues.get(x);
 			double avgLogP = 0.0;
-			for (WeightedRV<RV> w : wrv) {
+			for (WeightedRV<T> w : wrv) {
 				avgLogP = avgLogP + Math.log(w.value);
 			}
-			piW.add(new WeightedRV<RV>(x, avgLogP));
+			piW.add(new WeightedRV<T>(x, avgLogP));
 			
 			// Compute lambdaX
 			Collections.sort(wrv, WeightedRV.valueComparator);
@@ -171,12 +170,12 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 		
 		// Variables Ordering
 		Collections.sort(piW, WeightedRV.valueComparator);
-		List<RV> pi = WeightedRV.getRvList(piW);
+		List<T> pi = WeightedRV.getRvList(piW);
 		
 		// Main Loop
-		for (RV x : pi) {
+		for (T x : pi) {
 			// Propagation phase
-			List<RV> lambdaX = lambda.get(x);
+			List<T> lambdaX = lambda.get(x);
 			
 			// Move the variables know to be (or not) in the Markov blanket of X to the end of lambda
 			lambdaX.removeAll(dependent.get(x));
@@ -185,13 +184,13 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			lambdaX.addAll(this.independent.get(x));
 			
 			// Grown phase
-			List<RV> S = new ArrayList<RV>();
+			List<T> S = new ArrayList<T>();
 			
-			for (RV y : lambdaX) {
+			for (T y : lambdaX) {
 				
-				List<RV> lambdaY = lambda.get(y);
+				List<T> lambdaY = lambda.get(y);
 				
-				if (!this.test(x, y, Collections.<RV>emptySet(), this.independent.get(x), dependent.get(x))) {
+				if (!this.test(x, y, Collections.<T>emptySet(), this.independent.get(x), dependent.get(x))) {
 					if(S.isEmpty() || !this.test(x, y, S, this.independent.get(x), dependent.get(x))) {
 						// move X to the beginning of lambdaY
 						lambdaY.remove(x);
@@ -206,9 +205,9 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			}
 			
 			// Changes the examination order pi
-			ListIterator<RV> itr = S.listIterator(S.size());
+			ListIterator<T> itr = S.listIterator(S.size());
 			while(itr.hasPrevious()) {
-				RV R = itr.previous();
+				T R = itr.previous();
 				int i = pi.indexOf(x);
 				// if R has not been examined yet it will be the next
 				if(pi.subList(i+1, pi.size()).contains(R)) {
@@ -218,10 +217,10 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			}
 			
 			// Shrink phase
-			List<RV> SY;
+			List<T> SY;
 			for (int i = S.size()-1; i >= 0; i--) {
-				RV Y = S.get(i);
-				SY = new ArrayList<RV>(S);
+				T Y = S.get(i);
+				SY = new ArrayList<T>(S);
 				SY.remove(i);
 				if (this.test(x, Y, SY, this.independent.get(x), dependent.get(x))) {
 					S = SY;
@@ -229,7 +228,7 @@ public class GSIMN<RV extends RandomVariable<RV>> {
 			}
 			
 			// Markov Blanket of X equals S. Update the dependent and independent lists.
-			for (RV y : this.vars) {
+			for (T y : this.vars) {
 				if (S.contains(y)) {
 					dependent.get(y).add(x);
 					dependent.get(x).add(y);

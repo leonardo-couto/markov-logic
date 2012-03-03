@@ -3,17 +3,17 @@ package markovLogic.structureLearner;
 import fol.Formula;
 import fol.WeightedFormula;
 
-public class ScoredFormula extends WeightedFormula implements Comparable<ScoredFormula> {
+public class ScoredFormula<T extends Formula> extends WeightedFormula<T> implements Comparable<ScoredFormula<?>> {
 	
-	public ScoredFormula(Formula clause, double score, double weight) {
-		super(clause, weight);
+	public ScoredFormula(T formula, double score, double weight) {
+		super(formula, weight);
 		this.score = score;
 	}
 	
 	final double score;
 	
 	@Override
-	public int compareTo(ScoredFormula o) {
+	public int compareTo(ScoredFormula<?> o) {
 		return Double.compare(this.score, o.score);
 	}
 	

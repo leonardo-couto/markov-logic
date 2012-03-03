@@ -2,10 +2,6 @@ package stat;
 
 import java.util.Set;
 
-/**
- * @author Leonardo Castilho Couto
- *
- */
 public interface IndependenceTest<T> {
 	
 	/**

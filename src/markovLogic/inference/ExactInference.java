@@ -25,21 +25,6 @@ public class ExactInference implements Inference {
 	// 3 - depois para formulas mais complexas groundeds
 	// 4 - depois para formulas mais complexas com variaveis
 	
-	// comecar com um exemplo simples:
-	//
-	// w1 : P(X,Y) && Q(Y,Z)
-	// w2 : P(X,Y) && R(X)
-	//
-	// X = {A}, Y = {B}, Z = {C}
-	//
-	// pr(Q(B,C) | R(A)) = ?
-	//
-	// = p(q && r)* / [p(!q && r) + p(q && r)]
-	// * = p (q && r && p) + p (q && r && !p) =
-	// e(w1 x 1) x e(w2 x 1) +  e(w1 x 0) x e(w2 x 0)
-	//
-	
-	// grounded atom a
 	// TODO: ver o que fazer para o caso de o mesmo predicado aparecer duas vezes
 	// na mesma formula, exemplo: P(X) && R(X,Y) && P(Y).
 	

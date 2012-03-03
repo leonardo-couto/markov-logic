@@ -3,7 +3,7 @@ package formulaLearner;
 import fol.Formula;
 import fol.WeightedFormula;
 
-public class ClauseScore extends WeightedFormula implements Comparable<ClauseScore> {
+public class ClauseScore extends WeightedFormula<Formula> implements Comparable<ClauseScore> {
 	
 	public ClauseScore(Formula clause, double score, double weight) {
 		super(clause, weight);
