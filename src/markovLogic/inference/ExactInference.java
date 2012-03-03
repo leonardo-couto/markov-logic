@@ -1,12 +1,10 @@
 package markovLogic.inference;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import markovLogic.GroundedMarkovNetwork;
+import markovLogic.Grounder;
 import markovLogic.MarkovLogicNetwork;
 import stat.sampling.CrossJoinSampler;
 import stat.sampling.Sampler;
@@ -17,6 +15,8 @@ import fol.Formula;
 import fol.Predicate;
 import fol.Variable;
 import fol.WeightedFormula;
+import fol.database.Database;
+import fol.database.SimpleDB;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
@@ -29,91 +29,74 @@ public class ExactInference implements Inference {
 		this.mln = mln;
 	}
 	
-	// 1 - fazer primeiro para um Atom grounded
+	// 1 - fazer primeiro para um Atom grounded - FEITO
 	// 2 - depois para um Atom com variavel
 	// 3 - depois para formulas mais complexas groundeds
 	// 4 - depois para formulas mais complexas com variaveis
 	
-	public double pr(Atom a, Set<Formula> given) {
-		// TODO: se p(given) = 0, retornar excessão.
-		// p(a && given) / p(given) == p (a && given) / [p(a && given) + p(!a && given)]
-
-		
-		// comecar com um exemplo simples:
-		//
-		// w1 : P(X,Y) && Q(Y,Z)
-		// w2 : P(X,Y) && R(X)
-		//
-		// X = {A}, Y = {B}, Z = {C}
-		//
-		// pr(Q(B,C) | R(A)) = ?
-		//
-		// = p(q && r)* / [p(!q && r) + p(q && r)]
-		// * = p (q && r && p) + p (q && r && !p) =
-		// e(w1 x 1) x e(w2 x 1) +  e(w1 x 0) x e(w2 x 0)
-		//
-		return 0;
-	}
-
-	@Override
-	public double pr(Formula f, Set<Atom> given) {
-		if (f instanceof Atom) {
-			Atom a = (Atom) f;
-			if (a.isGrounded()) {
-				return this.prAtom(a, given);
-			}
-		}
-		// TODO Auto-generated method stub
-		return 0;	
-	}
-
-	@Override
-	public double pr(Formula f) {
-		return this.pr(f, Collections.<Atom>emptySet());
-	}
+	// comecar com um exemplo simples:
+	//
+	// w1 : P(X,Y) && Q(Y,Z)
+	// w2 : P(X,Y) && R(X)
+	//
+	// X = {A}, Y = {B}, Z = {C}
+	//
+	// pr(Q(B,C) | R(A)) = ?
+	//
+	// = p(q && r)* / [p(!q && r) + p(q && r)]
+	// * = p (q && r && p) + p (q && r && !p) =
+	// e(w1 x 1) x e(w2 x 1) +  e(w1 x 0) x e(w2 x 0)
+	//
 	
 	// grounded atom a
 	// TODO: ver o que fazer para o caso de o mesmo predicado aparecer duas vezes
 	// na mesma formula, exemplo: P(X) && R(X,Y) && P(Y).
-	private double prAtom(Atom a, Set<Atom> given) {
-		GroundedMarkovNetwork groundedMln = this.mln.ground(a, given);
-		int totalAtoms = groundedMln.getGroundings().size();
+	
+	/**
+	 * <p>Computes <code>p(g | e) == p(g && e) / p(e)</code><br>
+	 * <code> == p(g && e) / [p(g && e) + p(!g && e)]</code>,<br>
+	 * where <code>g</code> stands for <code>ground</code> and 
+	 * <code>e</code> for <code>evidence</code>.</p>
+	 */
+	@Override
+	public double pr(Atom ground, Evidence evidence) {
+		Grounder grounder = new Grounder(this.mln, evidence);
+		GroundedMarkovNetwork mrf = grounder.ground(ground);
 		
+		List<Atom> variables = mrf.getGroundings();
+		Sampler<Boolean> sampler = this.getSampler(variables.size());
+		Database world = new SimpleDB();
 		
-		// create sampler
-		Sampler<Atom> sampler = getTFSampler(totalAtoms);
-		List<Double> wt = new ArrayList<Double>();
-		List<Double> wf = new ArrayList<Double>();	
-		for (List<Atom> sample : sampler) {
-			double wsum = groundedMln.sumWeights(sample);
-			if (sample.get(0) == Atom.TRUE) {
-				wt.add(wsum);
-			} else {
-				wf.add(wsum);
+		double sumP = 0;  // usar bigDecimal?
+		double sumN = 0;
+		
+		for (List<Boolean> values : sampler) {
+			boolean value = false;
+			for (int i = 0; i < variables.size(); i++) {
+				Atom atom = variables.get(i);
+				boolean b = values.get(i).booleanValue();
+				world.set(atom, b);
+				if (atom == ground) value = b;
 			}
+			if (value) sumP += Math.exp(mrf.sumWeights(world));
+			else sumN += Math.exp(mrf.sumWeights(world));
 		}
 		
-		Collections.sort(wt);
-		Collections.sort(wf);
-		double sumt = 0;
-		double sumf = 0;
-		for (Double d : wt) {
-			sumt = sumt + Math.exp(d);
-		}
-		for (Double d : wf) {
-			sumf = sumf + Math.exp(d);
-		}
-
-		return (sumt / (sumt + sumf));
+		double pEvidence = sumP + sumN;
+		if (Math.abs(pEvidence) < 1e-15) throw new ArithmeticException("Probability of evidence is zero");
+		
+		return sumP / (pEvidence);
 	}
 	
-	private static Sampler<Atom> getTFSampler(int dimensions) {
-		ArrayList<List<Atom>> domain = new ArrayList<List<Atom>>(dimensions);
-		List<Atom> truefalse = Arrays.asList(new Atom[] {Atom.TRUE, Atom.FALSE});
-		for (int i = 0; i < dimensions; i++) {
-			domain.add(truefalse);
+	public Sampler<Boolean> getSampler(int size) {
+		List<Boolean> truthValues = new ArrayList<Boolean>(2);
+		truthValues.add(Boolean.TRUE);
+		truthValues.add(Boolean.FALSE);
+		List<List<Boolean>> domains = new ArrayList<List<Boolean>>(size);
+		for (int i = 0; i < size; i++) {
+			domains.add(truthValues);
 		}
-		return new CrossJoinSampler<Atom>(domain);
+		return new CrossJoinSampler<Boolean>(domains);
 	}
 	
 	public static void main (String[] args) {
@@ -150,27 +133,35 @@ public class ExactInference implements Inference {
 		Formula f5 = Conjunction.OPERATOR.apply(Disjunction.OPERATOR.apply(f2, f3), Negation.OPERATOR.apply(f1));
 		Formula f6 = Disjunction.OPERATOR.apply(f3, f4);
 		
-		MarkovLogicNetwork mln = new MarkovLogicNetwork();
-		mln.add(new WeightedFormula(f1, 0));
-		mln.add(new WeightedFormula(f2, 0));
-		mln.add(new WeightedFormula(f3, 0));
-		mln.add(new WeightedFormula(f4, 0));
-		mln.add(new WeightedFormula(f5, 0.6931));
-		mln.add(new WeightedFormula(f6, 2.3026));
+		List<WeightedFormula<?>> wfs = new ArrayList<WeightedFormula<?>>();
+		wfs.add(new WeightedFormula<Formula>(f1, 0));
+		wfs.add(new WeightedFormula<Formula>(f2, 0));
+		wfs.add(new WeightedFormula<Formula>(f3, 0));
+		wfs.add(new WeightedFormula<Formula>(f4, 0));
+		wfs.add(new WeightedFormula<Formula>(f5, 0.6931));
+		wfs.add(new WeightedFormula<Formula>(f6, 2.3026));
+		MarkovLogicNetwork mln = new MarkovLogicNetwork(wfs);
+
 		
 		Inference infer = new ExactInference(mln);
 		Constant c0 = new Constant("c0", da);
 		Constant c1 = new Constant("c1", db);
 		Constant c2 = new Constant("c2", dc);
 
-//		Atom e0 = new Atom(r, 0.0, c0, c2);
-//		//Atom e1 = new Atom(q, 0.0, c0, c1);
-//		Set<Atom> evidence = new HashSet<Atom>();
-//		evidence.add(e0);
-//		//evidence.add(e1);
-//		System.out.println("p(c0): " + infer.pr(new Atom(p, c0), evidence));
-//		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1), evidence));
-		double pr = infer.pr(new Atom(s, c2));
+		Atom e0 = new Atom(r, c0, c2);
+		Atom e1 = new Atom(q, c0, c1);
+		
+		Database values = new SimpleDB();
+		values.set(e0, false);
+		values.set(e1, false);
+		
+		Evidence evidence = new Evidence(values);
+		evidence.set(e0, true);
+		evidence.set(e1, true);
+		
+		System.out.println("p(c0): " + infer.pr(new Atom(p, c0), evidence));
+		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1), evidence));
+		double pr = infer.pr(new Atom(s, c2), new Evidence(new SimpleDB()));
 		System.out.println("s(c2): " + pr);
 		
 //		Domain d0 = new Domain("d0");

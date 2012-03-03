@@ -309,6 +309,20 @@ public class Clause implements Formula, Comparable<Clause> {
 	}
 	
 	@Override
+	public Clause replace(Atom original, Literal replacement) {
+		ArrayList<Literal> literals = new ArrayList<Literal>(this.literals.size());
+		
+		boolean same = true;
+		for (Literal literal : this.literals) {
+			Literal replaced = literal.replace(original, replacement);
+			literals.add(replaced);
+			same = same && literal == replaced;
+		}
+		
+		return same ? this : new Clause(literals);
+	}
+	
+	@Override
 	public CNF toCNF() {
 		return new CNF(this);
 	}

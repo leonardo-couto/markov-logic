@@ -18,6 +18,7 @@ public interface Formula {
 	public boolean hasPredicate(Predicate p);
 	public boolean isGrounded();
 	public int length();
+	public Formula replace(Atom original, Literal replacement);
 	public CNF toCNF();
 	public double trueCount(Database db);
 

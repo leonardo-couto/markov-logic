@@ -9,7 +9,7 @@ public class Predicate implements Comparable<Predicate> {
 	private final List<Domain> argDomains;
 	private boolean closedWorld;
 	
-	public static final Predicate EQUALS = new Predicate("equals", Domain.universe, Domain.universe);
+	public static final Predicate EQUALS = new Predicate("equals", Domain.UNIVERSE, Domain.UNIVERSE);
 
 	public Predicate(String name, Domain ... domains) {
 		this.name = name;

@@ -171,6 +171,33 @@ public class GeneralFormula implements Formula {
 	}
 	
 	@Override
+	public GeneralFormula replace(Atom original, Literal replacement) {
+		List<Atom> atoms = new ArrayList<Atom>(this.atoms.size());
+		
+		boolean same = true;
+		for (Atom atom : this.atoms) {
+			if (atom.equals(original)) {
+				same = false;
+				atoms.add(replacement.atom);
+			} else {
+				atoms.add(atom);
+			}
+		}
+		
+		if (same) return this;
+		
+		FormulaComponent fcReplacement = replacement.signal ? replacement.atom : replacement;
+		List<FormulaComponent> components = new ArrayList<FormulaComponent>(this.components.size());
+		
+		for (FormulaComponent component : this.components) {
+			FormulaComponent add = component.equals(original) ? fcReplacement : component;
+			components.add(add);
+		}
+		
+		return new GeneralFormula(components, atoms);
+	}
+	
+	@Override
 	public CNF toCNF() {
 		throw new UnsupportedOperationException("method toCNF() not implemented for GeneralFormula yet.");
 	}

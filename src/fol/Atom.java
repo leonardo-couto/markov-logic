@@ -129,6 +129,33 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 	
 	@Override
+	public Atom ground(Map<Variable, Constant> groundings) {
+		if (this.grounded) return this;
+		int length = this.terms.length;
+		boolean modified = false;
+		boolean grounded = true;
+		
+		Term[] groundedTerms = new Term[length];
+		for (int i = 0; i < length; i++) {
+			Term t = this.terms[i];
+			if (t instanceof Constant) {
+				groundedTerms[i] = t;				
+			} else {
+				Constant candidate = groundings.get(t);
+				if (candidate == null) {
+					grounded = false;
+					groundedTerms[i] = t;	
+				} else {
+					modified = true;
+					groundedTerms[i] = candidate;
+				}
+			}
+		}
+		
+		return modified ? new Atom(this.predicate, groundedTerms, grounded) : this;
+	}
+	
+	@Override
 	public int hashCode() {
 		if (this.hashCode != -1) return this.hashCode;
 		this.hashCode = Arrays.hashCode(this.terms) + 17*this.predicate.hashCode();
@@ -171,32 +198,10 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 
 	@Override
-	public Atom ground(Map<Variable, Constant> groundings) {
-		if (this.grounded) return this;
-		int length = this.terms.length;
-		boolean modified = false;
-		boolean grounded = true;
-		
-		Term[] groundedTerms = new Term[length];
-		for (int i = 0; i < length; i++) {
-			Term t = this.terms[i];
-			if (t instanceof Constant) {
-				groundedTerms[i] = t;				
-			} else {
-				Constant candidate = groundings.get(t);
-				if (candidate == null) {
-					grounded = false;
-					groundedTerms[i] = t;	
-				} else {
-					modified = true;
-					groundedTerms[i] = candidate;
-				}
-			}
-		}
-		
-		return modified ? new Atom(this.predicate, groundedTerms, grounded) : this;
+	public Formula replace(Atom original, Literal replacement) {
+		return this.equals(original) ? replacement : this;
 	}
-	
+
 	@Override
 	public CNF toCNF() {
 		if (this.predicate == EMPTY) return Clause.TRUE.toCNF();

@@ -120,6 +120,15 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 	public int length() {
 		return 1;
 	}
+	
+	@Override
+	public Literal replace(Atom original, Literal replacement) {
+		if (this.atom.equals(original)) {
+			boolean signal = this.signal != replacement.signal;
+			return new Literal(replacement.atom, signal);
+		}
+		return this;
+	}
 
 	@Override
 	public CNF toCNF() {

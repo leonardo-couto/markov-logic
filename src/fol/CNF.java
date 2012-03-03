@@ -227,6 +227,20 @@ public class CNF implements Formula {
 		return new ReducedCNF(constants, formula);
 		
 	}
+	
+	@Override
+	public CNF replace(Atom original, Literal replacement) {
+		ArrayList<Clause> clauses = new ArrayList<Clause>(this.clauses.size());
+		
+		boolean same = true;
+		for (Clause clause : this.clauses) {
+			Clause replaced = clause.replace(original, replacement);
+			clauses.add(replaced);
+			same = same && clause == replaced;
+		}
+		
+		return same ? this : new CNF(clauses);
+	}
 
 	@Override
 	public CNF toCNF() {

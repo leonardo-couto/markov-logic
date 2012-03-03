@@ -20,13 +20,13 @@ public class Domain extends HashSet<Constant> {
 	private final Domain parent;
 	private int varcount;
 	
-	public static final Domain universe = new Domain("universe", null);
+	public static final Domain UNIVERSE = new Domain("universe", null);
 
 	public Domain(String name) {
 		this.name = name;
 		this.functions = new ArrayList<Function>();
 		this.variables = new ArrayList<Variable>();
-		this.parent = universe;
+		this.parent = UNIVERSE;
 		this.varcount = 0;
 	}
 	
@@ -36,6 +36,13 @@ public class Domain extends HashSet<Constant> {
 		this.variables = new ArrayList<Variable>();
 		this.parent = parent;
 		this.varcount = 0;
+	}
+	
+	@Override
+	public void clear() {
+		this.functions.clear();
+		this.variables.clear();
+		super.clear();
 	}
 	
 	public Variable newVariable() {
