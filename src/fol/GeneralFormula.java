@@ -31,6 +31,18 @@ public class GeneralFormula implements Formula {
 		this.atoms = new ArrayList<Atom>(atoms);
 		this.components = new ArrayList<FormulaComponent>(components);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		GeneralFormula other = (GeneralFormula) obj;
+		return this.components.equals(other.components);
+	}
 
 	@Override
 	public List<Atom> getAtoms() {
@@ -104,6 +116,11 @@ public class GeneralFormula implements Formula {
 			variables.addAll(a.getVariables());
 		}
 		return variables;
+	}
+
+	@Override
+	public int hashCode() {
+		return this.components.hashCode();
 	}
 
 	@Override

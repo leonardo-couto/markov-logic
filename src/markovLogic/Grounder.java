@@ -3,6 +3,7 @@ package markovLogic;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,8 +54,8 @@ public class Grounder {
 				Formula f = wf.getFormula();
 				double w = wf.getWeight();
 				if (f.hasPredicate(ground.predicate)) {
-					Formula aux = replaceVars(ground, f);
-					List<Formula> formulas = getGroundings(aux); // ground all other variables
+					List<Formula> partialGrounds = Grounder.replaceVars(ground, f);
+					List<Formula> formulas = Grounder.getGroundings(partialGrounds); // ground all other variables
 					formulas = processFormulas(formulas, queue);
 					double[] weights = new double[formulas.size()];
 					Arrays.fill(weights, w);
@@ -105,48 +106,107 @@ public class Grounder {
 	 * Replace the variables in formula for the constants in Atom a
 	 * @return a copy of formula with some variables replaced
 	 */
-	private static Formula replaceVars(Atom grounded, Formula formula) {
-		Atom formulaAtom = null;
+	private static List<Formula> replaceVars(Atom grounded, Formula formula) {
+		List<Atom> formulaAtom = new ArrayList<Atom>();
 		for (Atom a : formula.getAtoms()) {
 			if (a.predicate == grounded.predicate) {
-				formulaAtom = a;
-				break;
+				formulaAtom.add(a);
 			}
 		}
 		
 		int terms = grounded.terms.length;
-		Map<Variable, Constant> groundings = new HashMap<Variable, Constant>(terms*2);
-		for (int i = 0; i < terms; i++) {
-			groundings.put((Variable) formulaAtom.terms[i], (Constant) grounded.terms[i]);
+		List<Formula> formulas = new ArrayList<Formula>();
+		for (Atom target : formulaAtom) {
+			Map<Variable, Constant> groundings = new HashMap<Variable, Constant>(terms*2);
+			for (int i = 0; i < terms; i++) {
+				groundings.put((Variable) target.terms[i], (Constant) grounded.terms[i]);
+			}
+			formulas.add(formula.ground(groundings));
 		}
 		
-		return formula.ground(groundings);
+		return formulas;
 	}
 	
 	/**
-	 * Replace all variables in f, if there is more than one constant to replace
-	 * one variable, duplicate the formula, thus creating all possible groundings
-	 * for f.
-	 * @param f Formula to be grounded
+	 * <p>
+	 * Replace all variables in formulas, if there is more than one constant to 
+	 * replace one variable, duplicate the formula, thus creating all possible 
+	 * groundings for formulas.</p>
+	 * @param formulas List<Formula> to be grounded
 	 * @return a List of all possible grounds for f
 	 */
-	private static List<Formula> getGroundings(Formula f) {
-		List<Formula> formulas = new LinkedList<Formula>();
-		formulas.add(f);
-		for (Variable v : f.getVariables()) {
-			List<Formula> newFormulas = new LinkedList<Formula>();
-			if (v.getConstants().isEmpty()) {
-				v.getDomain().newConstant();
-			}
-			List<Constant> constants = new LinkedList<Constant>(v.getConstants());
-			for (Formula aux : formulas) {
-				for (Constant c : constants) {
-					newFormulas.add(aux.ground(Collections.singletonMap(v, c)));
+	private static List<Formula> getGroundings(List<Formula> formulas) {
+		List<Formula> out = new ArrayList<Formula>();
+		
+		for (Formula f : formulas) {
+			List<Formula> grounds = new LinkedList<Formula>();
+			grounds.add(f);
+			for (Variable v : f.getVariables()) {
+				List<Formula> newFormulas = new LinkedList<Formula>();
+				if (v.getConstants().isEmpty()) {
+					v.getDomain().newConstant();
 				}
+				List<Constant> constants = new LinkedList<Constant>(v.getConstants());
+				for (Formula aux : grounds) {
+					for (Constant c : constants) {
+						newFormulas.add(aux.ground(Collections.singletonMap(v, c)));
+					}
+				}
+				grounds = newFormulas;
 			}
-			formulas = newFormulas;
+			out.addAll(grounds);
 		}
-		return formulas;
+		
+		return Grounder.removeDuplicates(out);
+	}
+	
+	/**
+	 * Does not guarantee uniqueness, but eliminate some duplicate formulas.
+	 * @param formulas a List of formulas
+	 * @return Ordered formulas with fewer duplicates
+	 */
+	private static List<Formula> removeDuplicates(List<Formula> formulas) {
+		if (formulas.isEmpty()) return formulas;
+				
+		Collections.sort(formulas, new SimpleFormulaComparator());	
+
+		int size = formulas.size();
+		List<Formula> uniqueFormulas = new ArrayList<Formula>(size);
+		Formula previous = formulas.get(0);
+		uniqueFormulas.add(previous);
+		for (int i = 1; i < size; i++) {
+			Formula current = formulas.get(i);
+			if (!(previous.equals(current))) {
+				uniqueFormulas.add(current);
+				previous = current;
+			}
+		}
+		
+		return uniqueFormulas;
+	}
+	
+	private static class SimpleFormulaComparator implements Comparator<Formula> {
+
+		@Override
+		public int compare(Formula o1, Formula o2) {
+			List<Atom> l1 = o1.getAtoms();
+			List<Atom> l2 = o2.getAtoms();			
+			
+			int length1 = l1.size();
+			int length2 = l2.size();
+
+			int min = Math.max(length1, length2);
+			for (int i = 0; i < min; i++) {
+				Atom a1 = l1.get(i);
+				Atom a2 = l2.get(i);
+				int diff = a1.compareTo(a2);
+				if (diff != 0) return diff;
+			}
+			
+			return length1 == length2 ? 0 : length1 < length2 ? -1 : 1;
+		}
+		
+		
 	}
 
 
