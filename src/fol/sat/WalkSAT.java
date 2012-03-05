@@ -271,7 +271,9 @@ public class WalkSAT {
 	 * Performs a randomWalk move
 	 */
 	private void randomWalk() {
-		Clause clause = this.pick(this.unsatisfiedClauses());
+		List<Clause> unsatisfied = this.unsatisfiedClauses();
+		if (unsatisfied.isEmpty()) return;
+		Clause clause = this.pick(unsatisfied);
 		Atom var = this.chooseVariable(clause);
 	    this.flip(var);
 	}
