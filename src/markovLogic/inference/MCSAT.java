@@ -34,10 +34,14 @@ public class MCSAT implements Inference {
 		List<Atom> variables = mrf.getGroundings();
 		Database world = getRandomAssignment(variables);
 		
+//		List<WeightedFormula<Clause>> clauses = this.getClauses(mrf.getformulas());
+		
 		int pSamples = 0;
 		int fSamples = 0;
 		
-		for (int i = 0; i < 10000; i++) {
+		int counter = 0;
+		
+		for (int i = 0; i < 1000; i++) {
 			List<Clause> choosen = new ArrayList<Clause>();
 			
 			for (WeightedFormula<?> wf : mrf.getformulas()) {
@@ -56,29 +60,54 @@ public class MCSAT implements Inference {
 				}
 			}
 			
+			if (choosen.isEmpty()) {
+				world = getRandomAssignment(variables);
+				counter = -2;
+				continue;
+			} else {
+				counter++;
+			}
 			CNF model = new CNF(choosen);
 			WalkSAT walk = new WalkSAT(model);
 			boolean solution = false;
+			world = getRandomAssignment(variables);
 			for (int j = 0; j < 10; j++) {
 				Database sample = walk.sat(world);
 				if (sample != null) { 
 					world = sample;
 					solution = true;
+					break;
 				}
 			}
 			
-			if (solution) {
+			if (solution && counter > 0) {
 				boolean value = world.valueOf(ground);
-				System.out.println(ground + ": " + value);
 				if (value) pSamples++; else fSamples++;
-			} else {
-				world = getRandomAssignment(variables);
 			}
 		}
 		
 		int total = pSamples + fSamples;		
 		return ((double) pSamples) / total;
 	}
+	
+//	private List<WeightedFormula<Clause>> getClauses(List<WeightedFormula<?>> mrf) {
+//		List<WeightedFormula<Clause>> clauses = new ArrayList<WeightedFormula<Clause>>();
+//		for (WeightedFormula<?> wf : mrf) {
+//			double weight = wf.getWeight();
+//			CNF formula;
+//			if (weight > 0) {
+//				formula = wf.getFormula().toCNF();
+//			} else {
+//				weight = -weight;
+//				formula = Negation.OPERATOR.apply(wf.getFormula()).toCNF();
+//			}
+//			for (Clause c : formula.getClauses()) {
+//				WeightedFormula<Clause> clause = new WeightedFormula<Clause>(c, weight);
+//				clauses.add(clause);
+//			}
+//		}
+//		return clauses;
+//	}
 	
 	private static Database getRandomAssignment(List<Atom> variables) {
 		Random r = new Random();

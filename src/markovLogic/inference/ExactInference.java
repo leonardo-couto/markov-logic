@@ -75,32 +75,4 @@ public class ExactInference implements Inference {
 		return new CrossJoinSampler<Boolean>(domains);
 	}
 	
-	public static void main (String[] args) {
-		
-
-		
-//		Inference infer = new ExactInference(mln);
-//		Constant c0 = new Constant("c0", da);
-//		Constant c1 = new Constant("c1", db);
-//		Constant c2 = new Constant("c2", dc);
-//
-//		Atom e0 = new Atom(r, c0, c2);
-//		Atom e1 = new Atom(q, c0, c1);
-//		
-//		Database values = new SimpleDB();
-//		values.set(e0, false);
-//		values.set(e1, false);
-//		
-//		Evidence evidence = new Evidence(values);
-//		evidence.set(e0, true);
-//		evidence.set(e1, true);
-//		
-//		System.out.println("p(c0): " + infer.pr(new Atom(p, c0), evidence));
-//		System.out.println("q(c0,c1): " + infer.pr(new Atom(q, c0, c1), evidence));
-//		double pr = infer.pr(new Atom(s, c2), new Evidence(new SimpleDB()));
-//		System.out.println("s(c2): " + pr);
-		
-
-	}
-
 }
