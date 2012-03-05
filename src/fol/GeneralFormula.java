@@ -15,14 +15,16 @@ import fol.operator.Biconditional;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
-import fol.operator.Operator;
 
 public class GeneralFormula implements Formula {
+	
+	private List<Atom> atoms; // lazy instantiated
 	
 	private final List<FormulaComponent> components;
 	
 	public GeneralFormula(List<FormulaComponent> components) {
 		this.components = new ArrayList<FormulaComponent>(components);
+		this.atoms = null;
 	}
 	
 	@Override
@@ -39,17 +41,23 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public List<Atom> getAtoms() {
-		List<Atom> atoms = new ArrayList<Atom>(this.components.size());
+		return new ArrayList<Atom>(this._getAtoms());
+	}
+	
+	private List<Atom> _getAtoms() {
+		if (this.atoms != null) return this.atoms;
 		
+		List<Atom> atoms = new ArrayList<Atom>(this.components.size());
 		for (FormulaComponent component : this.components) {
 			if (component instanceof Atom) {
 				atoms.add((Atom) component);
-				
+
 			} else if (component instanceof Literal) {
 				atoms.add(((Literal) component).atom);				
 			}
 		}
-		return atoms;
+		this.atoms = atoms;			
+		return this.atoms;
 	}
 	
 	/**
@@ -96,16 +104,8 @@ public class GeneralFormula implements Formula {
 	@Override
 	public Set<Predicate> getPredicates() {
 		Set<Predicate> predicates = new HashSet<Predicate>();
-		for (FormulaComponent component : this.components) {
-			if (component instanceof Atom) {
-				Atom atom = (Atom) component;
-				predicates.add(atom.predicate);
-				
-			} else if (component instanceof Literal) {
-				Literal literal = (Literal) component;
-				predicates.add(literal.atom.predicate);
-				
-			}
+		for (Atom a : this._getAtoms()) {
+			predicates.add(a.predicate);
 		}
 		return predicates;
 	}
@@ -113,12 +113,8 @@ public class GeneralFormula implements Formula {
 	@Override
 	public Set<Variable> getVariables() {
 		Set<Variable> variables = new HashSet<Variable>();
-		for (FormulaComponent component : this.components) {
-			if (component instanceof Formula) {
-				Formula formula = (Formula) component;
-				variables.addAll(formula.getVariables());
-				
-			}
+		for (Atom a : this._getAtoms()) {
+			variables.addAll(a.getVariables());
 		}
 		return variables;
 	}
@@ -130,15 +126,9 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public boolean hasPredicate(Predicate p) {
-		for (FormulaComponent component : this.components) {
-			if (component instanceof Atom) {
-				Atom atom = (Atom) component;
-				if (atom.predicate == p) return true;
-				
-			} else if (component instanceof Literal) {
-				Literal literal = (Literal) component;
-				if (literal.atom.predicate == p) return true;
-				
+		for (Atom a : this._getAtoms()) {
+			if (p == a.predicate) {
+				return true;
 			}
 		}
 		return false;
@@ -146,11 +136,9 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public boolean isGrounded() {
-		for (FormulaComponent component : this.components) {
-			if (component instanceof Formula) {
-				Formula formula = (Formula) component;
-				if (!formula.isGrounded()) return false;
-				
+		for (Atom a : this._getAtoms()) {
+			if (!a.isGrounded()) {
+				return false;
 			}
 		}
 		return true;
@@ -158,11 +146,7 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public int length() {
-		int length = 0;
-		for (FormulaComponent component : this.components) {
-			if (!(component instanceof Operator)) length++;
-		}
-		return length;
+		return this._getAtoms().size();
 	}
 
 	@Override
