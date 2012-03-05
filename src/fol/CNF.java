@@ -116,7 +116,7 @@ public class CNF implements Formula {
 	}
 
 	@Override
-	public Formula ground(Map<Variable, Constant> groundings) {
+	public CNF ground(Map<Variable, Constant> groundings) {
 		List<Clause> groundClauses = new ArrayList<Clause>(this.clauses);
 		
 		boolean changed = false;

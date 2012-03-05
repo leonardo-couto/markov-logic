@@ -15,20 +15,13 @@ import fol.operator.Biconditional;
 import fol.operator.Conjunction;
 import fol.operator.Disjunction;
 import fol.operator.Negation;
+import fol.operator.Operator;
 
 public class GeneralFormula implements Formula {
 	
-	private final List<Atom> atoms;
 	private final List<FormulaComponent> components;
 	
 	public GeneralFormula(List<FormulaComponent> components) {
-		this.components = new ArrayList<FormulaComponent>(components);
-		this.atoms = new ArrayList<Atom>(components.size());
-		this.initAtoms();
-	}
-	
-	private GeneralFormula(List<FormulaComponent> components, List<Atom> atoms) {
-		this.atoms = new ArrayList<Atom>(atoms);
 		this.components = new ArrayList<FormulaComponent>(components);
 	}
 	
@@ -46,7 +39,17 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public List<Atom> getAtoms() {
-		return new ArrayList<Atom>(this.atoms);
+		List<Atom> atoms = new ArrayList<Atom>(this.components.size());
+		
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Atom) {
+				atoms.add((Atom) component);
+				
+			} else if (component instanceof Literal) {
+				atoms.add(((Literal) component).atom);				
+			}
+		}
+		return atoms;
 	}
 	
 	/**
@@ -72,29 +75,19 @@ public class GeneralFormula implements Formula {
 	@Override
 	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
 		Deque<Boolean> stack = new LinkedList<Boolean>();
-		List<FormulaComponent> groundedComponents = new ArrayList<FormulaComponent>(this.components.size());
 		
-		int j = 0;
-		Atom ground;
-		for (Atom a : this.atoms) {
-			ground = a.isGrounded() ? a : a.ground(groundings);
-			
-			if (a != ground) {
-				while (a != this.components.get(j)) {
-					groundedComponents.add(this.components.get(j));
-					j++;
-				}
-				groundedComponents.add(ground);
-				j++;
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Atom) {
+				Atom atom = (Atom) component;
+				component = atom.ground(groundings);
+				
+			} else if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				component = literal.ground(groundings);
+				
 			}
-		}
-		
-		for (FormulaComponent component : groundedComponents) {
+			
 			component.evaluate(stack, db);
-		}
-		
-		for (int i = j; i < this.components.size(); i++) {
-			this.components.get(i).evaluate(stack, db);
 		}
 		
 		return stack.pop().booleanValue();
@@ -103,8 +96,16 @@ public class GeneralFormula implements Formula {
 	@Override
 	public Set<Predicate> getPredicates() {
 		Set<Predicate> predicates = new HashSet<Predicate>();
-		for (Atom a : this.atoms) {
-			predicates.add(a.predicate);
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Atom) {
+				Atom atom = (Atom) component;
+				predicates.add(atom.predicate);
+				
+			} else if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				predicates.add(literal.atom.predicate);
+				
+			}
 		}
 		return predicates;
 	}
@@ -112,8 +113,12 @@ public class GeneralFormula implements Formula {
 	@Override
 	public Set<Variable> getVariables() {
 		Set<Variable> variables = new HashSet<Variable>();
-		for (Atom a : this.atoms) {
-			variables.addAll(a.getVariables());
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Formula) {
+				Formula formula = (Formula) component;
+				variables.addAll(formula.getVariables());
+				
+			}
 		}
 		return variables;
 	}
@@ -125,27 +130,27 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public boolean hasPredicate(Predicate p) {
-		for (Atom a : this.atoms) {
-			if (p == a.predicate) {
-				return true;
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Atom) {
+				Atom atom = (Atom) component;
+				if (atom.predicate == p) return true;
+				
+			} else if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				if (literal.atom.predicate == p) return true;
+				
 			}
 		}
 		return false;
 	}
-	
-	private void initAtoms() {
-		for (FormulaComponent component : this.components) {
-			if (component instanceof Atom) {
-				this.atoms.add((Atom) component);
-			}
-		}
-	}
 
 	@Override
 	public boolean isGrounded() {
-		for (Atom a : this.atoms) {
-			if (!a.isGrounded()) {
-				return false;
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Formula) {
+				Formula formula = (Formula) component;
+				if (!formula.isGrounded()) return false;
+				
 			}
 		}
 		return true;
@@ -153,75 +158,193 @@ public class GeneralFormula implements Formula {
 
 	@Override
 	public int length() {
-		return this.atoms.size();
+		int length = 0;
+		for (FormulaComponent component : this.components) {
+			if (!(component instanceof Operator)) length++;
+		}
+		return length;
 	}
 
 	@Override
 	public GeneralFormula ground(Map<Variable, Constant> groundings) {
 		int size = this.components.size();
-		List<Atom> groundedAtoms = new ArrayList<Atom>(this.atoms.size());
 		List<FormulaComponent> groundedComponents = new ArrayList<FormulaComponent>(size);
 		
-		int j = 0;
-		Atom ground;
-		for (Atom a : this.atoms) {
-			ground = a.ground(groundings);
-			groundedAtoms.add(ground);
-			
-			if (a != ground) {
-				FormulaComponent component = this.components.get(j);
-				while (a != component) {
-					groundedComponents.add(component);
-					j++;
-					component = j < size ? this.components.get(j) : null;
-				}
-				groundedComponents.add(ground);
-				j++;
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Atom) {
+				Atom atom = (Atom) component;
+				component = atom.ground(groundings);
+				
+			} else if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				component = literal.ground(groundings);
+				
 			}
-		}
-		
-		for (int i = j; i < this.components.size(); i++) {
-			groundedComponents.add(this.components.get(i));
+			
+			groundedComponents.add(component);
 		}
 
-		return new GeneralFormula(groundedComponents, groundedAtoms);
+		return new GeneralFormula(groundedComponents);
 	}
 	
 	@Override
 	public GeneralFormula replace(Atom original, Literal replacement) {
-		List<Atom> atoms = new ArrayList<Atom>(this.atoms.size());
 		
-		boolean same = true;
-		for (Atom atom : this.atoms) {
-			if (atom.equals(original)) {
-				same = false;
-				atoms.add(replacement.atom);
-			} else {
-				atoms.add(atom);
-			}
-		}
-		
-		if (same) return this;
-		
-		FormulaComponent fcReplacement = replacement.signal ? replacement.atom : replacement;
 		List<FormulaComponent> components = new ArrayList<FormulaComponent>(this.components.size());
-		
+
 		for (FormulaComponent component : this.components) {
-			FormulaComponent add = component.equals(original) ? fcReplacement : component;
-			components.add(add);
+			if (component instanceof Atom) {
+				Atom atom = (Atom) component;
+				if (original.equals(atom)) {
+					component = replacement;
+				}
+				
+			} else if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				component = literal.replace(original, replacement);				
+			}
+			
+			components.add(component);
 		}
 		
-		return new GeneralFormula(components, atoms);
+		return new GeneralFormula(components);
 	}
 	
 	@Override
 	public CNF toCNF() {
-		throw new UnsupportedOperationException("method toCNF() not implemented for GeneralFormula yet.");
+		List<FormulaComponent> components = this.replaceBiconditional(this.components); 
+		List<FormulaComponent> nnf = toNegationNormalForm(components);
+		Deque<CNF> formulas = new LinkedList<CNF>();
+		
+		for (int i = 0; i < nnf.size(); i++) {
+			FormulaComponent component = nnf.get(i);
+
+			if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				formulas.add(literal.toCNF());
+
+			} else if (component == Conjunction.OPERATOR) {
+				List<Clause> clauses = new ArrayList<Clause>();
+				clauses.addAll(formulas.pollLast().getClauses());
+				clauses.addAll(formulas.pollLast().getClauses());
+				CNF cnf = new CNF(clauses);
+				formulas.offerLast(cnf);
+
+			} else if (component == Disjunction.OPERATOR) {
+				CNF cnf1 = formulas.pollLast();
+				CNF cnf2 = formulas.pollLast();
+				CNF disjunction = this.applyDisjunction(cnf1, cnf2);
+				formulas.add(disjunction);
+
+			} else {
+				String message = String.format("Don't know how to handle %s", component);
+				throw new UnsupportedOperationException(message);
+			}
+		}
+
+		if (formulas.size() != 1) { 
+			String message = String.format("Malformed Formula: %s", this.components);
+			throw new RuntimeException(message);
+		}
+		
+		return formulas.getFirst();
+	}
+	
+	private CNF applyDisjunction(CNF cnf1, CNF cnf2) {
+		List<Clause> clauses1 = cnf1.getClauses();
+		List<Clause> clauses2 = cnf2.getClauses();
+		
+		int size1 = clauses1.size();
+		int size2 = clauses2.size();
+		
+		List<Clause> join = new ArrayList<Clause>(size1 * size2);
+		for (int i = 0; i < size1; i++) {
+			List<Literal> literals = clauses1.get(i).getLiterals();
+			for (int j = 0; j < size2; j++) {
+				Clause clause = clauses2.get(j);
+				for (Literal l : literals) {
+					clause = clause.addLiteral(l);
+				}
+				join.add(clause);
+			}
+		}
+		
+		return new CNF(join);
+	}
+	
+	/**
+	 * Replaces the Biconditional operators for the equivalent formula with Conjunctions,
+	 * Disjunctions and Negations.
+	 */
+	private List<FormulaComponent> replaceBiconditional(List<FormulaComponent> components) {
+		if (!components.contains(Biconditional.OPERATOR)) return components;
+		
+		Deque<List<FormulaComponent>> factors = new LinkedList<List<FormulaComponent>>();
+		
+		for (FormulaComponent component : components) {
+			if (component instanceof Atom || component instanceof Literal) {
+				List<FormulaComponent> singleton = new ArrayList<FormulaComponent>();
+				singleton.add(component);
+				factors.offerLast(singleton);
+				
+			} else if (component == Biconditional.OPERATOR) {
+				List<FormulaComponent> f1 = factors.pollLast();
+				List<FormulaComponent> f2 = factors.pollLast();			
+				factors.add(this.applyBiconditional(f1, f2));				
+				
+			} else if (component == Negation.OPERATOR) {
+				factors.peekLast().add(component);
+				
+			} else { // Conjunction of Disjunction
+				if (component != Conjunction.OPERATOR && component != Disjunction.OPERATOR) {
+					String message = String.format("Don't know how to handle %s", component);
+					throw new UnsupportedOperationException(message);
+				}
+				
+				List<FormulaComponent> f1 = factors.pollLast();
+				f1.add(component);
+				factors.peekLast().addAll(f1);				
+			}
+		}
+		
+		if (factors.size() != 1) { 
+			String message = String.format("Malformed Formula: %s", this.components);
+			throw new RuntimeException(message);
+		}
+		
+		return factors.getFirst();
+	}
+	
+	/**
+	 * Applies the Biconditional operator in the extended form.
+	 * @param f1 
+	 * @param f2 
+	 * @return (f1 ^ f2) v (!f1 ^ !f2)
+	 */
+	private List<FormulaComponent> applyBiconditional(List<FormulaComponent> f1, List<FormulaComponent> f2) {
+		List<FormulaComponent> nf1 = new ArrayList<FormulaComponent>(f1);
+		List<FormulaComponent> nf2 = new ArrayList<FormulaComponent>(f2);
+		nf1.add(Negation.OPERATOR);
+		nf2.add(Negation.OPERATOR);
+		nf1 = toNegationNormalForm(nf1);
+		nf2 = toNegationNormalForm(nf2);
+		
+		List<FormulaComponent> biconditional = new ArrayList<FormulaComponent>();
+		biconditional.addAll(f1);
+		biconditional.addAll(f2);
+		biconditional.add(Conjunction.OPERATOR);
+		biconditional.addAll(nf1);
+		biconditional.addAll(nf2);
+		biconditional.add(Conjunction.OPERATOR);
+		biconditional.add(Disjunction.OPERATOR);	
+		
+		return biconditional;
 	}
 	
 	public GeneralFormula toNegationNormalForm() {
-		List<FormulaComponent> nnfComponents = toNegationNormalForm(this.components);
-		return new GeneralFormula(nnfComponents, this.atoms);
+		List<FormulaComponent> components = this.replaceBiconditional(this.components); 
+		List<FormulaComponent> nnfComponents = toNegationNormalForm(components);
+		return new GeneralFormula(nnfComponents);
 	}
 	
 	private static List<FormulaComponent> toNegationNormalForm(List<FormulaComponent> components) {
@@ -253,9 +376,17 @@ public class GeneralFormula implements Formula {
 					subtract(negate, 2);
 					negate.push(Integer.valueOf(i-1));
 					
-				} else { // Atom
-					nnf.push(Negation.OPERATOR);
-					nnf.push(component);
+				} else if (component instanceof Atom){
+					Atom atom = (Atom) component;
+					nnf.push(new Literal(atom, false));
+					
+				} else if (component instanceof Literal){
+					Literal literal = (Literal) component;
+					nnf.push(new Literal(literal.atom, !literal.signal));
+					
+				} else {
+					String message = String.format("Don't know how to handle %s", component);
+					throw new UnsupportedOperationException(message);
 				}
 				
 				if (deMorgan) {
@@ -265,6 +396,8 @@ public class GeneralFormula implements Formula {
 				}
 				
 			} else if (component instanceof Atom) {
+				nnf.push(new Literal((Atom) component, true));
+			} else if (component instanceof Literal) {
 				nnf.push(component);
 			} else if (component == Negation.OPERATOR) {
 				negate.push(Integer.valueOf(i-1));
