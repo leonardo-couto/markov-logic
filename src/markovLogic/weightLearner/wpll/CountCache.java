@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
-import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Variable;
 import fol.database.Database;
@@ -108,8 +107,7 @@ public class CountCache {
 			this.groundings.put(p, atoms);
 		}
 		if (samples > atoms.size()) {
-			Atom filter = FormulaFactory.generateAtom(p);
-			Iterator<Atom> iterator = new Groundings(filter);
+			Iterator<Atom> iterator = Groundings.iterator(p);
 			for (int i = atoms.size(); i < samples; i++) {
 				atoms.add(iterator.next());
 			}

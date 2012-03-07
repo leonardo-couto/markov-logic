@@ -142,7 +142,7 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 
 	@Override
 	public double trueCount(Database db) {
-		return Groundings.groundingCount(this.atom, this.signal, db);
+		return Groundings.count(this.atom, this.signal, db);
 	}
 	
 	public static final class AtomComparator implements Comparator<Literal> {

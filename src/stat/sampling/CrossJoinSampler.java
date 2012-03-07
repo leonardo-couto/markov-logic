@@ -25,7 +25,7 @@ public class CrossJoinSampler<T> extends AbstractSampler<T> {
 		}
 		
 		int n = (int) Math.min(this.getCardinality(), (long) this.maxSamples);
-		return crossJoin(n).iterator();
+		return this.crossJoin(n).iterator();
 	}
 	
 	/**

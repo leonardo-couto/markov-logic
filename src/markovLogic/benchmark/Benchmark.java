@@ -10,7 +10,6 @@ import markovLogic.inference.Inference;
 import stat.benchmark.InputPoint;
 import stat.benchmark.PrecisionRecall;
 import fol.Atom;
-import fol.FormulaFactory;
 import fol.Predicate;
 import fol.database.Database;
 import fol.database.Groundings;
@@ -38,9 +37,7 @@ public class Benchmark {
 		Evidence evidence = new Evidence(this.db);
 		for (Predicate p : predicates) evidence.set(p, true);
 		
-		// TODO: preciso de um iterator exato
-		Atom atom = FormulaFactory.generateAtom(predicate);
-		Iterator<Atom> iterator = new Groundings(atom);
+		Iterator<Atom> iterator = Groundings.iterator(predicate, true);
 		List<InputPoint> points = new ArrayList<InputPoint>();
 
 		while (iterator.hasNext()) {
@@ -48,7 +45,7 @@ public class Benchmark {
 			double observed = this.inference.pr(ground, evidence);
 			boolean expected = this.db.valueOf(ground);
 			InputPoint point = new InputPoint(observed, expected);
-			points.add(point);			
+			points.add(point);
 		}
 		
 		PrecisionRecall pr = new PrecisionRecall(points);

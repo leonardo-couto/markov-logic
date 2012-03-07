@@ -215,7 +215,7 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 
 	@Override
 	public double trueCount(Database db) {
-		return Groundings.groundingCount(this, true, db);
+		return Groundings.count(this, true, db);
 	}
 
 }
