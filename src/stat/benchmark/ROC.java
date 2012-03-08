@@ -46,7 +46,8 @@ public class ROC {
 	}
 	
 	List<UnormalizedROCPoint> getUnormalizedPoints() {
-		List<UnormalizedROCPoint> points = new ArrayList<UnormalizedROCPoint>(this.points.size()+1);
+		int size = this.points.size() + 1;
+		List<UnormalizedROCPoint> points = new ArrayList<UnormalizedROCPoint>(size);
 		
 		int fp = 0;
 		int tp = 0;
@@ -64,7 +65,7 @@ public class ROC {
 			
 		}
 		
-		// last points
+		// last point
 		UnormalizedROCPoint roc = new UnormalizedROCPoint(fp, tp);
 		points.add(roc);		
 		

@@ -2,6 +2,8 @@ package stat.benchmark;
 
 class UnormalizedROCPoint {
 	
+	private static final String TO_STRING = "(%s, %s)";
+	
 	/**
 	 * False positives (observed value true, expected false)
 	 */
@@ -15,6 +17,11 @@ class UnormalizedROCPoint {
 	public UnormalizedROCPoint(int fp, int tp) {
 		this.fp = fp;
 		this.tp = tp;
+	}
+	
+	@Override
+	public String toString() {
+		return String.format(TO_STRING, this.fp, this.tp);
 	}
 
 }
