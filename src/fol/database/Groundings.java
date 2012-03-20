@@ -2,9 +2,11 @@ package fol.database;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import stat.convergence.SequentialConvergenceTester;
 import stat.convergence.SequentialTester;
@@ -12,24 +14,25 @@ import stat.sampling.CrossJoinSampler;
 import stat.sampling.Sampler;
 import fol.Atom;
 import fol.Constant;
+import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.Term;
 import fol.Variable;
 
 /**
- * <p>This class is a Iterator for groundings of a given Atom.</p>
+ * <p>This class is a Iterator for groundings of a given Formula.</p>
  * <p>The groundings order are random and if <code>exact</code> is false
  * it is not guaranteed that all of them will be sampled. Unless 
  * <code>exact</code> is true it is also possible that some atoms will be 
  * sampled more than once.</p>
  */
-public class Groundings implements Iterator<Atom> {
+public class Groundings<T extends Formula> implements Iterator<T> {
 	
 	private static final int EXACT_THRESHOLD = 500;
 	
 	private final boolean exact;
-	private final Atom filter;
+	private final T filter;
 	private final Map<Variable, Constant> groundings;
 	private final int size;
 	private final List<Variable> variables;
@@ -37,11 +40,11 @@ public class Groundings implements Iterator<Atom> {
 	
 	private int counter;
 	
-	public Groundings(Atom filter) {
+	public Groundings(T filter) {
 		this(filter, false);
 	}
 	
-	public Groundings(Atom filter, boolean exact) {
+	public Groundings(T filter, boolean exact) {
 		this.filter = filter;
 		this.groundings = new HashMap<Variable, Constant>();
 		this.variables = new ArrayList<Variable>();
@@ -53,10 +56,12 @@ public class Groundings implements Iterator<Atom> {
 	
 	private int init() {
 		long l = 1;
-		for (Term t : this.filter.terms) {
-			if (t instanceof Variable) {
-				this.groundings.put((Variable) t, null);
-				l = l * t.getDomain().size();
+		for (Atom atom : this.filter.getAtoms()) {
+			for (Term t : atom.terms) {
+				if (t instanceof Variable && !this.groundings.containsKey(t)) {
+					this.groundings.put((Variable) t, null);
+					l = l * t.getDomain().size();
+				}
 			}
 		}
 		this.variables.addAll(this.groundings.keySet());
@@ -80,7 +85,8 @@ public class Groundings implements Iterator<Atom> {
 	}
 
 	@Override
-	public Atom next() {
+	@SuppressWarnings("unchecked")
+	public T next() {
 		counter++;
 		if (exact) {
 			List<Constant> sample = this.sampler.next();
@@ -93,7 +99,7 @@ public class Groundings implements Iterator<Atom> {
 				groundings.put(v, v.getRandomConstant());
 			}			
 		}
-		return filter.ground(groundings);
+		return (T) filter.ground(groundings);
 	}
 
 	@Override
@@ -101,33 +107,37 @@ public class Groundings implements Iterator<Atom> {
 		// do nothing
 	}
 	
-	public static Groundings iterator(Predicate predicate) {
+	public static Groundings<Atom> iterator(Predicate predicate) {
 		return iterator(predicate, false);
 	}
 	
-	public static Groundings iterator(Predicate predicate, boolean exact) {
+	public static Groundings<Atom> iterator(Predicate predicate, boolean exact) {
 		Atom filter = FormulaFactory.generateAtom(predicate);
-		return new Groundings(filter, exact);
+		return new Groundings<Atom>(filter, exact);
 	}
 	
-	public static int count(Atom filter) {
+	public static int count(Formula filter) {
 		long l = 1;
-		for (Term t : filter.terms) {
-			if (t instanceof Variable) {
-				l = l * t.getDomain().size();
+		Set<Variable> variables = new HashSet<Variable>();
+		for (Atom atom : filter.getAtoms()) {
+			for (Term t : atom.terms) {
+				if (t instanceof Variable && !variables.contains(t)) {
+					l = l * t.getDomain().size();
+					variables.add((Variable) t);
+				}
 			}
 		}
 		return (int) Math.min(l, Integer.MAX_VALUE);
 	}
 	
-	public static double count(Atom filter, boolean value, Database db) {
-		Groundings atoms = new Groundings(filter);
-		int total = atoms.size();
+	public static double count(Formula filter, boolean value, Database db) {
+		Groundings<Formula> formulas = new Groundings<Formula>(filter);
+		int total = formulas.size();
 		
 		SequentialTester tester = new SequentialConvergenceTester(.99, 0.05);
 		tester.setSampleLimit(total);
 		while (!tester.hasConverged()) {
-			double next = db.valueOf(atoms.next()) ? 1 : 0;
+			double next = formulas.next().getValue(db) ? 1 : 0;
 			tester.increment(next);
 		}
 		

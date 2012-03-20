@@ -88,7 +88,7 @@ public class AtomDistribution implements Distribution<Atom> {
 	
 	@Override
 	public Iterator<Boolean> getDataIterator(Atom x) {
-		final Iterator<Atom> iterator = new Groundings(x);
+		final Iterator<Atom> iterator = new Groundings<Atom>(x);
 
 		return new Iterator<Boolean>() {
 			@Override

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fol.database.Database;
+import fol.database.Groundings;
 import fol.operator.Conjunction;
 
 /**
@@ -281,8 +282,7 @@ public class CNF implements Formula {
 
 	@Override
 	public double trueCount(Database db) {
-		// TODO: concentrar o código repetido em um lugar soh, criar uma classe para isso
-		throw new UnsupportedOperationException("method trueCount() not implemented for CNF yet.");
+		return Groundings.count(this, true, db);
 	}
 	
 	/**

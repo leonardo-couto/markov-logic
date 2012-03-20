@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import fol.database.Database;
+import fol.database.Groundings;
 import fol.operator.Disjunction;
 
 /**
@@ -345,34 +346,7 @@ public class Clause implements Formula, Comparable<Clause> {
 	
 	@Override
 	public double trueCount(Database db) {
-		// TODO: fazer o algoritmo otimizado 
-		
-		Set<Variable> varSet = this.getVariables();
-		int size = varSet.size();
-		Variable[] vars = this.getVariables().toArray(new Variable[size]);
-		Map<Variable, Constant> groundings = new HashMap<Variable, Constant>();
-		int total = 1;
-		for (int i = 0; i < vars.length; i++) {
-			total *= vars[i].getConstants().size();
-			if (total > 700) break;
-		}
-
-		int sample = total < 700 ? total : 700; // 500 for a error of at most 5%
-		// TODO tirar o 2* daqui e do SimpleDB, fazer as amostras serem exatas para < 100
-		
-		int count = 0;
-		for (int i = 0; i < sample; i++) {
-			for (int j = 0; j < size; j++) {
-				Variable v = vars[j];
-				groundings.put(v, v.getRandomConstant());
-			}
-			if (this.getValue(db, groundings)) {
-				count++;
-			}
-		}
-		
-		double ratio = ((double) count) / sample;
-		return ratio * total;
+		return Groundings.count(this, true, db);
 	}
 	
 	/**
