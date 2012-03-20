@@ -27,7 +27,6 @@ public class ParseDataSet {
 	private final Map<String, Constant> constantMap;
 	private final Set<Constant> constants;
 	private final Database db;
-	private File dbFile;
 	
 	private static final Double THRESHOLD = 0.5;
 
@@ -110,27 +109,28 @@ public class ParseDataSet {
 		try {
 			domains = p.getDomains();
 		} catch (NullPointerException e) {
-			throw new RuntimeException("Error in file " + dbFile.getName() + 
-					" line " + lineNumber + ": " + line + "\nPredicate \"" + 
-					predicateName + "\" not declared in domain.");
+			throw new RuntimeException("Error. Line " + lineNumber + ": " + line + 
+					"\nPredicate \"" + predicateName + "\" not declared in domain.");
 		}
 		
-		// check if the last token is a float
-		try {
-			double d = Double.parseDouble(tokens[length-1]);
-			// make sure the value lies between 0 and 1;
-			if (Double.compare(d, 0) < 0 || Double.compare(d, 1) > 0) {
-				throw new RuntimeException("Format error in file " + dbFile.getName() + 
-					" line " + lineNumber + ": " + line + "\nProbability outside range [0,1]");
+		if (tokens.length > domains.size() +1) {
+			// check if the last token is a float
+			try {
+				double d = Double.parseDouble(tokens[length-1]);
+				// make sure the value lies between 0 and 1;
+				if (Double.compare(d, 0) < 0 || Double.compare(d, 1) > 0) {
+					throw new RuntimeException("Format error. Line " + 
+							lineNumber + ": " + line + "\nProbability outside range [0,1]");
+				}
+				if(negated) {
+					value = 1.0d - d;
+				} else if (!unknown) {
+					value = d;
+				}
+				length = length -1;
+			} catch (NumberFormatException e) {
+				// last value is not an number
 			}
-			if(negated) {
-				value = 1.0d - d;
-			} else if (!unknown) {
-				value = d;
-			}
-			length = length -1;
-		} catch (NumberFormatException e) {
-			// last value is not an number
 		}
 
 		// Constants loop
