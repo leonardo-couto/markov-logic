@@ -1,6 +1,7 @@
 package markovLogic.structureLearner.pdl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -39,8 +40,13 @@ public class ClauseFilter {
 		// generate counts
 		this.counter.count(all);
 		
-		double initialScore = this.wlearner.score();
 		double[] weights = this.wlearner.weights();
+		try {
+			weights = this.wlearner.learn(weights);
+		} catch(Exception e) {
+			weights = Arrays.copyOf(weights, this.wlearner.getFormulas().size());
+		}
+		double initialScore = this.wlearner.score();
 //		List<ConjunctiveNormalForm> selection = new ArrayList<ConjunctiveNormalForm>(candidates.size());
 		List<WeightedFormula<Clause>> selection = new ArrayList<WeightedFormula<Clause>>(candidates.size());
 		
