@@ -9,7 +9,7 @@ import fol.FormulaComponent;
 import fol.GeneralFormula;
 import fol.database.Database;
 
-public final class Conjunction implements Operator {
+public final class Conjunction implements BinaryOperator {
 	
 	private static final String CONJUNCTION_OP = "^";
 	private static final String CONJUNCTION_CONNECTOR = " ^ ";

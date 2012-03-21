@@ -9,7 +9,7 @@ import fol.FormulaComponent;
 import fol.GeneralFormula;
 import fol.database.Database;
 
-public final class Biconditional implements Operator {
+public final class Biconditional implements BinaryOperator {
 	
 	private static final String BICONDITIONAL_OP = "<->";
 	private static final String BICONDITIONAL_CONNECTOR = " <-> ";

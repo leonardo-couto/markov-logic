@@ -310,7 +310,7 @@ public class FormulaFactory {
 	
 	// Return a variable from Domain d not in c. If there is no Variable
 	// in d that is not in c, creates a new one.
-	private static Variable newVariableNotIn(Domain d, Collection<Variable> c) {
+	public static Variable newVariableNotIn(Domain d, Collection<Variable> c) {
 		List<Variable> variables = d.getVariables();
 		for (Variable v : variables) {
 			if (!c.contains(v)) {

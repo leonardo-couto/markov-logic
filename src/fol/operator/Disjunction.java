@@ -10,7 +10,7 @@ import fol.FormulaComponent;
 import fol.GeneralFormula;
 import fol.database.Database;
 
-public final class Disjunction implements Operator {
+public final class Disjunction implements BinaryOperator {
 	
 	private static final String DISJUNCTION_OP = "v";
 	private static final String DISJUNCTION_CONNECTOR = " v ";
