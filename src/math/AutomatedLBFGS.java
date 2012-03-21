@@ -69,8 +69,6 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		double[] g = gradient.g(out);
 		
 //		super.lbfgs(n, m, out, -1.0*f, changeSign(g), diagco, diag, iprint, eps, xtol, iflag);
-		this.print("************ entrando LBFGS ************** ");
-		this.print(String.format("%s;%s;%s", f, -100, Arrays.toString(out)));
 		
 		int i = 0;
 		do {
@@ -78,14 +76,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 			i++;
 			f = function.f(out);
 			g = gradient.g(out);
-			double sum = 0;
-			for (double d : g) {
-				sum += d*d;
-			}
-			this.print(String.format("%s;%s;%s", f, sum, Arrays.toString(out)));
 		} while (iflag[0] == 1 && !stop(i));
-		
-		this.print("************ Saindo LBFGS ************** ");
 		
 		this.lastValue = f;
 		this.lastArgs = out;
@@ -123,7 +114,4 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		return this.lastValue;
 	}
 	
-	private void print(String s) {
-//		System.out.println(s);
-	}
 }

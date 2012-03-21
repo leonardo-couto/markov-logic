@@ -131,6 +131,8 @@ public class Groundings<T extends Formula> implements Iterator<T> {
 	}
 	
 	public static double count(Formula filter, boolean value, Database db) {
+		if (filter.isGrounded()) return filter.getValue(db) == value ? 1.0 : 0.0;
+		
 		Groundings<Formula> formulas = new Groundings<Formula>(filter);
 		int total = formulas.size();
 		

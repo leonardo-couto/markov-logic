@@ -124,6 +124,10 @@ public class CountCache {
 		throw new RuntimeException();
 	}
 	
+	public void clear() {
+		this.cache.clear();
+	}
+	
 
 	private static final class CountData {
 		

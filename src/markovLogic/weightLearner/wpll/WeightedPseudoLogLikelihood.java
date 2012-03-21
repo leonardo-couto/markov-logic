@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 
 import markovLogic.weightLearner.Score;
 import fol.Atom;
@@ -121,28 +120,22 @@ public class WeightedPseudoLogLikelihood implements Score {
 		int index = -1;
 		
 		// all the work is done here
-		ParallelPll parallelPll = new ParallelPll(this.countsMap.values(), weights);
-		BlockingQueue<DataPll> data = parallelPll.run();
-		
-		// for each grounding, update pll and its gradient
-		try {
-			while (true) {
-				DataPll d = data.take();
-				if (d == DataPll.END) break;
-				Predicate predicate = d.grounding.predicate;
-				
-				if (predicate != previous) {
-					previous = predicate;
-					index = this.predicates.indexOf(predicate);
-				}
-				
-				predicatePll[index] += d.pll;
-				for (int i = 0; i < weights.length; i++) {
-					predicateGrad[index][i] += d.grad[i];
-				}
+		LogConditionalProbability prob = new LogConditionalProbability(weights);
+		Collection<List<Count>> counts = this.countsMap.values();
+		for (List<Count> count : counts) {
+			// for each grounding, update pll and its gradient
+			DataPll data = prob.evaluate(count);
+			Predicate predicate = data.grounding.predicate;
+			
+			if (predicate != previous) {
+				previous = predicate;
+				index = this.predicates.indexOf(predicate);
 			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+			
+			predicatePll[index] += data.pll;
+			for (int i = 0; i < weights.length; i++) {
+				predicateGrad[index][i] += data.grad[i];
+			}
 		}
 		
 		// applies the weight for each predicate 
