@@ -1,0 +1,7 @@
+director(person)
+actor(person)
+movie(film,person)
+genre(film,genre)
+workedUnder(person,person)
+popularity(film)
+rating(film)
