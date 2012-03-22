@@ -69,7 +69,7 @@ public class FormulaParser {
 				if (chars[i+1] != '=' || chars[i+2] != '>') return null;
 				if (neg) return null;
 				if (operators.size() + 1 != formulas.size()) return null;
-				operators.add(Disjunction.OPERATOR);
+				operators.add(Biconditional.OPERATOR);
 				i = i+2;
 				break;
 				
