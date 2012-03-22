@@ -74,9 +74,6 @@ public class CountCache {
 			for (int i = data.samples; i < samples; i++) {
 				
 				// grounds atoms and formula
-				if (atoms.isEmpty()) {
-					System.out.println("aqui");
-				}
 				Atom groundedAtom = atoms.get(i);
 				for (int j = 0; j < vars.length; j++) {
 					Variable v = vars[j];
