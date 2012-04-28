@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 import fol.database.Groundings;
 
 public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
@@ -44,7 +45,12 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 	}
 
 	@Override
-	public void evaluate(Deque<Boolean> stack, Database db) {
+	public void evaluate(Deque<Boolean> stack, BinaryDB db) {
+		stack.push(this.getValue(db));
+	}
+	
+	@Override
+	public void evaluate(Deque<Double> stack, RealDB db) {
 		stack.push(this.getValue(db));
 	}
 	
@@ -80,13 +86,24 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 	}
 
 	@Override
-	public boolean getValue(Database db) {
+	public boolean getValue(BinaryDB db) {
 		return this.signal == this.atom.getValue(db);
+	}
+	
+	@Override
+	public double getValue(RealDB db) {
+		return this.signal ? this.atom.getValue(db) : 1.0d - this.atom.getValue(db);
 	}
 
 	@Override
-	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+	public boolean getValue(BinaryDB db, Map<Variable, Constant> groundings) {
 		return this.signal == this.atom.getValue(db, groundings);
+	}
+
+	@Override
+	public double getValue(RealDB db, Map<Variable, Constant> groundings) {
+		return this.signal ? this.atom.getValue(db, groundings) : 
+			1.0d - this.atom.getValue(db, groundings);
 	}
 
 	@Override
@@ -141,7 +158,12 @@ public class Literal implements Formula, FormulaComponent, Comparable<Literal> {
 	}
 
 	@Override
-	public double trueCount(Database db) {
+	public double trueCount(BinaryDB db) {
+		return Groundings.count(this.atom, this.signal, db);
+	}
+	
+	@Override
+	public double trueCount(RealDB db) {
 		return Groundings.count(this.atom, this.signal, db);
 	}
 	

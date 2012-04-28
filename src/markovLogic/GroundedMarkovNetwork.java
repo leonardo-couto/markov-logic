@@ -1,13 +1,13 @@
 package markovLogic;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import fol.Atom;
 import fol.WeightedFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 
 public class GroundedMarkovNetwork {
 	
@@ -42,7 +42,7 @@ public class GroundedMarkovNetwork {
 	 * @return the sum of weights of all formulas that are true
 	 *         in the given world.
 	 */
-	public double sumWeights(Database world) {
+	public double sumWeights(BinaryDB world) {
 		double sum = 0d;
 		for (WeightedFormula<?> wf : this.formulas) {
 			boolean value = wf.getFormula().getValue(world);
@@ -51,10 +51,25 @@ public class GroundedMarkovNetwork {
 		return sum;
 	}
 	
+	/**
+	 * Get the sum of weights of the satisfied formulas given
+	 * the possible world <code>world</code>
+	 * @return the sum of weights of all formulas that are true
+	 *         in the given world.
+	 */
+	public double sumWeights(RealDB world) {
+		double sum = 0d;
+		for (WeightedFormula<?> wf : this.formulas) {
+			double value = wf.getFormula().getValue(world);
+			sum += value*wf.getWeight();			
+		}
+		return sum;
+	}
+	
 	@Override
 	public String toString() {
 		final String space = " ";
-		final String eol = File.separator;
+		final String eol = System.getProperty("line.separator");
 		StringBuilder sb = new StringBuilder();
 		for (WeightedFormula<?> wf : this.formulas) {
 			sb.append(wf.getWeight());

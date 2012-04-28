@@ -7,7 +7,8 @@ import java.util.List;
 import fol.Formula;
 import fol.FormulaComponent;
 import fol.GeneralFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 
 public final class Conjunction implements BinaryOperator {
 	
@@ -30,9 +31,15 @@ public final class Conjunction implements BinaryOperator {
 	}
 
 	@Override
-	public void evaluate(Deque<Boolean> stack, Database db) {
+	public void evaluate(Deque<Boolean> stack, BinaryDB db) {
 		stack.push(Boolean.valueOf(
 				stack.pop().booleanValue() & stack.pop().booleanValue()));
+	}
+
+	@Override
+	public void evaluate(Deque<Double> stack, RealDB db) {
+		stack.push(Double.valueOf(
+				stack.pop().doubleValue() * stack.pop().doubleValue()));
 	}
 
 	@Override

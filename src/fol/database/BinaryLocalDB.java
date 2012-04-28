@@ -4,12 +4,12 @@ import java.util.HashMap;
 
 import fol.Atom;
 
-public class LocalDB extends SimpleDB {
+public class BinaryLocalDB extends BinaryDatabase {
 
-	private final SimpleDB db;
+	private final BinaryDatabase db;
 	private final HashMap<Atom, Boolean> local;
 	
-	public LocalDB(SimpleDB db) {
+	public BinaryLocalDB(BinaryDatabase db) {
 		this.db = db; 
 		this.local = new HashMap<Atom, Boolean>();
 	}
@@ -52,8 +52,8 @@ public class LocalDB extends SimpleDB {
 	}
 	
 	@Override
-	public Database getLocalCopy() {
-		return new LocalDB(this);
+	public BinaryDB getLocalCopy() {
+		return new BinaryLocalDB(this);
 	}
 	
 }

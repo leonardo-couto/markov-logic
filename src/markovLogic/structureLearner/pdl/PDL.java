@@ -20,7 +20,8 @@ import fol.Formula;
 import fol.FormulaFactory;
 import fol.Predicate;
 import fol.WeightedFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 
 public class PDL implements StructureLearner {
 	
@@ -49,10 +50,18 @@ public class PDL implements StructureLearner {
 	private final WeightLearner preciseLearner;
 	private WeightLearner l1Learner;
 	
-	public PDL(Set<Predicate> predicates, Database db) {
+	public PDL(Set<Predicate> predicates, BinaryDB db) {
+		this(predicates, db, null);
+	}
+	
+	public PDL(Set<Predicate> predicates, RealDB db) {
+		this(predicates, null, db);
+	}
+	
+	private PDL(Set<Predicate> predicates, BinaryDB bin, RealDB real) {
 		this.factory = new FormulaFactory(predicates, MAX_VARS);
 		this.atoms = this.factory.getUnitClauses();
-		this.cache = new CountCache(db);
+		this.cache = (bin == null) ? new CountCache(real) : new CountCache(bin);
 		
 		Score fastScore = new WeightedPseudoLogLikelihood(predicates, this.cache, LOW_SAMPLE_SIZE);
 		Score preciseScore = new WeightedPseudoLogLikelihood(predicates, this.cache, HIGH_SAMPLE_SIZE);
@@ -112,6 +121,7 @@ public class PDL implements StructureLearner {
 				}
 			}
 			
+			this.cache.clear();
 			
 			if (clauses.isEmpty()) break;
 			candidates = clauses;

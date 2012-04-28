@@ -4,11 +4,11 @@ import java.util.HashMap;
 
 import fol.Atom;
 
-public class SimpleDB implements Database {
+public class BinaryDatabase implements BinaryDB {
 	
 	private final HashMap<Atom, Boolean> db;
 	
-	public SimpleDB() {
+	public BinaryDatabase() {
 		this.db = new HashMap<Atom, Boolean>();
 	}
 
@@ -46,8 +46,8 @@ public class SimpleDB implements Database {
 	}
 
 	@Override
-	public Database getLocalCopy() {
-		return new LocalDB(this);
+	public BinaryDB getLocalCopy() {
+		return new BinaryLocalDB(this);
 	}
 	
 }

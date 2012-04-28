@@ -8,7 +8,8 @@ import java.util.List;
 import fol.Formula;
 import fol.FormulaComponent;
 import fol.GeneralFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 
 public final class Disjunction implements BinaryOperator {
 	
@@ -31,9 +32,16 @@ public final class Disjunction implements BinaryOperator {
 	}
 
 	@Override
-	public void evaluate(Deque<Boolean> stack, Database db) {
+	public void evaluate(Deque<Boolean> stack, BinaryDB db) {
 		stack.push(Boolean.valueOf(
 				stack.pop().booleanValue() | stack.pop().booleanValue()));
+	}
+
+	@Override
+	public void evaluate(Deque<Double> stack, RealDB db) {
+		double d1 = stack.pop().doubleValue();
+		double d2 = stack.pop().doubleValue();
+		stack.push(Double.valueOf(d1 + d2 - d1*d2));
 	}
 
 	@Override

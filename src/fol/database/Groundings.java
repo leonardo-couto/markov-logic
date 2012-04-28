@@ -130,7 +130,7 @@ public class Groundings<T extends Formula> implements Iterator<T> {
 		return (int) Math.min(l, Integer.MAX_VALUE);
 	}
 	
-	public static double count(Formula filter, boolean value, Database db) {
+	public static double count(Formula filter, boolean value, BinaryDB db) {
 		if (filter.isGrounded()) return filter.getValue(db) == value ? 1.0 : 0.0;
 		
 		Groundings<Formula> formulas = new Groundings<Formula>(filter);
@@ -139,11 +139,29 @@ public class Groundings<T extends Formula> implements Iterator<T> {
 		SequentialTester tester = new SequentialConvergenceTester(.99, 0.05);
 		tester.setSampleLimit(total);
 		while (!tester.hasConverged()) {
-			double next = formulas.next().getValue(db) ? 1 : 0;
+			double next = formulas.next().getValue(db) ? 1.0d : 0.0d;
 			tester.increment(next);
 		}
 		
-		double ratio = value ? tester.mean() : 1 - tester.mean();
+		double ratio = value ? tester.mean() : 1.0d - tester.mean();
+		return ratio * total;
+	}
+	
+	public static double count(Formula filter, boolean value, RealDB db) {
+		if (filter.isGrounded()) 
+			return value ? filter.getValue(db) : 1.0d - filter.getValue(db);
+		
+		Groundings<Formula> formulas = new Groundings<Formula>(filter);
+		int total = formulas.size();
+		
+		SequentialTester tester = new SequentialConvergenceTester(.99, 0.05);
+		tester.setSampleLimit(total);
+		while (!tester.hasConverged()) {
+			double next = formulas.next().getValue(db);
+			tester.increment(next);
+		}
+		
+		double ratio = value ? tester.mean() : 1.0d - tester.mean();
 		return ratio * total;
 	}
 

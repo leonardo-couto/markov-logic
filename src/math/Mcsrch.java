@@ -29,8 +29,15 @@ package math;
   * instances simultaneously.
   */
 public class Mcsrch {
+	
+	/**
+	  *	An estimate of the machine precision (e.g. 10e-16 on a SUN station 3/60). 
+	  * The line search routine will terminate if the relative width of the interval 
+	  * of uncertainty is less than	<code>xtol</code>.
+	 */
+	private static final double xtol = MachinePrecision.get();
 
-	private int infoc[] = new int[1], j = 0;
+	private int infoc[] = new int[1];
 	private double dg = 0, dgm = 0, dginit = 0, dgtest = 0, dgx[] = new double[1], dgxm[] = new double[1], dgy[] = new double[1], dgym[] = new double[1], finit = 0, ftest1 = 0, fm = 0, fx[] = new double[1], fxm[] = new double[1], fy[] = new double[1], fym[] = new double[1], p5 = 0, p66 = 0, stx[] = new double[1], sty[] = new double[1], stmin = 0, stmax = 0, width = 0, width1 = 0, xtrapf = 0;
 	private boolean brackt[] = new boolean[1], stage1 = false;
 	
@@ -116,9 +123,6 @@ public class Mcsrch {
 	  *
 	  *	@param ftol Tolerance for the sufficient decrease condition.
 	  *
-	  * @param xtol Termination occurs when the relative width of the interval
-	  *		of uncertainty is at most <code>xtol</code>.
-	  *
 	  *	@param maxfev Termination occurs when the number of evaluations of
 	  *		the objective function is at least <code>maxfev</code> by the end
 	  *		of an iteration.
@@ -145,7 +149,7 @@ public class Mcsrch {
 	  *	@param wa Temporary storage array, of length <code>n</code>.
 	  */
 
-	public void mcsrch ( int n , double[] x , double f , double[] g , double[] s , int is0 , double[] stp , double ftol , double xtol , int maxfev , int[] info , int[] nfev , double[] wa )
+	public void mcsrch ( int n , double[] x , double f , double[] g , double[] s , int is0 , double[] stp , double ftol , int maxfev , int[] info , int[] nfev , double[] wa )
 	{
 		p5 = 0.5;
 		p66 = 0.66;
@@ -162,9 +166,8 @@ public class Mcsrch {
 
 			dginit = 0;
 
-			for ( j = 1 ; j <= n ; j += 1 )
-			{
-				dginit = dginit + g [ j -1] * s [ is0+j -1];
+			for (int j = 0; j < n; j++) {
+				dginit = dginit + g[j] * s[is0 + j];
 			}
 
 
@@ -182,9 +185,8 @@ public class Mcsrch {
 			width = lbfgs.stpmax - lbfgs.stpmin;
 			width1 = width/p5;
 
-			for ( j = 1 ; j <= n ; j += 1 )
-			{
-				wa [ j -1] = x [ j -1];
+			for (int j = 0; j < n; j++) {
+				wa[j] = x[j];
 			}
 
 			// The variables stx, fx, dgx contain the values of the step,
@@ -235,9 +237,8 @@ public class Mcsrch {
 				// and compute the directional derivative.
 				// We return to main program to obtain F and G.
 
-				for ( j = 1 ; j <= n ; j += 1 )
-				{
-					x [ j -1] = wa [ j -1] + stp[0] * s [ is0+j -1];
+				for (int j = 0; j < n; j++) {
+					x[j] = wa[j] + stp[0] * s[is0 + j];
 				}
 
 				info[0]=-1;
@@ -248,9 +249,8 @@ public class Mcsrch {
 			nfev[0] = nfev[0] + 1;
 			dg = 0;
 
-			for ( j = 1 ; j <= n ; j += 1 )
-			{
-				dg = dg + g [ j -1] * s [ is0+j -1];
+			for (int j = 0; j < n; j++) {
+				dg = dg + g[j] * s[is0 + j];
 			}
 
 			ftest1 = finit + stp[0]*dgtest;

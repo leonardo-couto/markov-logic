@@ -9,7 +9,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 import fol.database.Groundings;
 import fol.operator.Biconditional;
 import fol.operator.Conjunction;
@@ -72,7 +73,7 @@ public class GeneralFormula implements Formula {
 	}
 
 	@Override
-	public boolean getValue(Database db) {
+	public boolean getValue(BinaryDB db) {
 		Deque<Boolean> stack = new LinkedList<Boolean>();
 		for (FormulaComponent component : this.components) {
 			component.evaluate(stack, db);
@@ -81,7 +82,16 @@ public class GeneralFormula implements Formula {
 	}
 
 	@Override
-	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+	public double getValue(RealDB db) {
+		Deque<Double> stack = new LinkedList<Double>();
+		for (FormulaComponent component : this.components) {
+			component.evaluate(stack, db);
+		}
+		return stack.pop().doubleValue();
+	}
+
+	@Override
+	public boolean getValue(BinaryDB db, Map<Variable, Constant> groundings) {
 		Deque<Boolean> stack = new LinkedList<Boolean>();
 		
 		for (FormulaComponent component : this.components) {
@@ -99,6 +109,27 @@ public class GeneralFormula implements Formula {
 		}
 		
 		return stack.pop().booleanValue();
+	}
+
+	@Override
+	public double getValue(RealDB db, Map<Variable, Constant> groundings) {
+		Deque<Double> stack = new LinkedList<Double>();
+		
+		for (FormulaComponent component : this.components) {
+			if (component instanceof Atom) {
+				Atom atom = (Atom) component;
+				component = atom.ground(groundings);
+				
+			} else if (component instanceof Literal) {
+				Literal literal = (Literal) component;
+				component = literal.ground(groundings);
+				
+			}
+			
+			component.evaluate(stack, db);
+		}
+		
+		return stack.pop().doubleValue();
 	}
 
 	@Override
@@ -420,7 +451,12 @@ public class GeneralFormula implements Formula {
 	}
 
 	@Override
-	public double trueCount(Database db) {
+	public double trueCount(BinaryDB db) {
+		return Groundings.count(this, true, db);
+	}
+	
+	@Override
+	public double trueCount(RealDB db) {
 		return Groundings.count(this, true, db);
 	}
 	

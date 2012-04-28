@@ -16,29 +16,25 @@ import fol.Constant;
 import fol.Domain;
 import fol.Predicate;
 import fol.Term;
-import fol.database.Database;
-import fol.database.SimpleDB;
-
-import util.Util;
+import fol.database.RealDB;
+import fol.database.RealDatabase;
 
 public class ParseDataSet {
 	
 	private final Map<String, Predicate> predicateMap;
 	private final Map<String, Constant> constantMap;
 	private final Set<Constant> constants;
-	private final Database db;
+	private final RealDB db;
 	
-	private static final Double THRESHOLD = 0.5;
-
 	public ParseDataSet(Set<Predicate> predicates) {
-		this.predicateMap = Util.toMap(predicates);
+		this.predicateMap = Parse.toMap(predicates);
 		this.constants = getConstants(predicates);
-		this.constantMap = Util.toMap(constants);		
-		this.db = new SimpleDB();
+		this.constantMap = Parse.toMap(constants);		
+		this.db = new RealDatabase();
 	}
 	
 	// Get all constants already defined in the domain, if any.
-	private Set<Constant> getConstants(Set<Predicate> pSet) {
+	private static Set<Constant> getConstants(Set<Predicate> pSet) {
 		Set<Constant> cSet = new HashSet<Constant>();
 		Set<Domain> domains = new HashSet<Domain>();
 		for(Predicate p : pSet) {
@@ -98,7 +94,7 @@ public class ParseDataSet {
 		}
 		
 		// break into tokens
-		String[] tokens = Parse.predicateTokenizer(mline);
+		String[] tokens = mline.replaceAll("\\s","").split("[(,)]");
 		int length = tokens.length;
 		
 		// get the predicate
@@ -160,7 +156,7 @@ public class ParseDataSet {
 		
 		Term[] terms = constantList.toArray(new Term[constantList.size()]);
 		Atom at = new Atom(p, terms);
-		this.db.set(at, THRESHOLD.compareTo(value) < 0);
+		this.db.set(at, value);
 	}
 	
 	/**
@@ -170,7 +166,7 @@ public class ParseDataSet {
 		return this.constants;
 	}
 	
-	public Database getDatabase() {
+	public RealDB getDatabase() {
 		return this.db;
 	}
 	

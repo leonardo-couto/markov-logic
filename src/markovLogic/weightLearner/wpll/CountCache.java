@@ -14,17 +14,30 @@ import fol.Constant;
 import fol.Formula;
 import fol.Predicate;
 import fol.Variable;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 import fol.database.Groundings;
 
 public class CountCache {
 	
-	private final Database db;
+	private final boolean binary;
+	private final BinaryDB bdb;
+	private final RealDB rdb;
 	private final ConcurrentHashMap<Formula, CountCache.CountData> cache;
 	private final ConcurrentHashMap<Predicate, List<Atom>> groundings;
 	
-	public CountCache(Database db) {
-		this.db = db;
+	public CountCache(RealDB db) {
+		this.binary = false;
+		this.bdb = null;
+		this.rdb = db;
+		this.cache = new ConcurrentHashMap<Formula, CountCache.CountData>();
+		this.groundings = new ConcurrentHashMap<Predicate, List<Atom>>();
+	}
+	
+	public CountCache(BinaryDB db) {
+		this.binary = true;
+		this.bdb = db;
+		this.rdb = null;
 		this.cache = new ConcurrentHashMap<Formula, CountCache.CountData>();
 		this.groundings = new ConcurrentHashMap<Predicate, List<Atom>>();
 	}
@@ -49,18 +62,15 @@ public class CountCache {
 		data.samples = sampleSize;
 		return counts;
 	}
-	
-	public Database getDatabase() {
-		return this.db;
-	}
-	
+
 	private void updateCache(Predicate p, CountData data, Formula formula, int sampleSize) {
 
 		int samples = Math.min(p.totalGroundings(), sampleSize);
 		if (samples > data.samples) {
 			
 			List<Atom> atoms = updateGroundings(p, samples);			
-			Database localDB = this.db.getLocalCopy();
+			RealDB localRDB = this.binary ? null : this.rdb.getLocalCopy();
+			BinaryDB localBDB = this.binary ? this.bdb.getLocalCopy() : null;
 			
 			// target atom and its variables
 			Atom target = this.getAtom(p, formula);
@@ -82,16 +92,30 @@ public class CountCache {
 				}
 				Formula grounded = formula.ground(groundings);
 				
-				// make counts
-				boolean value = this.db.valueOf(groundedAtom);
-				localDB.flip(groundedAtom);
-				double trueCount = grounded.trueCount(value ? this.db : localDB);
-				double falseCount = grounded.trueCount(value ? localDB : this.db);
-				localDB.flip(groundedAtom);
-				double count = value ? trueCount : falseCount;
-				
-				// add to cache
-				counts.add(new Count(groundedAtom, formula, falseCount, trueCount, count));
+				if (this.binary) {
+					// make counts
+					boolean value = this.bdb.valueOf(groundedAtom);
+					localBDB.flip(groundedAtom);
+					double trueCount = grounded.trueCount(value ? this.bdb : localBDB);
+					double falseCount = grounded.trueCount(value ? localBDB : this.bdb);
+					localBDB.flip(groundedAtom);
+					double count = value ? trueCount : falseCount;
+					
+					// add to cache
+					counts.add(new Count(groundedAtom, formula, falseCount, trueCount, count));
+				} else {
+					// make counts
+					double value = this.rdb.valueOf(groundedAtom);
+					localRDB.set(groundedAtom, 1.0d);
+					double trueCount = grounded.trueCount(localRDB);
+					localRDB.set(groundedAtom, 0.0d);
+					double falseCount = grounded.trueCount(localRDB);
+					localRDB.set(groundedAtom, value);
+					double count = value*(trueCount-falseCount) + falseCount;
+
+					// add to cache
+					counts.add(new Count(groundedAtom, formula, falseCount, trueCount, count));
+				}
 			}
 			
 		}

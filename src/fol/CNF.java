@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 import fol.database.Groundings;
 import fol.operator.Conjunction;
 
@@ -85,7 +86,7 @@ public class CNF implements Formula {
 	}
 
 	@Override
-	public boolean getValue(Database db) {
+	public boolean getValue(BinaryDB db) {
 		int size = this.clauses.size();
 		for (int i = 0; i < size; i++) {
 			if (!this.clauses.get(i).getValue(db)) {
@@ -96,7 +97,7 @@ public class CNF implements Formula {
 	}
 
 	@Override
-	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+	public boolean getValue(BinaryDB db, Map<Variable, Constant> groundings) {
 		int size = this.clauses.size();
 		for (int i = 0; i < size; i++) {
 			Clause grounded = this.clauses.get(i).ground(groundings);
@@ -105,6 +106,37 @@ public class CNF implements Formula {
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public double getValue(RealDB db) {
+		int size = this.clauses.size();
+		double value = 1.0d;
+		for (int i = 0; i < size; i++) {
+			double clause = this.clauses.get(i).getValue(db);
+			if (clause == 0.0d) {
+				return 0.0d;
+			} else if (clause != 1.0d) {
+				value *= clause;
+			}
+		}
+		return value;
+	}
+
+	@Override
+	public double getValue(RealDB db, Map<Variable, Constant> groundings) {
+		int size = this.clauses.size();
+		double value = 1.0d;
+		for (int i = 0; i < size; i++) {
+			Clause grounded = this.clauses.get(i).ground(groundings);
+			double clause = grounded.getValue(db);
+			if (clause == 0.0d) {
+				return 0.0d;
+			} else if (clause != 1.0d) {
+				value *= clause;
+			}
+		}
+		return value;
 	}
 
 	@Override
@@ -263,25 +295,14 @@ public class CNF implements Formula {
 		
 		return sb.toString();
 	}
-	
-	// TODO: REMOVER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	public static String clausesToString(List<Clause> clauses) {
-		StringBuilder sb = new StringBuilder();
-		Iterator<Clause> iterator = clauses.iterator();
-		
-		sb.append('(');
-		sb.append(iterator.next().toString());
-		while (iterator.hasNext()) {
-			sb.append(") ^ (");
-			sb.append(iterator.next().toString());
-		}
-		sb.append(')');
-		
-		return sb.toString();
-	}
 
 	@Override
-	public double trueCount(Database db) {
+	public double trueCount(BinaryDB db) {
+		return Groundings.count(this, true, db);
+	}
+	
+	@Override
+	public double trueCount(RealDB db) {
 		return Groundings.count(this, true, db);
 	}
 	

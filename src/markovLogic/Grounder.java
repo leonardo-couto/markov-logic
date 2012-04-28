@@ -11,20 +11,19 @@ import java.util.Map;
 import java.util.Queue;
 
 import markovLogic.inference.Evidence;
-
 import fol.Atom;
 import fol.Constant;
 import fol.Formula;
 import fol.Literal;
 import fol.Variable;
 import fol.WeightedFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
 
 public class Grounder {
 	
 	private final MarkovLogicNetwork mln;
-	private final Database db;
-	private final Database evidence;
+	private final BinaryDB db;
+	private final Evidence evidence;
 	
 	private final Map<Atom,Literal> cache;
 	private final Map<Atom,Atom> queued;
@@ -81,7 +80,7 @@ public class Grounder {
 				
 				Literal cached = this.cache.get(atom);
 				if (cached == null) {
-					if (this.evidence.valueOf(atom)) {
+					if (this.evidence.isEvidence(atom)) {
 						// is evidence
 						boolean value = this.db.valueOf(atom);
 						formula = formula.replace(atom, value ? Literal.TRUE : Literal.FALSE);

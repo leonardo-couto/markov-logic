@@ -2,16 +2,9 @@ package math;
 
 import java.util.Arrays;
 
-
-import util.Util;
-
 public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	
-	public final int m;
-	public final int[] iprint;
-	public double eps;	
-	public static final double xtol = Util.machinePrecision();
-	
+	private final double precision;
 	private double[] lastArgs;
 	private double lastValue;
 	
@@ -22,12 +15,8 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	}
 	
 	public AutomatedLBFGS(double precision) {
-		super();
-		this.m = 4; // 4 <= m <= 7
-		this.iprint = new int[2];
-		iprint[0] = -1;
-		iprint[1] = 3;
-		this.eps = precision; // Precision of solution.
+		super(4, precision, new int[] {-1, 3}, false);
+		this.precision = precision;
 		this.lastArgs = new double[0];
 		this.lastValue = Double.NaN;
 	}
@@ -35,22 +24,21 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	public double[] min(double[] x, ScalarFunction function, VectorFunction gradient) throws ExceptionWithIflag {
 		int n = function.lengthInput();
 		double[] out = Arrays.copyOf(x, n);
-		boolean diagco = false;
 		double[] diag = new double[n];
 		int[] iflag = {0};
 		double f = function.f(out);
 		double[] g = gradient.g(out);
 		
-		super.lbfgs(n, m, out, f, g, diagco, diag, this.iprint, eps, xtol, iflag);
+		super.lbfgs(n, out, f, g, diag, iflag);
 		
 		while (iflag[0] == 1) {
 			f = function.f(out);
 			g = gradient.g(out);
-			super.lbfgs(n, m, out, f, g, diagco, diag, iprint, eps, xtol, iflag);			
+			super.lbfgs(n, out, f, g, diag, iflag);			
 		}
 
-		this.lastValue = f;
-		this.lastArgs = out;
+		this.lastValue = function.f(super.solution_cache);
+		this.lastArgs = super.solution_cache;
 
 		return out;
 	}
@@ -62,7 +50,6 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	public double[] max(double[] x, ScalarFunction function, VectorFunction gradient) throws ExceptionWithIflag {
 		int n = function.lengthInput();
 		double[] out = Arrays.copyOf(x, n);
-		boolean diagco = false;
 		double[] diag = new double[n];
 		int[] iflag = {0};
 		double f = function.f(out);
@@ -72,25 +59,20 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 		
 		int i = 0;
 		do {
-			super.lbfgs(n, m, out, -1.0*f, changeSign(g), diagco, diag, iprint, eps, xtol, iflag);		
+			super.lbfgs(n, out, -1.0*f, changeSign(g), diag, iflag);		
 			i++;
 			f = function.f(out);
 			g = gradient.g(out);
 		} while (iflag[0] == 1 && !stop(i));
 		
-		this.lastValue = f;
-		this.lastArgs = out;
+		this.lastValue = function.f(super.solution_cache);
+		this.lastArgs = super.solution_cache;
 
 		return out;
 	}
 	
 	public double[] max(double[] x, DifferentiableFunction function) throws ExceptionWithIflag {
 		return this.max(x, function, function);
-	}
-	
-	@Override
-	public void setPrecision(double eps) {
-		this.eps = eps;
 	}
 	
 	private static double[] changeSign(double[] d) {
@@ -101,7 +83,7 @@ public class AutomatedLBFGS extends LBFGS implements Optimizer {
 	}
 	
 	public AutomatedLBFGS copy() {
-		return new AutomatedLBFGS(this.eps);
+		return new AutomatedLBFGS(this.precision);
 	}
 
 	@Override

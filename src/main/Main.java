@@ -8,8 +8,6 @@ import java.util.List;
 
 import markovLogic.parse.ParseDataSet;
 import markovLogic.parse.ParseDomain;
-import markovLogic.structureLearner.busl.Busl;
-
 
 public class Main {
 	
@@ -32,9 +30,9 @@ public class Main {
 //		IndependenceTest<Atom> iTest = new DefaultTest<Atom>(0.01, atoms);
 //		GSIMN<Atom> gs = new GSIMN<Atom>(atoms, iTest);
 //		System.out.println(gs.run());
-		System.out.println("runing busl...");
-		Busl busl = new Busl(this.domain.getPredicates(), this.dataSet.getDatabase());
-		System.out.println(busl.learn());
+//		System.out.println("runing busl...");
+//		Busl busl = new Busl(this.domain.getPredicates(), this.dataSet.getDatabase());
+//		System.out.println(busl.learn());
 	}
 	
 	private void parse(File f) {

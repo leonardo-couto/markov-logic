@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 import fol.database.Groundings;
 import fol.operator.Disjunction;
 
@@ -149,7 +150,7 @@ public class Clause implements Formula, Comparable<Clause> {
 	}
 
 	@Override
-	public boolean getValue(Database db) {
+	public boolean getValue(BinaryDB db) {
 		int size = this.literals.size();
 		for (int i = 0; i < size; i++) {
 			if (this.literals.get(i).getValue(db)) {
@@ -160,7 +161,22 @@ public class Clause implements Formula, Comparable<Clause> {
 	}
 
 	@Override
-	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+	public double getValue(RealDB db) {
+		int size = this.literals.size();
+		double value = 0.0d;
+		for (int i = 0; i < size; i++) {
+			double literal = this.literals.get(i).getValue(db);
+			if (literal == 1.0d) {
+				return 1.0d;
+			} else if (literal != 0.0d) {
+				value += literal - (value*literal);
+			}
+		}
+		return value;
+	}
+
+	@Override
+	public boolean getValue(BinaryDB db, Map<Variable, Constant> groundings) {
 		int size = this.literals.size();
 		for (int i = 0; i < size; i++) {
 			Literal grounded = this.literals.get(i).ground(groundings);
@@ -169,6 +185,22 @@ public class Clause implements Formula, Comparable<Clause> {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public double getValue(RealDB db, Map<Variable, Constant> groundings) {
+		int size = this.literals.size();
+		double value = 0.0d;
+		for (int i = 0; i < size; i++) {
+			Literal grounded = this.literals.get(i).ground(groundings);
+			double literal = grounded.getValue(db);
+			if (literal == 1.0d) {
+				return 1.0d;
+			} else if (literal != 0.0d) {
+				value += literal - (value*literal);
+			}
+		}
+		return value;
 	}
 
 	@Override
@@ -345,7 +377,12 @@ public class Clause implements Formula, Comparable<Clause> {
 	}
 	
 	@Override
-	public double trueCount(Database db) {
+	public double trueCount(BinaryDB db) {
+		return Groundings.count(this, true, db);
+	}
+	
+	@Override
+	public double trueCount(RealDB db) {
 		return Groundings.count(this, true, db);
 	}
 	

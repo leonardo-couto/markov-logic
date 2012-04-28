@@ -7,7 +7,8 @@ import java.util.List;
 import fol.Formula;
 import fol.FormulaComponent;
 import fol.GeneralFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 
 public final class Biconditional implements BinaryOperator {
 	
@@ -30,10 +31,19 @@ public final class Biconditional implements BinaryOperator {
 	}
 
 	@Override
-	public void evaluate(Deque<Boolean> stack, Database db) {
+	public void evaluate(Deque<Boolean> stack, BinaryDB db) {
 		boolean b1 = stack.pop().booleanValue();
 		boolean b2 = stack.pop().booleanValue();
 		stack.push(Boolean.valueOf((b1 && b2) || (!b1 && !b2)));		
+	}
+
+	@Override
+	public void evaluate(Deque<Double> stack, RealDB db) {
+		double b1 = stack.pop().doubleValue();
+		double b2 = stack.pop().doubleValue();
+		double f0 = b1*b2;
+		double f1 = (1.0d-b1)*(1.0d-b2);
+		stack.push(Double.valueOf(f0 + f1 - f0*f1));		
 	}
 
 	@Override

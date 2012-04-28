@@ -1,6 +1,5 @@
 package markovLogic;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -66,7 +65,7 @@ public class MarkovLogicNetwork {
 	@Override
 	public String toString() {
 		final String space = " ";
-		final String eol = File.separator;
+		final String eol = System.getProperty("line.separator");
 		StringBuilder sb = new StringBuilder();
 		for (WeightedFormula<?> wf : this.wFormulas) {
 			sb.append(wf.getWeight());

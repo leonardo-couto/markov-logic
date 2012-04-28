@@ -2,18 +2,14 @@ package fol.database;
 
 import fol.Atom;
 
-public interface Database {
+public interface RealDB {
 	
-	public boolean valueOf(Atom a);
+	static final Double TRUE = Double.valueOf(1.0d);
+	static final Double FALSE = Double.valueOf(0.0d);
 	
-	/**
-	 * Invert the value of Atom a in the database.
-	 * 
-	 * @param a Atom that will be flip.
-	 * @return The new value of a.
-	 */
-	public boolean flip(Atom a);
-	public void set(Atom a, boolean value);
+	public double valueOf(Atom a);
+	
+	public void set(Atom a, double value);
 	/**
 	 * Allows one to set values without modifying the original Database.
 	 * 
@@ -21,6 +17,6 @@ public interface Database {
 	 * copy is active. Changing the value of the same Atom in both the
 	 * local and original copy will generate inconsistencies.
 	 */
-	public Database getLocalCopy();
+	public RealDB getLocalCopy();
 	
 }

@@ -12,8 +12,8 @@ import fol.CNF;
 import fol.Clause;
 import fol.Formula;
 import fol.WeightedFormula;
-import fol.database.Database;
-import fol.database.SimpleDB;
+import fol.database.BinaryDatabase;
+import fol.database.BinaryDB;
 import fol.operator.Negation;
 import fol.sat.WalkSAT;
 
@@ -32,13 +32,10 @@ public class MCSAT implements Inference {
 		
 		Random random = new Random();
 		List<Atom> variables = mrf.getGroundings();
-		Database world = getRandomAssignment(variables);
-		
-//		List<WeightedFormula<Clause>> clauses = this.getClauses(mrf.getformulas());
+		BinaryDB world = getRandomAssignment(variables);
 		
 		int pSamples = 0;
 		int fSamples = 0;
-		
 		int counter = 0;
 		
 		for (int i = 0; i < 1000; i++) {
@@ -72,7 +69,7 @@ public class MCSAT implements Inference {
 			boolean solution = false;
 			world = getRandomAssignment(variables);
 			for (int j = 0; j < 10; j++) {
-				Database sample = walk.sat(world);
+				BinaryDB sample = walk.sat(world);
 				if (sample != null) { 
 					world = sample;
 					solution = true;
@@ -90,28 +87,9 @@ public class MCSAT implements Inference {
 		return ((double) pSamples) / total;
 	}
 	
-//	private List<WeightedFormula<Clause>> getClauses(List<WeightedFormula<?>> mrf) {
-//		List<WeightedFormula<Clause>> clauses = new ArrayList<WeightedFormula<Clause>>();
-//		for (WeightedFormula<?> wf : mrf) {
-//			double weight = wf.getWeight();
-//			CNF formula;
-//			if (weight > 0) {
-//				formula = wf.getFormula().toCNF();
-//			} else {
-//				weight = -weight;
-//				formula = Negation.OPERATOR.apply(wf.getFormula()).toCNF();
-//			}
-//			for (Clause c : formula.getClauses()) {
-//				WeightedFormula<Clause> clause = new WeightedFormula<Clause>(c, weight);
-//				clauses.add(clause);
-//			}
-//		}
-//		return clauses;
-//	}
-	
-	private static Database getRandomAssignment(List<Atom> variables) {
+	private static BinaryDB getRandomAssignment(List<Atom> variables) {
 		Random r = new Random();
-		Database database = new SimpleDB();
+		BinaryDB database = new BinaryDatabase();
 		for (Atom atom : variables) database.set(atom, r.nextBoolean());
 		return database;
 	}

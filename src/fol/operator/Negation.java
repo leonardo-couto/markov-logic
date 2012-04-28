@@ -7,7 +7,8 @@ import java.util.List;
 import fol.Formula;
 import fol.FormulaComponent;
 import fol.GeneralFormula;
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 
 
 public final class Negation implements Operator {
@@ -31,8 +32,13 @@ public final class Negation implements Operator {
 	}
 
 	@Override
-	public void evaluate(Deque<Boolean> stack, Database db) {
+	public void evaluate(Deque<Boolean> stack, BinaryDB db) {
 		stack.push(Boolean.valueOf(!stack.pop().booleanValue()));		
+	}
+
+	@Override
+	public void evaluate(Deque<Double> stack, RealDB db) {
+		stack.push(Double.valueOf(1.0d - stack.pop().doubleValue()));		
 	}
 
 	@Override

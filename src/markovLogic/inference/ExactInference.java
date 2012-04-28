@@ -9,8 +9,8 @@ import markovLogic.MarkovLogicNetwork;
 import stat.sampling.CrossJoinSampler;
 import stat.sampling.Sampler;
 import fol.Atom;
-import fol.database.Database;
-import fol.database.SimpleDB;
+import fol.database.BinaryDatabase;
+import fol.database.BinaryDB;
 
 public class ExactInference implements Inference {
 	
@@ -41,7 +41,7 @@ public class ExactInference implements Inference {
 		
 		List<Atom> variables = mrf.getGroundings();
 		Sampler<Boolean> sampler = this.getSampler(variables.size());
-		Database world = new SimpleDB();
+		BinaryDB world = new BinaryDatabase();
 		
 		double sumP = 0;  // usar bigDecimal?
 		double sumN = 0;

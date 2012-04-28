@@ -13,8 +13,8 @@ import fol.CNF;
 import fol.CNF.ReducedCNF;
 import fol.Clause;
 import fol.Literal;
-import fol.database.Database;
-import fol.database.SimpleDB;
+import fol.database.BinaryDB;
+import fol.database.BinaryDatabase;
 
 /**
  * Algorithm to solve the boolean satisfability problem, based on:<br>
@@ -38,7 +38,7 @@ public class WalkSAT {
 	private final Map<Atom, List<Clause>> falseLiterals;
 	
 	
-	private Database assignment;
+	private BinaryDB assignment;
 	
 	/**
 	 * Probability of choosing a random walk approach rather
@@ -60,7 +60,7 @@ public class WalkSAT {
 		this.pRandom = new Random();
 		this.qRandom = new Random();
 		this.satMap = new HashMap<Clause, Boolean>();
-		this.assignment = this.assignConstants(new SimpleDB());
+		this.assignment = this.assignConstants(new BinaryDatabase());
 		this.trueLiterals = new HashMap<Atom, List<Clause>>();
 		this.falseLiterals = new HashMap<Atom, List<Clause>>();
 		this.mapAtoms(this.clauses);
@@ -78,7 +78,7 @@ public class WalkSAT {
 	 * @param db
 	 * @return
 	 */
-	private Database assignConstants(Database db) {
+	private BinaryDB assignConstants(BinaryDB db) {
 		for (Literal l : this.constants) {
 			db.set(l.atom, l.signal);
 		}
@@ -259,7 +259,7 @@ public class WalkSAT {
 	/**
 	 * Gives a random assignment for the variable values
 	 */
-	private Database randomAssignment() {
+	private BinaryDB randomAssignment() {
 		for (Atom a : this.variables) {
 			boolean value = this.qRandom.nextBoolean();
 			this.assignment.set(a, value);
@@ -300,12 +300,12 @@ public class WalkSAT {
 	 * Solves the boolean satisfiability problem.<br>
 	 * Starts the local search with a random assignment.
 	 */
-	public Database sat() {
+	public BinaryDB sat() {
 		for (int i = 0; i < this.maxTries; i++) {
 			this.randomAssignment();
 			this.updateSatMap();
 			if (this.isSatisfied()) return this.assignment;
-			Database assignment = this.sat(this.assignment);
+			BinaryDB assignment = this.sat(this.assignment);
 			if (assignment != null) return assignment;
 		}
 		return null;
@@ -317,7 +317,7 @@ public class WalkSAT {
 	 * It does not check if the initialAssignment satisfies
 	 * the formula before starting the search.
 	 */
-	public Database sat(Database initialAssignment) {
+	public BinaryDB sat(BinaryDB initialAssignment) {
 		if (this.assignment != initialAssignment) {
 			this.assignment = this.assignConstants(initialAssignment);
 			this.updateSatMap();

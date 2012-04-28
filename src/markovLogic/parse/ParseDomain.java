@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import util.Util;
-
 import fol.Domain;
 import fol.Predicate;
 
@@ -37,7 +35,7 @@ public class ParseDomain {
 	public ParseDomain(Set<Predicate> predicates, Set<Domain> domains) {
 		this.predicateSet = predicates;
 		this.domainSet = domains;
-		this.domainMap = Util.toMap(domains);
+		this.domainMap = Parse.toMap(domains);
 	}
 
 	// TODO: Check file/lines format?
@@ -53,7 +51,7 @@ public class ParseDomain {
 	
 	// TODO: Check line format?
 	private void parseLine(String line) {
-		String[] tokens = Parse.predicateTokenizer(line);
+		String[] tokens = line.replaceAll("\\s","").split("[(,)]");
 		String predicateName = tokens[0];
 		List<Domain> domainList = new ArrayList<Domain>();
 		Domain d;

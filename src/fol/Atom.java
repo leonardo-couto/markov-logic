@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import fol.database.Database;
+import fol.database.BinaryDB;
+import fol.database.RealDB;
 import fol.database.Groundings;
 import fol.operator.Operator;
 
@@ -76,7 +77,12 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 	
 	@Override
-	public void evaluate(Deque<Boolean> stack, Database db) {
+	public void evaluate(Deque<Boolean> stack, BinaryDB db) {
+		stack.push(this.getValue(db));
+	}
+	
+	@Override
+	public void evaluate(Deque<Double> stack, RealDB db) {
 		stack.push(this.getValue(db));
 	}
 
@@ -104,15 +110,29 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 	
 	@Override
-	public boolean getValue(Database db) {
+	public boolean getValue(BinaryDB db) {
 		if (!this.grounded) {
 			throw new RuntimeException("getValue of non-grounded Atom " + this.toString());
 		}
 		return this.predicate == EMPTY ? true : db.valueOf(this);
 	}
+	
+	@Override
+	public double getValue(RealDB db) {
+		if (!this.grounded) {
+			throw new RuntimeException("getValue of non-grounded Atom " + this.toString());
+		}
+		return this.predicate == EMPTY ? 1.0d : db.valueOf(this);
+	}
 
 	@Override
-	public boolean getValue(Database db, Map<Variable, Constant> groundings) {
+	public boolean getValue(BinaryDB db, Map<Variable, Constant> groundings) {
+		Atom a = this.ground(groundings);
+		return a.getValue(db);
+	}
+	
+	@Override
+	public double getValue(RealDB db, Map<Variable, Constant> groundings) {
 		Atom a = this.ground(groundings);
 		return a.getValue(db);
 	}
@@ -214,7 +234,12 @@ public final class Atom implements Formula, FormulaComponent, Comparable<Atom> {
 	}
 
 	@Override
-	public double trueCount(Database db) {
+	public double trueCount(BinaryDB db) {
+		return Groundings.count(this, true, db);
+	}
+
+	@Override
+	public double trueCount(RealDB db) {
 		return Groundings.count(this, true, db);
 	}
 

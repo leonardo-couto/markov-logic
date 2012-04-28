@@ -43,8 +43,6 @@ public interface Optimizer {
 	public double[] min(double[] x, DifferentiableFunction function) throws OptimizationException;
 
 	
-	public void setPrecision(double eps);
-	
 	/**
 	 * @return An instance of Optimizer with the same parameters
 	 * as the one that copy was called.
