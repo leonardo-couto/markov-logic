@@ -88,7 +88,7 @@ public class Domain extends HashSet<Constant> {
 	}
 	
 	public boolean remove(Variable v) {
-		return this.functions.remove(v);
+		return this.variables.remove(v);
 	}
 	
 	@Override

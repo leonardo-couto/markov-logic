@@ -56,7 +56,7 @@ public class ZValue {
 		while (b) {
 			TDistribution tStudentDist = new TDistributionImpl(counter+1);
 			double tStudent = inverseCumulative(tStudentDist,this.confidence);
-			tStudentList.add(new Double(tStudent));
+			tStudentList.add(Double.valueOf(tStudent));
 			if (Double.compare(Math.abs(tStudent-this.normal), EPSLON) < 1) {
 				b = false;
 			}
